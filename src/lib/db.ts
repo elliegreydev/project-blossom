@@ -67,11 +67,108 @@ export interface AuroraNudgeState {
   dismissedCount: number;
 }
 
+// Medication ------------------------------------------------------------------
+
+export type MedicationRoute =
+  | "tablet"
+  | "injection"
+  | "patch"
+  | "gel"
+  | "spray"
+  | "implant"
+  | "cream"
+  | "blocker"
+  | "other";
+
+// days: null means every day; otherwise 0-6 (Sun-Sat). times: "HH:MM" strings.
+export interface MedicationFrequency {
+  times: string[];
+  days: number[] | null;
+}
+
+export interface Medication {
+  id: string;
+  name: string;
+  route: MedicationRoute | null;
+  unit: string | null;
+  frequency: MedicationFrequency | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DoseStatus = "taken" | "skipped" | "delayed" | "not_logged";
+
+export interface MedicationLog {
+  id: string;
+  medicationId: string;
+  scheduledTime: string | null; // ISO of the intended dose slot, if scheduled
+  status: DoseStatus;
+  loggedAt: string;
+  note: string | null;
+}
+
+// Appointments ----------------------------------------------------------------
+
+export interface Appointment {
+  id: string;
+  title: string;
+  appointmentAt: string; // ISO datetime
+  location: string | null;
+  preparationNote: string | null;
+  outcomeNote: string | null;
+  rescheduledFrom: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Wellbeing -------------------------------------------------------------------
+
+export interface JournalEntry {
+  id: string;
+  bodyText: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CheckIn {
+  id: string;
+  mood: number | null;
+  energy: number | null;
+  confidence: number | null;
+  stress: number | null;
+  comfort: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+// Goals -----------------------------------------------------------------------
+
+export type GoalStatus = "active" | "completed" | "archived";
+
+export interface Goal {
+  id: string;
+  title: string;
+  category: JourneyCategory | null;
+  target: string | null;
+  status: GoalStatus;
+  convertedToMilestoneId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
 type BlossomDb = Dexie & {
   profiles: EntityTable<Profile, "id">;
   milestones: EntityTable<Milestone, "id">;
   journeyEvents: EntityTable<JourneyEvent, "id">;
   auroraNudges: EntityTable<AuroraNudgeState, "nudgeKey">;
+  medications: EntityTable<Medication, "id">;
+  medicationLogs: EntityTable<MedicationLog, "id">;
+  appointments: EntityTable<Appointment, "id">;
+  journalEntries: EntityTable<JournalEntry, "id">;
+  checkIns: EntityTable<CheckIn, "id">;
+  goals: EntityTable<Goal, "id">;
 };
 
 function createDb(): BlossomDb {
@@ -84,6 +181,18 @@ function createDb(): BlossomDb {
     milestones: "id, eventDate, category",
     journeyEvents: "id, eventDate, category",
     auroraNudges: "nudgeKey",
+  });
+  instance.version(3).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
   });
   return instance;
 }
@@ -167,5 +276,132 @@ export async function dismissAuroraNudge(nudgeKey: string): Promise<void> {
     nudgeKey,
     lastShownAt: new Date().toISOString(),
     dismissedCount: (existing?.dismissedCount ?? 0) + 1,
+  });
+}
+
+// Medication ------------------------------------------------------------------
+
+export async function addMedication(
+  input: Pick<Medication, "name" | "route" | "unit" | "frequency">
+): Promise<Medication> {
+  const now = new Date().toISOString();
+  const medication: Medication = {
+    id: newId(),
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+    ...input,
+  };
+  await db.medications.add(medication);
+  return medication;
+}
+
+export async function updateMedication(id: string, patch: Partial<Medication>): Promise<void> {
+  await db.medications.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function logDose(
+  input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
+): Promise<void> {
+  await db.medicationLogs.add({
+    id: newId(),
+    loggedAt: new Date().toISOString(),
+    ...input,
+  });
+}
+
+// Appointments ----------------------------------------------------------------
+
+export async function addAppointment(
+  input: Pick<Appointment, "title" | "appointmentAt" | "location" | "preparationNote">
+): Promise<Appointment> {
+  const now = new Date().toISOString();
+  const appointment: Appointment = {
+    id: newId(),
+    outcomeNote: null,
+    rescheduledFrom: null,
+    createdAt: now,
+    updatedAt: now,
+    ...input,
+  };
+  await db.appointments.add(appointment);
+  return appointment;
+}
+
+export async function updateAppointment(id: string, patch: Partial<Appointment>): Promise<void> {
+  await db.appointments.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+// Wellbeing -------------------------------------------------------------------
+
+export async function addJournalEntry(bodyText: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.journalEntries.add({ id: newId(), bodyText, createdAt: now, updatedAt: now });
+}
+
+export async function addCheckIn(
+  input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
+): Promise<void> {
+  await db.checkIns.add({ id: newId(), createdAt: new Date().toISOString(), ...input });
+}
+
+// Goals -----------------------------------------------------------------------
+
+export async function addGoal(
+  input: Pick<Goal, "title" | "category" | "target">
+): Promise<Goal> {
+  const now = new Date().toISOString();
+  const goal: Goal = {
+    id: newId(),
+    status: "active",
+    convertedToMilestoneId: null,
+    createdAt: now,
+    updatedAt: now,
+    completedAt: null,
+    ...input,
+  };
+  await db.goals.add(goal);
+  return goal;
+}
+
+export async function updateGoal(id: string, patch: Partial<Goal>): Promise<void> {
+  await db.goals.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+// Complete a goal and, if asked, enshrine it as a milestone (something that
+// happened). Returns the new milestone id when one is created.
+export async function completeGoal(id: string, asMilestone: boolean): Promise<void> {
+  const goal = await db.goals.get(id);
+  if (!goal) return;
+  let milestoneId: string | null = null;
+  if (asMilestone) {
+    const milestone = await addMilestone({
+      title: goal.title,
+      templateKey: null,
+      category: goal.category,
+      eventDate: new Date().toISOString().slice(0, 10),
+      datePrecision: "exact",
+      note: null,
+    });
+    milestoneId = milestone.id;
+  }
+  await updateGoal(id, {
+    status: "completed",
+    completedAt: new Date().toISOString(),
+    convertedToMilestoneId: milestoneId,
+  });
+}
+
+// Given a medication's schedule, list the dose slots expected today as ISO
+// datetimes. Empty when the med has no schedule or isn't scheduled for today.
+export function dueDosesToday(med: Medication, now: Date): string[] {
+  if (!med.frequency || med.frequency.times.length === 0) return [];
+  const weekday = now.getDay();
+  if (med.frequency.days && !med.frequency.days.includes(weekday)) return [];
+  return med.frequency.times.map((t) => {
+    const [h, m] = t.split(":").map(Number);
+    const d = new Date(now);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
   });
 }

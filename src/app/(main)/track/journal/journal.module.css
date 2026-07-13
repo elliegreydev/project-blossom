@@ -1,0 +1,39 @@
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.segment {
+  flex: 1;
+  padding: 9px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segment.active {
+  background: var(--bg);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(43, 31, 51, 0.08);
+}
+
+.checkInScales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.scaleTag {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

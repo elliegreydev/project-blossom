@@ -1,21 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./QuickAdd.module.css";
 import AddMilestoneSheet from "./AddMilestoneSheet";
+import AddMedicationSheet from "./AddMedicationSheet";
+import AddAppointmentSheet from "./AddAppointmentSheet";
+import JournalSheet from "./JournalSheet";
+
+type Sheet = "milestone" | "medication" | "appointment" | "journal" | null;
 
 export default function QuickAdd() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [milestoneOpen, setMilestoneOpen] = useState(false);
+  const [sheet, setSheet] = useState<Sheet>(null);
 
   function handlePress() {
-    if (pathname.startsWith("/journey")) {
-      setMilestoneOpen(true);
-      return;
-    }
+    // On a screen with an obvious primary add action, go straight to it.
+    if (pathname.startsWith("/journey")) return setSheet("milestone");
+    if (pathname.startsWith("/track/medication")) return setSheet("medication");
+    if (pathname.startsWith("/track/journal")) return setSheet("journal");
+    if (pathname.startsWith("/calendar")) return setSheet("appointment");
     setMenuOpen((v) => !v);
+  }
+
+  function open(s: Sheet) {
+    setMenuOpen(false);
+    setSheet(s);
   }
 
   return (
@@ -37,33 +49,36 @@ export default function QuickAdd() {
         <>
           <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)} />
           <div className={styles.menu}>
+            <button type="button" className={styles.menuItem} onClick={() => open("milestone")}>
+              Add milestone
+            </button>
+            <button type="button" className={styles.menuItem} onClick={() => open("medication")}>
+              Add medication
+            </button>
+            <button type="button" className={styles.menuItem} onClick={() => open("appointment")}>
+              Add appointment
+            </button>
+            <button type="button" className={styles.menuItem} onClick={() => open("journal")}>
+              New journal entry
+            </button>
             <button
               type="button"
               className={styles.menuItem}
               onClick={() => {
                 setMenuOpen(false);
-                setMilestoneOpen(true);
+                router.push("/track/goals");
               }}
             >
-              Add milestone
-            </button>
-            <button type="button" className={styles.menuItem} disabled>
-              Log a dose
-              <span className={styles.menuItemHint}>Coming soon</span>
-            </button>
-            <button type="button" className={styles.menuItem} disabled>
-              Add appointment
-              <span className={styles.menuItemHint}>Coming soon</span>
-            </button>
-            <button type="button" className={styles.menuItem} disabled>
-              New journal entry
-              <span className={styles.menuItemHint}>Coming soon</span>
+              Add goal
             </button>
           </div>
         </>
       )}
 
-      {milestoneOpen && <AddMilestoneSheet onClose={() => setMilestoneOpen(false)} />}
+      {sheet === "milestone" && <AddMilestoneSheet onClose={() => setSheet(null)} />}
+      {sheet === "medication" && <AddMedicationSheet onClose={() => setSheet(null)} />}
+      {sheet === "appointment" && <AddAppointmentSheet onClose={() => setSheet(null)} />}
+      {sheet === "journal" && <JournalSheet onClose={() => setSheet(null)} />}
     </>
   );
 }
