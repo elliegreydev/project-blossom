@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -10,6 +11,7 @@ import {
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
+import { selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
 import styles from "./home.module.css";
 
@@ -38,7 +40,11 @@ export default function HomePage() {
   const meds = useLiveQuery(() => db.medications.toArray(), []);
   const medLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const appts = useLiveQuery(() => db.appointments.toArray(), []);
-  const firstMilestoneNudge = useLiveQuery(() => db.auroraNudges.get("first_milestone"));
+  const journalEntries = useLiveQuery(() => db.journalEntries.toArray(), []);
+  const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
+  const goals = useLiveQuery(() => db.goals.toArray(), []);
+  const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
+  const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
 
   if (
     !profile ||
@@ -46,7 +52,11 @@ export default function HomePage() {
     journeyEvents === undefined ||
     meds === undefined ||
     medLogs === undefined ||
-    appts === undefined
+    appts === undefined ||
+    journalEntries === undefined ||
+    checkIns === undefined ||
+    goals === undefined ||
+    auroraNudgeStates === undefined
   )
     return null;
 
@@ -83,8 +93,27 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const showFirstMilestoneNudge =
-    profile.auroraMode !== "disabled" && milestones.length === 0 && !firstMilestoneNudge;
+  const auroraSuggestion = auroraHiddenForSession
+    ? null
+    : selectAuroraSuggestion({
+        now,
+        profile,
+        milestones,
+        journeyEvents,
+        medications: meds,
+        medicationLogs: medLogs,
+        appointments: appts,
+        journalEntries,
+        checkIns,
+        goals,
+        nudgeStates: auroraNudgeStates,
+      });
+
+  function acknowledgeAuroraSuggestion() {
+    if (!auroraSuggestion) return;
+    setAuroraHiddenForSession(true);
+    void dismissAuroraNudge(auroraSuggestion.key);
+  }
 
   const name = profile.displayName || "there";
 
@@ -147,20 +176,29 @@ export default function HomePage() {
 
       <InstallAppNudge />
 
-      {showFirstMilestoneNudge && (
+      {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
-            <span className={styles.auroraLabel}>A gentle thought from Aurora</span>
-            Whenever you&apos;re ready, your Journey is a quiet place to note things that
-            matter to you. No pressure.
+            <span className={styles.auroraLabel}>{auroraSuggestion.eyebrow}</span>
+            <strong className={styles.auroraTitle}>{auroraSuggestion.title}</strong>
+            <span>{auroraSuggestion.message}</span>
           </div>
-          <button
-            type="button"
-            className={styles.auroraDismiss}
-            onClick={() => dismissAuroraNudge("first_milestone")}
-          >
-            Dismiss
-          </button>
+          <div className={styles.auroraActions}>
+            <Link
+              href={auroraSuggestion.href}
+              className={styles.auroraAction}
+              onClick={acknowledgeAuroraSuggestion}
+            >
+              {auroraSuggestion.actionLabel}
+            </Link>
+            <button
+              type="button"
+              className={styles.auroraDismiss}
+              onClick={acknowledgeAuroraSuggestion}
+            >
+              Not now
+            </button>
+          </div>
         </aside>
       )}
 
