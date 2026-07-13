@@ -1,0 +1,204 @@
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: max(24px, var(--safe-top)) 20px max(24px, var(--safe-bottom));
+  background: var(--bg);
+}
+
+.progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.progressDot {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.progressDot.done {
+  background: var(--lavender);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.title {
+  font-size: 26px;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-family: var(--font-inter);
+  font-weight: 400;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.input {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.input:focus {
+  border-color: var(--lavender);
+}
+
+.optionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.optionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.optionCard.selected {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 14%, var(--bg-raised));
+}
+
+.optionTitle {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.optionDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-weight: 400;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--plum);
+}
+
+.checkboxLabel {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-inter);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  margin: 24px auto 0;
+  width: 100%;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryButton {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.primaryButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.primaryButton:not(:disabled):active {
+  opacity: 0.85;
+}
+
+.tertiaryButton {
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.skipAllButton {
+  padding: 10px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}

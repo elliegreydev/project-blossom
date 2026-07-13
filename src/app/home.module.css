@@ -1,0 +1,22 @@
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: max(32px, var(--safe-top)) 20px max(32px, var(--safe-bottom));
+  background: var(--bg);
+}
+
+.greeting {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 420px;
+}
