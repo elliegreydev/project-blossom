@@ -1,12 +1,12 @@
 :root {
-  /* Brand pastels — accents only, never large solid fills */
+  /* Brand pastels: accents only, never large solid fills */
   --pink: #f7b4c8;
   --lavender: #c4b6f6;
   --sky: #b7d6ff;
   --mint: #bdead6;
   --plum: #2b1f33;
 
-  /* Surfaces — light mode */
+  /* Surfaces: light mode */
   --bg: #fcfaFc;
   --bg-raised: #f7f3f8;
   --border: #ece5ee;
@@ -32,7 +32,7 @@
   --duration-fast: 180ms;
   --duration-slow: 280ms;
 
-  /* Branded gradient — logo, Aurora moments, quick-add, special actions only */
+  /* Branded gradient: logo, Aurora moments, quick-add, special actions only */
   --gradient-brand: linear-gradient(135deg, var(--pink), var(--lavender));
 
   /* iOS safe areas */

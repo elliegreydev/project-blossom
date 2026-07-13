@@ -128,7 +128,7 @@ export default function OnboardingPage() {
             <h1 className={styles.title}>Hi, we&apos;re glad you&apos;re here.</h1>
             <p className={styles.subtitle}>
               Blossom is yours to shape at your own pace. Everything here is optional
-              and you can change it later &mdash; nothing is locked in.
+              and you can change it later. Nothing is locked in.
             </p>
             <p className={styles.subtitle}>
               Before we continue, we just need one thing.
@@ -155,7 +155,7 @@ export default function OnboardingPage() {
             <div className={styles.eyebrow}>About you</div>
             <h1 className={styles.title}>What should we call you?</h1>
             <p className={styles.subtitle}>
-              This is just for the app &mdash; not your legal name, and never shared.
+              This is just for the app. Not your legal name, and never shared.
             </p>
             <div className={styles.field}>
               <span className={styles.label}>Chosen or display name</span>
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
             <h1 className={styles.title}>Where are you based?</h1>
             <p className={styles.subtitle}>
               This helps us show relevant support resources and date formats. Only UK
-              content is available for now &mdash; more regions are on the way.
+              content is available for now. More regions are on the way.
             </p>
             <div className={styles.field}>
               <span className={styles.label}>Region</span>
@@ -300,7 +300,7 @@ export default function OnboardingPage() {
             <h1 className={styles.title}>Local-only, or sync across devices?</h1>
             <p className={styles.subtitle}>
               Blossom works fully without an account. Sync is an optional upgrade you
-              can turn on any time &mdash; not something you&apos;re missing.
+              can turn on any time. Not something you&apos;re missing.
             </p>
             <div className={styles.optionGrid}>
               <button
@@ -320,7 +320,7 @@ export default function OnboardingPage() {
               >
                 <span className={styles.optionTitle}>Set up sync later</span>
                 <span className={styles.optionDesc}>
-                  We&apos;ll remind you in Settings &mdash; not built yet
+                  We&apos;ll remind you in Settings. Not built yet
                 </span>
               </button>
             </div>
