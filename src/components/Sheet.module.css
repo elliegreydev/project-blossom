@@ -1,0 +1,142 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(43, 31, 51, 0.35);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn var(--duration-fast) var(--ease-standard);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.sheet {
+  width: 100%;
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px max(20px, var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: slideUp var(--duration-slow) var(--ease-standard);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.grabber {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 19px;
+  color: var(--text-primary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.input,
+.textarea,
+.select {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--lavender);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-family: var(--font-inter);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip.selected {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.primaryButton {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tertiaryButton {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}

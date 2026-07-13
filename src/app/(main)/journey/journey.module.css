@@ -1,0 +1,89 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: max(28px, var(--safe-top)) 20px 20px;
+}
+
+.title {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--text-primary);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filterChip {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filterChip.active {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entry {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entryTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.entryMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.entryNote {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.empty {
+  padding: 40px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emptyTitle {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.emptySubtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+}

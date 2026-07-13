@@ -1,0 +1,91 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: max(28px, var(--safe-top)) 20px 20px;
+}
+
+.greeting {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--text-primary);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.emptyRow {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+.card {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.auroraCard {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--lavender) 22%, var(--bg-raised)), color-mix(in srgb, var(--pink) 18%, var(--bg-raised)));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auroraText {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.auroraDismiss {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.linkRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}

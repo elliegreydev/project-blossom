@@ -1,0 +1,5 @@
+.content {
+  padding-bottom: calc(64px + max(8px, var(--safe-bottom)));
+  min-height: 100dvh;
+  background: var(--bg);
+}
