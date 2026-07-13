@@ -12,6 +12,7 @@ const RESURFACE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default function SyncNudge() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
+  const syncState = useLiveQuery(() => db.syncMeta.get("sync"));
   const [ready, setReady] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -48,7 +49,8 @@ export default function SyncNudge() {
     }
   }
 
-  if (!ready || !profile || profile.syncEnabled || dismissed) return null;
+  if (!ready || !profile || dismissed) return null;
+  if (profile.syncEnabled && signedIn && syncState?.ownerId) return null;
 
   return (
     <aside className={styles.nudge} aria-label="Blossom account and sync">

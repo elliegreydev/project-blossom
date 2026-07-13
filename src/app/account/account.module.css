@@ -109,6 +109,38 @@
   font: inherit;
 }
 
+.form .codeInput {
+  font-family: var(--font-manrope);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.codeActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+
+.textButton {
+  min-height: 44px;
+  padding: 6px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .primaryButton,
 .secondaryButton,
 .signOutButton {
@@ -249,4 +281,3 @@
     padding: 24px;
   }
 }
-

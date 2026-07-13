@@ -36,6 +36,8 @@ export default function AccountPage() {
   const pendingCount = useLiveQuery(() => db.syncOutbox.count(), []);
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState("");
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -57,20 +59,68 @@ export default function AccountPage() {
     };
   }, []);
 
-  async function sendMagicLink(event: FormEvent<HTMLFormElement>) {
+  async function requestCode(address: string) {
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: true },
+    });
+    if (authError) throw authError;
+  }
+
+  async function sendCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setWorking(true);
     setError(null);
     setMessage(null);
-    const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/confirm?next=/account`;
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
+    const address = email.trim().toLowerCase();
+    try {
+      await requestCode(address);
+      setPendingEmail(address);
+      setCode("");
+      setMessage("We sent a six-digit code. It may take a minute to arrive.");
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Blossom couldn’t send a code just now.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function verifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingEmail || code.length !== 6) return;
+    setWorking(true);
+    setError(null);
+    setMessage(null);
+    const { data, error: verifyError } = await createClient().auth.verifyOtp({
+      email: pendingEmail,
+      token: code,
+      type: "email",
     });
-    if (authError) setError(authError.message);
-    else setMessage("Check your email for a one-time sign-in link. You can close this page while you wait.");
+    if (verifyError) {
+      setError("That code is incorrect or has expired. Check it and try again.");
+    } else {
+      setUser(data.user ?? data.session?.user ?? null);
+      setPendingEmail(null);
+      setCode("");
+      setMessage("You’re signed in. Nothing has synced until you choose to connect this device.");
+    }
     setWorking(false);
+  }
+
+  async function resendCode() {
+    if (!pendingEmail) return;
+    setWorking(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await requestCode(pendingEmail);
+      setMessage("A fresh six-digit code is on its way.");
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Blossom couldn’t resend the code just now.");
+    } finally {
+      setWorking(false);
+    }
   }
 
   async function connectSync() {
@@ -139,16 +189,64 @@ export default function AccountPage() {
           <p>Signing in is optional. It never uploads your local Blossom data by itself.</p>
         </header>
 
-        {!user ? (
+        {!user && pendingEmail ? (
+          <section className={styles.card}>
+            <div className={styles.cardHeading}>
+              <div className={styles.icon} aria-hidden="true">#</div>
+              <div>
+                <h2>Enter your six-digit code</h2>
+                <p>We sent it to {pendingEmail}.</p>
+              </div>
+            </div>
+            <form className={styles.form} onSubmit={verifyCode}>
+              <label htmlFor="account-code">Verification code</label>
+              <input
+                id="account-code"
+                className={styles.codeInput}
+                type="text"
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                placeholder="000000"
+                maxLength={6}
+                autoFocus
+                required
+              />
+              <button type="submit" className={styles.primaryButton} disabled={working || code.length !== 6}>
+                {working ? "Checking…" : "Sign in"}
+              </button>
+            </form>
+            <div className={styles.codeActions}>
+              <button type="button" className={styles.textButton} onClick={resendCode} disabled={working}>
+                Send a new code
+              </button>
+              <button
+                type="button"
+                className={styles.textButton}
+                onClick={() => {
+                  setPendingEmail(null);
+                  setCode("");
+                  setError(null);
+                  setMessage(null);
+                }}
+                disabled={working}
+              >
+                Use a different email
+              </button>
+            </div>
+          </section>
+        ) : !user ? (
           <section className={styles.card}>
             <div className={styles.cardHeading}>
               <div className={styles.icon} aria-hidden="true">✉</div>
               <div>
                 <h2>Sign in by email</h2>
-                <p>No password to remember. We’ll send a one-time link.</p>
+                <p>No password to remember. We’ll send a six-digit code.</p>
               </div>
             </div>
-            <form className={styles.form} onSubmit={sendMagicLink}>
+            <form className={styles.form} onSubmit={sendCode}>
               <label htmlFor="account-email">Email address</label>
               <input
                 id="account-email"
@@ -161,7 +259,7 @@ export default function AccountPage() {
                 required
               />
               <button type="submit" className={styles.primaryButton} disabled={working}>
-                {working ? "Sending…" : "Email me a sign-in link"}
+                {working ? "Sending…" : "Email me a code"}
               </button>
             </form>
           </section>
