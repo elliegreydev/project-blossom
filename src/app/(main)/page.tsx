@@ -154,6 +154,10 @@ export default function HomePage() {
           ))
         )}
       </div>
+
+      <Link href="/settings/support" className={styles.supportLink}>
+        Need support right now?
+      </Link>
     </div>
   );
 }

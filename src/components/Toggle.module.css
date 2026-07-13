@@ -1,0 +1,32 @@
+.track {
+  width: 46px;
+  height: 27px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.track.on {
+  background: var(--plum);
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--duration-fast) var(--ease-standard);
+  box-shadow: 0 1px 3px rgba(43, 31, 51, 0.25);
+}
+
+.track.on .thumb {
+  transform: translateX(19px);
+}

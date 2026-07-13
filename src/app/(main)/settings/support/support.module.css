@@ -1,0 +1,45 @@
+.resourceItem {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resourceName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.resourceCategory {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sky) 30%, var(--bg-raised));
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.resourceMeta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.resourceReviewed {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.emergencyBanner {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--pink) 22%, var(--bg));
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}

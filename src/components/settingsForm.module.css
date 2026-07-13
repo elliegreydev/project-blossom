@@ -1,0 +1,148 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: max(28px, var(--safe-top)) 20px 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.input {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--lavender);
+}
+
+.input:disabled {
+  opacity: 0.5;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.toggleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toggleTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.toggleDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.optionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.optionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.optionCard.selected {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 14%, var(--bg-raised));
+}
+
+.optionTitle {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.optionDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.primaryButton {
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dangerButton {
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--pink);
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tertiaryButton {
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.savedTag {
+  font-size: 13px;
+  color: var(--text-muted);
+}

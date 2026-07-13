@@ -27,6 +27,12 @@ export interface Profile {
   onboardingCompletedAt: string | null;
   onboardingStep: number;
   createdAt: string;
+  // Privacy & security
+  appLockEnabled: boolean;
+  appLockPinHash: string | null;
+  // Accessibility
+  reduceMotion: boolean;
+  textSize: "normal" | "large" | "larger";
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -158,6 +164,17 @@ export interface Goal {
   completedAt: string | null;
 }
 
+// Private links (the user's own saved resources, separate from the curated
+// region resources list) ------------------------------------------------------
+
+export interface PrivateLink {
+  id: string;
+  label: string;
+  url: string;
+  note: string | null;
+  createdAt: string;
+}
+
 type BlossomDb = Dexie & {
   profiles: EntityTable<Profile, "id">;
   milestones: EntityTable<Milestone, "id">;
@@ -169,6 +186,7 @@ type BlossomDb = Dexie & {
   journalEntries: EntityTable<JournalEntry, "id">;
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
+  privateLinks: EntityTable<PrivateLink, "id">;
 };
 
 function createDb(): BlossomDb {
@@ -193,6 +211,19 @@ function createDb(): BlossomDb {
     journalEntries: "id, createdAt",
     checkIns: "id, createdAt",
     goals: "id, status",
+  });
+  instance.version(4).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
   });
   return instance;
 }
@@ -227,13 +258,30 @@ export const DEFAULT_PROFILE: Profile = {
   onboardingCompletedAt: null,
   onboardingStep: 0,
   createdAt: new Date().toISOString(),
+  appLockEnabled: false,
+  appLockPinHash: null,
+  reduceMotion: false,
+  textSize: "normal",
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
   const existing = await db.profiles.get(LOCAL_PROFILE_ID);
-  if (existing) return existing;
-  await db.profiles.add(DEFAULT_PROFILE);
-  return DEFAULT_PROFILE;
+  if (!existing) {
+    await db.profiles.add(DEFAULT_PROFILE);
+    return DEFAULT_PROFILE;
+  }
+  // Backfill fields added in later schema versions for profiles created
+  // before they existed, so the UI never has to guard against undefined.
+  const backfill: Partial<Profile> = {};
+  if (existing.appLockEnabled === undefined) backfill.appLockEnabled = false;
+  if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
+  if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
+  if (existing.textSize === undefined) backfill.textSize = "normal";
+  if (Object.keys(backfill).length > 0) {
+    await db.profiles.update(LOCAL_PROFILE_ID, backfill);
+    return { ...existing, ...backfill };
+  }
+  return existing;
 }
 
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {
@@ -404,4 +452,125 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
     d.setHours(h, m, 0, 0);
     return d.toISOString();
   });
+}
+
+// Private links -----------------------------------------------------------------
+
+export async function addPrivateLink(
+  input: Pick<PrivateLink, "label" | "url" | "note">
+): Promise<void> {
+  await db.privateLinks.add({ id: newId(), createdAt: new Date().toISOString(), ...input });
+}
+
+export async function deletePrivateLink(id: string): Promise<void> {
+  await db.privateLinks.delete(id);
+}
+
+// App lock (PIN) ------------------------------------------------------------------
+// The PIN is never stored in plain text, only a SHA-256 hash. This protects
+// against casual/local snooping (e.g. someone opening IndexedDB devtools) but
+// is not cryptographic-grade security - it can't be, since verification has
+// to happen fully offline with no server. Good enough for "someone picks up
+// my phone", not meant to withstand a determined attacker with device access.
+async function hashPin(pin: string): Promise<string> {
+  const bytes = new TextEncoder().encode(pin);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function setAppLockPin(pin: string): Promise<void> {
+  const hash = await hashPin(pin);
+  await updateProfile({ appLockEnabled: true, appLockPinHash: hash });
+}
+
+export async function disableAppLock(): Promise<void> {
+  await updateProfile({ appLockEnabled: false, appLockPinHash: null });
+}
+
+export async function verifyAppLockPin(pin: string): Promise<boolean> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile?.appLockPinHash) return true;
+  const hash = await hashPin(pin);
+  return hash === profile.appLockPinHash;
+}
+
+// Data export / deletion -----------------------------------------------------------
+
+export async function exportAllData(): Promise<Record<string, unknown>> {
+  const [
+    profile,
+    milestones,
+    journeyEvents,
+    medications,
+    medicationLogs,
+    appointments,
+    journalEntries,
+    checkIns,
+    goals,
+    privateLinks,
+  ] = await Promise.all([
+    db.profiles.get(LOCAL_PROFILE_ID),
+    db.milestones.toArray(),
+    db.journeyEvents.toArray(),
+    db.medications.toArray(),
+    db.medicationLogs.toArray(),
+    db.appointments.toArray(),
+    db.journalEntries.toArray(),
+    db.checkIns.toArray(),
+    db.goals.toArray(),
+    db.privateLinks.toArray(),
+  ]);
+  // appLockPinHash is deliberately excluded - it's a security credential,
+  // not personal data the user needs back in an export.
+  const safeProfile: Partial<Profile> = { ...profile };
+  delete safeProfile.appLockPinHash;
+  return {
+    exportedAt: new Date().toISOString(),
+    profile: safeProfile,
+    milestones,
+    journeyEvents,
+    medications,
+    medicationLogs,
+    appointments,
+    journalEntries,
+    checkIns,
+    goals,
+    privateLinks,
+  };
+}
+
+export async function deleteAllData(): Promise<void> {
+  await db.transaction(
+    "rw",
+    [
+      db.profiles,
+      db.milestones,
+      db.journeyEvents,
+      db.auroraNudges,
+      db.medications,
+      db.medicationLogs,
+      db.appointments,
+      db.journalEntries,
+      db.checkIns,
+      db.goals,
+      db.privateLinks,
+    ],
+    async () => {
+      await Promise.all([
+        db.profiles.clear(),
+        db.milestones.clear(),
+        db.journeyEvents.clear(),
+        db.auroraNudges.clear(),
+        db.medications.clear(),
+        db.medicationLogs.clear(),
+        db.appointments.clear(),
+        db.journalEntries.clear(),
+        db.checkIns.clear(),
+        db.goals.clear(),
+        db.privateLinks.clear(),
+      ]);
+    }
+  );
 }

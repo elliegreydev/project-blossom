@@ -1,0 +1,71 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: max(28px, var(--safe-top)) 20px 20px;
+}
+
+.title {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--text-primary);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.rowIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.rowIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rowTitle {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.rowMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

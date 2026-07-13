@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Inter } from "next/font/google";
+import AccessibilityEffects from "@/components/AccessibilityEffects";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -46,7 +47,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-GB" className={`${manrope.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AccessibilityEffects />
+        {children}
+      </body>
     </html>
   );
 }

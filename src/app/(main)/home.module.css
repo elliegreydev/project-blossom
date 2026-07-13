@@ -89,3 +89,9 @@
   color: var(--text-secondary);
   font-weight: 500;
 }
+
+.supportLink {
+  font-size: 13px;
+  color: var(--text-muted);
+  align-self: flex-start;
+}

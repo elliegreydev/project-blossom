@@ -1,0 +1,77 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.title {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.dots {
+  display: flex;
+  gap: 14px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+}
+
+.dot.filled {
+  background: var(--plum);
+  border-color: var(--plum);
+}
+
+.dot.error {
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  gap: 14px;
+}
+
+.key {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.key:active {
+  background: var(--border);
+}
+
+.key.ghost {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--pink);
+  min-height: 18px;
+}
