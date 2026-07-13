@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addMedication, type MedicationRoute } from "@/lib/db";
 
 const ROUTES: { key: MedicationRoute; label: string }[] = [
@@ -19,6 +20,7 @@ const ROUTES: { key: MedicationRoute; label: string }[] = [
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function AddMedicationSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [name, setName] = useState("");
   const [route, setRoute] = useState<MedicationRoute | null>(null);
   const [unit, setUnit] = useState("");
@@ -53,13 +55,14 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="medication-sheet-title">
         <div className={styles.grabber} />
-        <h2 className={styles.title}>Add a medication</h2>
+        <h2 id="medication-sheet-title" className={styles.title}>Add a medication</h2>
 
         <div className={styles.field}>
           <span className={styles.label}>Name</span>
           <input
+            aria-label="Medication name"
             className={styles.input}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -69,7 +72,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
 
         <div className={styles.field}>
           <span className={styles.label}>Type (optional)</span>
-          <div className={styles.chipRow}>
+          <div className={styles.chipRow} role="group" aria-label="Medication type">
             {ROUTES.map((r) => (
               <button
                 key={r.key}
@@ -86,6 +89,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
         <div className={styles.field}>
           <span className={styles.label}>Dose / units (optional)</span>
           <input
+            aria-label="Medication dose or units"
             className={styles.input}
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
@@ -95,7 +99,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
 
         <div className={styles.field}>
           <span className={styles.label}>Schedule</span>
-          <div className={styles.chipRow}>
+          <div className={styles.chipRow} role="group" aria-label="Medication schedule">
             <button
               type="button"
               className={`${styles.chip} ${!scheduled ? styles.selected : ""}`}
@@ -120,6 +124,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
               {times.map((t, i) => (
                 <input
                   key={i}
+                  aria-label={`Dose time ${i + 1}`}
                   type="time"
                   className={styles.input}
                   value={t}
@@ -138,7 +143,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
 
             <div className={styles.field}>
               <span className={styles.label}>Days</span>
-              <div className={styles.chipRow}>
+              <div className={styles.chipRow} role="group" aria-label="Schedule frequency">
                 <button
                   type="button"
                   className={`${styles.chip} ${everyDay ? styles.selected : ""}`}
@@ -155,7 +160,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
                 </button>
               </div>
               {!everyDay && (
-                <div className={styles.chipRow}>
+                <div className={styles.chipRow} role="group" aria-label="Schedule days">
                   {WEEKDAYS.map((label, d) => (
                     <button
                       key={d}

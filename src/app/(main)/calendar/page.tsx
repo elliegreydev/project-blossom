@@ -21,10 +21,10 @@ function timeLabel(iso: string): string {
 export default function CalendarPage() {
   const appts = useLiveQuery(() => db.appointments.orderBy("appointmentAt").toArray(), []);
   const [addOpen, setAddOpen] = useState(false);
+  const [now] = useState(() => Date.now());
 
   if (appts === undefined) return null;
 
-  const now = Date.now();
   const upcoming = appts.filter((a) => new Date(a.appointmentAt).getTime() >= now);
   const past = appts.filter((a) => new Date(a.appointmentAt).getTime() < now).reverse();
 
@@ -44,9 +44,10 @@ export default function CalendarPage() {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.sectionTitle} style={{ fontSize: 22 }}>
-        Calendar
-      </div>
+      <header>
+        <h1 className={styles.pageTitle}>Calendar</h1>
+        <p className={styles.pageSubtitle}>Appointments and important dates, in one calm place.</p>
+      </header>
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Upcoming</div>

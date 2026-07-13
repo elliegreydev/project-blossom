@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addMilestone, type DatePrecision, type JourneyCategory } from "@/lib/db";
 
 const TEMPLATES: { key: string; title: string; category: JourneyCategory }[] = [
@@ -18,6 +19,7 @@ const TEMPLATES: { key: string; title: string; category: JourneyCategory }[] = [
 ];
 
 export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [datePrecision, setDatePrecision] = useState<DatePrecision>("exact");
@@ -53,13 +55,13 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="milestone-sheet-title">
         <div className={styles.grabber} />
-        <h2 className={styles.title}>Add a milestone</h2>
+        <h2 id="milestone-sheet-title" className={styles.title}>Add a milestone</h2>
 
         <div className={styles.field}>
           <span className={styles.label}>A suggestion, if it helps</span>
-          <div className={styles.chipRow}>
+          <div className={styles.chipRow} role="group" aria-label="Milestone suggestions">
             {TEMPLATES.map((t) => (
               <button
                 key={t.key}
@@ -76,6 +78,7 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
         <div className={styles.field}>
           <span className={styles.label}>Title</span>
           <input
+            aria-label="Milestone title"
             className={styles.input}
             value={title}
             onChange={(e) => {
@@ -88,7 +91,7 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
 
         <div className={styles.field}>
           <span className={styles.label}>When</span>
-          <div className={styles.chipRow}>
+          <div className={styles.chipRow} role="group" aria-label="Milestone date precision">
             {(["exact", "approximate", "none"] as DatePrecision[]).map((p) => (
               <button
                 key={p}
@@ -102,6 +105,7 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
           </div>
           {datePrecision === "exact" && (
             <input
+              aria-label="Milestone date"
               type="date"
               className={styles.input}
               value={exactDate}
@@ -110,6 +114,7 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
           )}
           {datePrecision === "approximate" && (
             <input
+              aria-label="Approximate milestone date"
               className={styles.input}
               value={approxDate}
               onChange={(e) => setApproxDate(e.target.value)}
@@ -121,6 +126,7 @@ export default function AddMilestoneSheet({ onClose }: { onClose: () => void }) 
         <div className={styles.field}>
           <span className={styles.label}>Note (optional)</span>
           <textarea
+            aria-label="Milestone note"
             className={styles.textarea}
             value={note}
             onChange={(e) => setNote(e.target.value)}

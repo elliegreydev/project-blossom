@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addCheckIn } from "@/lib/db";
 
 const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; label: string }[] = [
@@ -13,6 +14,7 @@ const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; la
 ];
 
 export default function CheckInSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [values, setValues] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -39,9 +41,9 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="checkin-sheet-title">
         <div className={styles.grabber} />
-        <h2 className={styles.title}>How are you today?</h2>
+        <h2 id="checkin-sheet-title" className={styles.title}>How are you today?</h2>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -6 }}>
           Every part is optional. Fill in only what feels right.
         </p>
@@ -49,7 +51,7 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
         {SCALES.map((scale) => (
           <div key={scale.key} className={styles.field}>
             <span className={styles.label}>{scale.label}</span>
-            <div className={styles.chipRow}>
+            <div className={styles.chipRow} role="group" aria-label={scale.label}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
@@ -68,6 +70,7 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
         <div className={styles.field}>
           <span className={styles.label}>Note (optional)</span>
           <textarea
+            aria-label="Check-in note"
             className={styles.textarea}
             value={note}
             onChange={(e) => setNote(e.target.value)}
