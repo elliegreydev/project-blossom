@@ -5,10 +5,12 @@ import { useEffect, useRef } from "react";
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
-export function useSheetDialog(onClose: () => void) {
+export function useSheetDialog(onClose: () => void, active = true) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!active) return;
+
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
     const focusable = dialog?.querySelectorAll<HTMLElement>(FOCUSABLE);
@@ -41,7 +43,7 @@ export function useSheetDialog(onClose: () => void) {
       document.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, [active, onClose]);
 
   return dialogRef;
 }
