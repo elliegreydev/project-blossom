@@ -13,6 +13,7 @@ import {
 } from "@/lib/db";
 import { selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
+import SyncNudge from "@/components/SyncNudge";
 import styles from "./home.module.css";
 
 function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
@@ -175,6 +176,7 @@ export default function HomePage() {
       </div>
 
       <InstallAppNudge />
+      <SyncNudge />
 
       {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
