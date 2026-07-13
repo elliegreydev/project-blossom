@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addJournalEntry } from "@/lib/db";
 
 export default function JournalSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -18,11 +20,12 @@ export default function JournalSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="journal-sheet-title">
         <div className={styles.grabber} />
-        <h2 className={styles.title}>New journal entry</h2>
+        <h2 id="journal-sheet-title" className={styles.title}>New journal entry</h2>
         <div className={styles.field}>
           <textarea
+            aria-label="Journal entry"
             className={styles.textarea}
             style={{ minHeight: 160 }}
             value={body}

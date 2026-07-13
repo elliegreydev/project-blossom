@@ -12,6 +12,16 @@
   border-top: 1px solid var(--border);
 }
 
+.brand {
+  display: none;
+}
+
+.items {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
 .item {
   flex: 1;
   display: flex;
@@ -23,10 +33,14 @@
   border: none;
   background: transparent;
   cursor: pointer;
+  border-radius: 10px;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
 .item.active {
-  color: var(--plum);
+  color: var(--nav-active);
 }
 
 .icon {
@@ -38,4 +52,78 @@
   font-family: var(--font-inter);
   font-size: 11px;
   font-weight: 500;
+}
+
+@media (max-width: 899px) {
+  .item.active {
+    background: color-mix(in srgb, var(--lavender) 12%, transparent);
+  }
+}
+
+@media (min-width: 900px) {
+  .nav {
+    top: 0;
+    right: auto;
+    width: 240px;
+    min-height: 100dvh;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 28px;
+    padding: max(28px, var(--safe-top)) 16px 24px;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg-raised) 84%, var(--bg));
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 10px;
+    color: var(--text-primary);
+    font-family: var(--font-manrope);
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .brand img {
+    border-radius: 12px;
+  }
+
+  .items {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .item {
+    flex: none;
+    width: 100%;
+    min-height: 48px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 11px 12px;
+    font-size: 14px;
+  }
+
+  .item:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--lavender) 9%, transparent);
+  }
+
+  .item.active {
+    background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  }
+
+  .icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
 }

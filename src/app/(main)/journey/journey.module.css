@@ -1,21 +1,53 @@
 .screen {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: max(28px, var(--safe-top)) 20px 20px;
+  gap: 24px;
+  max-width: 820px;
+  padding: max(30px, var(--safe-top)) 20px 36px;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .title {
   font-family: var(--font-manrope);
   font-weight: 700;
-  font-size: 22px;
+  font-size: clamp(30px, 5vw, 38px);
+  line-height: 1.15;
   color: var(--text-primary);
+}
+
+.subtitle {
+  max-width: 560px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  margin-inline: -20px;
+  padding: 2px 20px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
 }
 
 .filterChip {
@@ -27,6 +59,12 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  flex: 0 0 auto;
+  min-height: 38px;
+  scroll-snap-align: start;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
 .filterChip.active {
@@ -36,54 +74,126 @@
 }
 
 .timeline {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  padding-left: 26px;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 5px;
+  width: 1px;
+  background: linear-gradient(var(--lavender), color-mix(in srgb, var(--border) 75%, transparent));
 }
 
 .entry {
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.entryTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.entryMeta {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.entryNote {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.empty {
-  padding: 40px 12px;
-  text-align: center;
+  position: relative;
+  padding: 4px 0 24px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+.entry::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 8px;
+  width: 9px;
+  height: 9px;
+  border: 3px solid var(--bg);
+  border-radius: 50%;
+  background: var(--lavender);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lavender) 55%, var(--border));
+}
+
+.entryTopline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.entryTitle {
+  font-family: var(--font-manrope);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.entryCategory {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.entryMeta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.entryNote {
+  max-width: 640px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 1px;
+}
+
+.empty {
+  min-height: 320px;
+  padding: 64px 18px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.emptyMark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  color: var(--plum);
+  background: color-mix(in srgb, var(--lavender) 34%, var(--bg));
+  font-size: 17px;
+}
+
 .emptyTitle {
   font-family: var(--font-manrope);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 19px;
   color: var(--text-primary);
 }
 
 .emptySubtitle {
   font-size: 14px;
   color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 470px;
+}
+
+@media (min-width: 720px) {
+  .screen {
+    padding: max(42px, var(--safe-top)) 36px 52px;
+  }
+
+  .filters {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
 }

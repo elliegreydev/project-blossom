@@ -22,6 +22,14 @@ function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+function todayLabel(date: Date): string {
+  return date.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export default function HomePage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const milestones = useLiveQuery(() => db.milestones.toArray(), []);
@@ -81,48 +89,65 @@ export default function HomePage() {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.greeting}>Hi {name} 🌸</div>
+      <header className={styles.hero}>
+        <div>
+          <div className={styles.eyebrow}>{todayLabel(now)}</div>
+          <h1 className={styles.greeting}>Hi {name} 🌸</h1>
+        </div>
+        <div className={styles.petals} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      </header>
 
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Today</div>
-        {todayItems.length === 0 ? (
-          <div className={styles.emptyRow}>Nothing needs you right now.</div>
-        ) : (
-          todayItems.map((item) => (
-            <Link key={item.id} href={item.href} className={styles.card}>
-              <div className={styles.cardTitle}>{item.label}</div>
-              <div className={styles.cardMeta}>{item.meta}</div>
-            </Link>
-          ))
-        )}
-      </div>
+      <div className={styles.overviewGrid}>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Today</h2>
+          {todayItems.length === 0 ? (
+            <div className={styles.emptyRow}>
+              <strong>Nothing needs you right now.</strong>
+              <span>A quiet day is allowed.</span>
+            </div>
+          ) : (
+            todayItems.map((item) => (
+              <Link key={item.id} href={item.href} className={styles.card}>
+                <div className={styles.cardTitle}>{item.label}</div>
+                <div className={styles.cardMeta}>{item.meta}</div>
+              </Link>
+            ))
+          )}
+        </section>
 
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Coming up</div>
-        {upcoming.length === 0 ? (
-          <div className={styles.emptyRow}>
-            Once you add appointments or medication, they&apos;ll show up here.
-          </div>
-        ) : (
-          upcoming.map((a) => (
-            <Link key={a.id} href="/calendar" className={styles.card}>
-              <div className={styles.cardTitle}>{a.title}</div>
-              <div className={styles.cardMeta}>
-                {new Date(a.appointmentAt).toLocaleDateString("en-GB", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}{" "}
-                · {timeLabel(a.appointmentAt)}
-              </div>
-            </Link>
-          ))
-        )}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Coming up</h2>
+          {upcoming.length === 0 ? (
+            <div className={styles.emptyRow}>
+              <strong>Nothing scheduled yet.</strong>
+              <span>Appointments will appear here when they&apos;re useful.</span>
+            </div>
+          ) : (
+            upcoming.map((a) => (
+              <Link key={a.id} href="/calendar" className={styles.card}>
+                <div className={styles.cardTitle}>{a.title}</div>
+                <div className={styles.cardMeta}>
+                  {new Date(a.appointmentAt).toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  · {timeLabel(a.appointmentAt)}
+                </div>
+              </Link>
+            ))
+          )}
+        </section>
       </div>
 
       {showFirstMilestoneNudge && (
-        <div className={styles.auroraCard}>
+        <aside className={styles.auroraCard} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
+            <span className={styles.auroraLabel}>A gentle thought from Aurora</span>
             Whenever you&apos;re ready, your Journey is a quiet place to note things that
             matter to you. No pressure.
           </div>
@@ -133,12 +158,15 @@ export default function HomePage() {
           >
             Dismiss
           </button>
-        </div>
+        </aside>
       )}
 
-      <div className={styles.section}>
+      <section className={styles.section}>
         <div className={styles.linkRow}>
-          <div className={styles.sectionTitle}>Recent journey activity</div>
+          <div>
+            <div className={styles.eyebrow}>Journey</div>
+            <h2 className={styles.sectionTitle}>Recent activity</h2>
+          </div>
           <Link href="/journey" className={styles.link}>
             View all
           </Link>
@@ -153,7 +181,7 @@ export default function HomePage() {
             </div>
           ))
         )}
-      </div>
+      </section>
     </div>
   );
 }

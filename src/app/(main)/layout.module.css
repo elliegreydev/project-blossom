@@ -1,5 +1,95 @@
-.content {
-  padding-bottom: calc(64px + max(8px, var(--safe-bottom)));
+.shell {
   min-height: 100dvh;
   background: var(--bg);
+}
+
+.content {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: calc(88px + max(8px, var(--safe-bottom)));
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+.content > * {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+.loadingScreen {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px;
+  color: var(--text-secondary);
+  background: var(--bg);
+  font-size: 14px;
+}
+
+.loadingMark {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  animation: breathe 1.8s var(--ease-standard) infinite alternate;
+}
+
+.loadingMark span {
+  position: absolute;
+  width: 22px;
+  height: 30px;
+  border-radius: 70% 70% 45% 45%;
+  transform-origin: 50% 100%;
+  background: color-mix(in srgb, var(--pink) 72%, transparent);
+}
+
+.loadingMark span:nth-child(1) {
+  left: 11px;
+  top: -3px;
+}
+
+.loadingMark span:nth-child(2) {
+  right: -2px;
+  top: 8px;
+  transform: rotate(90deg);
+  background: color-mix(in srgb, var(--lavender) 72%, transparent);
+}
+
+.loadingMark span:nth-child(3) {
+  left: 11px;
+  bottom: -3px;
+  transform: rotate(180deg);
+  background: color-mix(in srgb, var(--sky) 72%, transparent);
+}
+
+.loadingMark span:nth-child(4) {
+  left: -2px;
+  top: 8px;
+  transform: rotate(-90deg);
+  background: color-mix(in srgb, var(--mint) 72%, transparent);
+}
+
+@keyframes breathe {
+  from {
+    opacity: 0.58;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (min-width: 900px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .content {
+    grid-column: 2;
+    padding-bottom: 48px;
+  }
 }
