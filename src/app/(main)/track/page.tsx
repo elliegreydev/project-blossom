@@ -62,6 +62,19 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "bloodTests",
+    href: "/track/blood-tests",
+    title: "Blood tests",
+    desc: "A private, descriptive record of your results",
+    tint: "var(--pink)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M9 3h6M10 3v6.2a4 4 0 0 1-.7 2.3L6.8 15a5 5 0 1 0 10.4 0l-2.5-3.5a4 4 0 0 1-.7-2.3V3" />
+        <path d="M7.5 15.5h9" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {

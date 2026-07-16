@@ -9,7 +9,8 @@ export type ModuleKey =
   | "appointments"
   | "journal"
   | "goals"
-  | "journey";
+  | "journey"
+  | "bloodTests";
 
 export interface Profile {
   id: string;
@@ -170,6 +171,26 @@ export interface Goal {
   completedAt: string | null;
 }
 
+// Blood tests (v1.5) -----------------------------------------------------------
+// Descriptive only, per the locked spec: no reference ranges computed, no
+// flags, no interpretation. referenceRangeRaw is free text the user copies
+// from their own lab report, shown back exactly as entered, never parsed.
+// Not yet wired into account sync (see src/lib/sync.ts) - local-only for now,
+// same as journal entries and private links.
+
+export interface BloodTestEntry {
+  id: string;
+  testName: string;
+  date: string;
+  value: string;
+  unit: string | null;
+  labSource: string | null;
+  referenceRangeRaw: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Private links (the user's own saved resources, separate from the curated
 // region resources list) ------------------------------------------------------
 
@@ -226,6 +247,7 @@ type BlossomDb = Dexie & {
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
+  bloodTestEntries: EntityTable<BloodTestEntry, "id">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -293,6 +315,22 @@ function createDb(): BlossomDb {
     await tx.table("checkIns").toCollection().modify((checkIn: CheckIn) => {
       checkIn.updatedAt ??= checkIn.createdAt;
     });
+  });
+  instance.version(6).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
   });
   return instance;
 }
@@ -624,6 +662,25 @@ export async function deletePrivateLink(id: string): Promise<void> {
   await db.privateLinks.delete(id);
 }
 
+// Blood tests -----------------------------------------------------------------
+
+export async function addBloodTestEntry(
+  input: Pick<BloodTestEntry, "testName" | "date" | "value" | "unit" | "labSource" | "referenceRangeRaw" | "note">
+): Promise<BloodTestEntry> {
+  const now = new Date().toISOString();
+  const entry: BloodTestEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.bloodTestEntries.add(entry);
+  return entry;
+}
+
+export async function updateBloodTestEntry(id: string, patch: Partial<BloodTestEntry>): Promise<void> {
+  await db.bloodTestEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteBloodTestEntry(id: string): Promise<void> {
+  await db.bloodTestEntries.delete(id);
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -668,6 +725,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     checkIns,
     goals,
     privateLinks,
+    bloodTestEntries,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -679,6 +737,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.checkIns.toArray(),
     db.goals.toArray(),
     db.privateLinks.toArray(),
+    db.bloodTestEntries.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
@@ -696,6 +755,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     checkIns,
     goals,
     privateLinks,
+    bloodTestEntries,
   };
 }
 
@@ -714,6 +774,7 @@ export async function deleteAllData(): Promise<void> {
       db.checkIns,
       db.goals,
       db.privateLinks,
+      db.bloodTestEntries,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -730,6 +791,7 @@ export async function deleteAllData(): Promise<void> {
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
+        db.bloodTestEntries.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);
