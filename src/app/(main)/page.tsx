@@ -44,6 +44,9 @@ export default function HomePage() {
   const journalEntries = useLiveQuery(() => db.journalEntries.toArray(), []);
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
   const goals = useLiveQuery(() => db.goals.toArray(), []);
+  const voiceGoals = useLiveQuery(() => db.voiceGoals.toArray(), []);
+  const voiceSessions = useLiveQuery(() => db.voiceSessions.toArray(), []);
+  const presentationEntries = useLiveQuery(() => db.presentationEntries.toArray(), []);
   const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
 
@@ -57,6 +60,9 @@ export default function HomePage() {
     journalEntries === undefined ||
     checkIns === undefined ||
     goals === undefined ||
+    voiceGoals === undefined ||
+    voiceSessions === undefined ||
+    presentationEntries === undefined ||
     auroraNudgeStates === undefined
   )
     return null;
@@ -107,6 +113,9 @@ export default function HomePage() {
         journalEntries,
         checkIns,
         goals,
+        voiceGoals,
+        voiceSessions,
+        presentationEntries,
         nudgeStates: auroraNudgeStates,
       });
 

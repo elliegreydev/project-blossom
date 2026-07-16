@@ -9,7 +9,10 @@ import type {
   Medication,
   MedicationLog,
   Milestone,
+  PresentationEntry,
   Profile,
+  VoiceGoal,
+  VoiceSession,
 } from "./db";
 
 export type AuroraSuggestionKind =
@@ -17,7 +20,9 @@ export type AuroraSuggestionKind =
   | "medication"
   | "wellbeing"
   | "goal"
-  | "journey";
+  | "journey"
+  | "voice"
+  | "presentation";
 
 export interface AuroraSuggestion {
   key: string;
@@ -41,6 +46,9 @@ export interface AuroraContext {
   journalEntries: JournalEntry[];
   checkIns: CheckIn[];
   goals: Goal[];
+  voiceGoals: VoiceGoal[];
+  voiceSessions: VoiceSession[];
+  presentationEntries: PresentationEntry[];
   nudgeStates: AuroraNudgeState[];
 }
 
@@ -238,6 +246,58 @@ function firstJourneyStep(context: AuroraContext): Candidate | null {
   };
 }
 
+// Only fires once a goal exists - this is about a habit someone has already
+// started, not a prompt to start one. Mirrors waitingGoal's shape closely.
+function voicePracticeWaiting(context: AuroraContext): Candidate | null {
+  if (!context.profile.enabledModules.includes("voicePractice") || context.voiceGoals.length === 0)
+    return null;
+  const thresholdDays = context.profile.auroraMode === "supportive" ? 10 : 21;
+  const latestSession = context.voiceSessions
+    .map((session) => validTime(session.createdAt))
+    .filter((time): time is number => time !== null)
+    .sort((a, b) => b - a)[0];
+  const oldestGoalCreatedAt = context.voiceGoals
+    .map((goal) => goal.createdAt)
+    .sort()[0];
+  const inactiveDays = latestSession
+    ? Math.max(0, (context.now.getTime() - latestSession) / DAY_MS)
+    : daysSince(oldestGoalCreatedAt, context.now);
+
+  if (inactiveDays < thresholdDays) return null;
+  return {
+    key: "voice_practice_waiting",
+    kind: "voice",
+    eyebrow: "No rush at all",
+    title: "Your practice goal is still there",
+    message: "Whenever it feels right, there is space to log a session. Skipping stretches of time is completely fine.",
+    actionLabel: "Open voice practice",
+    href: "/track/voice",
+    priority: 55,
+    cooldownDays: thresholdDays,
+  };
+}
+
+// A quiet, purely informational surfacing of the want-to-try list - never
+// framed as "you haven't tried anything", since that would cut against the
+// module's own no-pressure design. Doesn't require any inactivity signal.
+function presentationWantToTry(context: AuroraContext): Candidate | null {
+  if (!context.profile.enabledModules.includes("presentation")) return null;
+  const wantToTryCount = context.presentationEntries.filter((entry) => entry.wantToTry).length;
+  if (wantToTryCount === 0) return null;
+
+  return {
+    key: "presentation_want_to_try",
+    kind: "presentation",
+    eyebrow: "Whenever you feel like it",
+    title: "Your want-to-try list is still there",
+    message: `You have ${wantToTryCount} idea${wantToTryCount === 1 ? "" : "s"} saved for whenever feels right. No timeline, no pressure to act on any of it.`,
+    actionLabel: "Open presentation",
+    href: "/track/presentation",
+    priority: 45,
+    cooldownDays: 21,
+  };
+}
+
 export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion | null {
   const mode = context.profile.auroraMode;
   if (mode === "disabled" || mode === "quiet") return null;
@@ -249,6 +309,8 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
     wellbeingCheckIn(context),
     waitingGoal(context),
     firstJourneyStep(context),
+    voicePracticeWaiting(context),
+    presentationWantToTry(context),
   ]
     .filter((candidate): candidate is Candidate => candidate !== null)
     .filter(

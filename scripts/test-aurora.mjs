@@ -20,6 +20,9 @@ function context(overrides = {}) {
     journalEntries: [],
     checkIns: [],
     goals: [],
+    voiceGoals: [],
+    voiceSessions: [],
+    presentationEntries: [],
     nudgeStates: [],
     ...overrides,
   };
@@ -107,6 +110,62 @@ assert.equal(
   supportiveMedication?.message.includes("Private medication"),
   false,
   "medication copy should never expose the medication name"
+);
+
+const voicePractice = selectAuroraSuggestion(
+  context({
+    profile: {
+      ...context().profile,
+      enabledModules: ["voicePractice"],
+    },
+    voiceGoals: [
+      {
+        id: "voice-goal-1",
+        title: "Private goal",
+        category: "pitch",
+        targetFrequency: null,
+        targetDuration: null,
+        createdAt: "2026-06-01T12:00:00.000Z",
+        updatedAt: "2026-06-01T12:00:00.000Z",
+      },
+    ],
+  })
+);
+assert.equal(voicePractice?.kind, "voice", "a long-waiting voice goal should surface a gentle nudge");
+assert.equal(
+  voicePractice?.message.includes("Private goal"),
+  false,
+  "voice practice copy should never expose the goal title"
+);
+
+const noVoiceGoalYet = selectAuroraSuggestion(
+  context({ profile: { ...context().profile, enabledModules: ["voicePractice"] } })
+);
+assert.equal(noVoiceGoalYet, null, "no voice goal yet should never prompt someone to start one");
+
+const presentation = selectAuroraSuggestion(
+  context({
+    profile: { ...context().profile, enabledModules: ["presentation"] },
+    presentationEntries: [
+      {
+        id: "presentation-1",
+        date: "2026-07-01",
+        category: "outfit",
+        note: null,
+        photo: null,
+        confidenceRating: null,
+        wantToTry: true,
+        createdAt: "2026-07-01T12:00:00.000Z",
+        updatedAt: "2026-07-01T12:00:00.000Z",
+      },
+    ],
+  })
+);
+assert.equal(presentation?.kind, "presentation", "a want-to-try item should surface a no-pressure reminder");
+assert.equal(
+  presentation?.message.includes("haven't tried"),
+  false,
+  "presentation copy must never frame this as inactivity"
 );
 
 console.log("Aurora rule tests passed");
