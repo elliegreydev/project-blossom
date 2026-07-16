@@ -1,0 +1,283 @@
+.page {
+  min-height: 100vh;
+  padding: max(28px, var(--safe-top)) max(20px, var(--safe-right)) max(36px, var(--safe-bottom)) max(20px, var(--safe-left));
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--lavender) 14%, transparent), transparent 32rem),
+    var(--bg);
+}
+
+.shell {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.back {
+  width: fit-content;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header {
+  padding: 14px 0 10px;
+}
+
+.eyebrow,
+.smallLabel {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin-top: 6px;
+  font-size: clamp(29px, 7vw, 40px);
+  line-height: 1.12;
+}
+
+.header p,
+.card p,
+.privacyNote p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.header p {
+  max-width: 520px;
+  margin-top: 10px;
+}
+
+.card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-raised) 72%, var(--bg));
+}
+
+.card h2 {
+  margin: 4px 0 7px;
+  font-size: 19px;
+}
+
+.cardHeading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--lavender) 22%, var(--bg));
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.form .codeInput {
+  font-family: var(--font-manrope);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.codeActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+
+.textButton {
+  min-height: 44px;
+  padding: 6px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.primaryButton,
+.secondaryButton,
+.signOutButton {
+  min-height: 48px;
+  padding: 11px 17px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: none;
+  background: var(--plum);
+  color: #fff;
+}
+
+.secondaryButton,
+.signOutButton {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.signOutButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.accountRow,
+.syncHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.accountRow strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.statusPill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mint) 34%, var(--bg));
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mint) 72%, #2f765d);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--mint) 20%, transparent);
+}
+
+.dotWarning {
+  background: color-mix(in srgb, var(--pink) 70%, #943e57);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--pink) 20%, transparent);
+}
+
+.syncMeta {
+  margin-top: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 18px;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.warningCard {
+  border-color: color-mix(in srgb, var(--pink) 50%, var(--border));
+  background: color-mix(in srgb, var(--pink) 8%, var(--bg-raised));
+}
+
+.signOutButton {
+  width: 100%;
+}
+
+.success,
+.error {
+  padding: 13px 15px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.success {
+  background: color-mix(in srgb, var(--mint) 22%, var(--bg-raised));
+}
+
+.error {
+  background: color-mix(in srgb, var(--pink) 20%, var(--bg-raised));
+}
+
+.privacyNote {
+  padding: 18px 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+.privacyNote strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primaryButton {
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}
+
+@media (min-width: 720px) {
+  .page {
+    padding-top: 48px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Inter } from "next/font/google";
 import AccessibilityEffects from "@/components/AccessibilityEffects";
+import SyncCoordinator from "@/components/SyncCoordinator";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -50,6 +51,7 @@ export default function RootLayout({
       <body>
         <AccessibilityEffects />
         {children}
+        <SyncCoordinator />
       </body>
     </html>
   );

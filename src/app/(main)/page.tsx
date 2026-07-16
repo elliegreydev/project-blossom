@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -10,7 +11,9 @@ import {
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
+import { selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
+import SyncNudge from "@/components/SyncNudge";
 import styles from "./home.module.css";
 
 function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
@@ -38,7 +41,11 @@ export default function HomePage() {
   const meds = useLiveQuery(() => db.medications.toArray(), []);
   const medLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const appts = useLiveQuery(() => db.appointments.toArray(), []);
-  const firstMilestoneNudge = useLiveQuery(() => db.auroraNudges.get("first_milestone"));
+  const journalEntries = useLiveQuery(() => db.journalEntries.toArray(), []);
+  const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
+  const goals = useLiveQuery(() => db.goals.toArray(), []);
+  const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
+  const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
 
   if (
     !profile ||
@@ -46,7 +53,11 @@ export default function HomePage() {
     journeyEvents === undefined ||
     meds === undefined ||
     medLogs === undefined ||
-    appts === undefined
+    appts === undefined ||
+    journalEntries === undefined ||
+    checkIns === undefined ||
+    goals === undefined ||
+    auroraNudgeStates === undefined
   )
     return null;
 
@@ -83,8 +94,27 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const showFirstMilestoneNudge =
-    profile.auroraMode !== "disabled" && milestones.length === 0 && !firstMilestoneNudge;
+  const auroraSuggestion = auroraHiddenForSession
+    ? null
+    : selectAuroraSuggestion({
+        now,
+        profile,
+        milestones,
+        journeyEvents,
+        medications: meds,
+        medicationLogs: medLogs,
+        appointments: appts,
+        journalEntries,
+        checkIns,
+        goals,
+        nudgeStates: auroraNudgeStates,
+      });
+
+  function acknowledgeAuroraSuggestion() {
+    if (!auroraSuggestion) return;
+    setAuroraHiddenForSession(true);
+    void dismissAuroraNudge(auroraSuggestion.key);
+  }
 
   const name = profile.displayName || "there";
 
@@ -95,10 +125,19 @@ export default function HomePage() {
           <div className={styles.eyebrow}>{todayLabel(now)}</div>
           <h1 className={styles.greeting}>Hi {name} 🌸</h1>
         </div>
-        <div className={styles.petals} aria-hidden="true">
-          <span />
-          <span />
-          <span />
+        <div className={styles.heroActions}>
+          <Link href="/account" className={styles.accountLink}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M7.5 18.5A5.5 5.5 0 0 1 8 7.52 6.5 6.5 0 0 1 20 11a4 4 0 0 1-1 7.87" />
+              <path d="M9 15h6M12 12v6" />
+            </svg>
+            <span>Account &amp; sync</span>
+          </Link>
+          <div className={styles.petals} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
       </header>
 
@@ -146,21 +185,31 @@ export default function HomePage() {
       </div>
 
       <InstallAppNudge />
+      <SyncNudge />
 
-      {showFirstMilestoneNudge && (
+      {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
-            <span className={styles.auroraLabel}>A gentle thought from Aurora</span>
-            Whenever you&apos;re ready, your Journey is a quiet place to note things that
-            matter to you. No pressure.
+            <span className={styles.auroraLabel}>{auroraSuggestion.eyebrow}</span>
+            <strong className={styles.auroraTitle}>{auroraSuggestion.title}</strong>
+            <span>{auroraSuggestion.message}</span>
           </div>
-          <button
-            type="button"
-            className={styles.auroraDismiss}
-            onClick={() => dismissAuroraNudge("first_milestone")}
-          >
-            Dismiss
-          </button>
+          <div className={styles.auroraActions}>
+            <Link
+              href={auroraSuggestion.href}
+              className={styles.auroraAction}
+              onClick={acknowledgeAuroraSuggestion}
+            >
+              {auroraSuggestion.actionLabel}
+            </Link>
+            <button
+              type="button"
+              className={styles.auroraDismiss}
+              onClick={acknowledgeAuroraSuggestion}
+            >
+              Not now
+            </button>
+          </div>
         </aside>
       )}
 

@@ -27,7 +27,9 @@ export interface Profile {
   onboardingCompletedAt: string | null;
   onboardingStep: number;
   createdAt: string;
-  // Privacy & security
+  updatedAt: string;
+  // Privacy & security. Device-local only - never synced, so a PIN or
+  // accessibility preference set on one device never applies to another.
   appLockEnabled: boolean;
   appLockPinHash: string | null;
   // Accessibility
@@ -112,6 +114,7 @@ export interface MedicationLog {
   status: DoseStatus;
   loggedAt: string;
   note: string | null;
+  updatedAt: string;
 }
 
 // Appointments ----------------------------------------------------------------
@@ -129,6 +132,8 @@ export interface Appointment {
 }
 
 // Wellbeing -------------------------------------------------------------------
+// Journal entries are never synced (see src/lib/sync.ts's SyncEntity list) -
+// they stay local-only until Blossom has real end-to-end encryption.
 
 export interface JournalEntry {
   id: string;
@@ -146,6 +151,7 @@ export interface CheckIn {
   comfort: number | null;
   note: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 // Goals -----------------------------------------------------------------------
@@ -175,6 +181,39 @@ export interface PrivateLink {
   createdAt: string;
 }
 
+// Sync (optional account sync; see src/lib/sync.ts) ----------------------------
+
+export type SyncEntity =
+  | "profile"
+  | "milestone"
+  | "journey_event"
+  | "medication"
+  | "medication_log"
+  | "appointment"
+  | "check_in"
+  | "goal"
+  | "aurora_nudge";
+
+export interface SyncOutboxItem {
+  id: string;
+  entity: SyncEntity;
+  recordId: string;
+  operation: "upsert" | "delete";
+  changedAt: string;
+  attempts: number;
+  lastError: string | null;
+}
+
+export interface SyncState {
+  key: "sync";
+  ownerId: string | null;
+  deviceId: string;
+  lastPulledAt: string | null;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  syncing: boolean;
+}
+
 type BlossomDb = Dexie & {
   profiles: EntityTable<Profile, "id">;
   milestones: EntityTable<Milestone, "id">;
@@ -187,6 +226,8 @@ type BlossomDb = Dexie & {
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
+  syncOutbox: EntityTable<SyncOutboxItem, "id">;
+  syncMeta: EntityTable<SyncState, "key">;
 };
 
 function createDb(): BlossomDb {
@@ -225,6 +266,34 @@ function createDb(): BlossomDb {
     goals: "id, status",
     privateLinks: "id",
   });
+  // A previously-declared version's .stores() must never change once it has
+  // shipped, so sync support is added as its own version rather than mutating
+  // version(4) in place.
+  instance.version(5).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.updatedAt ??= profile.createdAt;
+    });
+    await tx.table("medicationLogs").toCollection().modify((log: MedicationLog) => {
+      log.updatedAt ??= log.loggedAt;
+    });
+    await tx.table("checkIns").toCollection().modify((checkIn: CheckIn) => {
+      checkIn.updatedAt ??= checkIn.createdAt;
+    });
+  });
   return instance;
 }
 
@@ -258,6 +327,7 @@ export const DEFAULT_PROFILE: Profile = {
   onboardingCompletedAt: null,
   onboardingStep: 0,
   createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   appLockEnabled: false,
   appLockPinHash: null,
   reduceMotion: false,
@@ -277,6 +347,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
+  if (existing.updatedAt === undefined) backfill.updatedAt = existing.createdAt;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
     return { ...existing, ...backfill };
@@ -285,11 +356,51 @@ export async function getOrCreateProfile(): Promise<Profile> {
 }
 
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {
-  await db.profiles.update(LOCAL_PROFILE_ID, patch);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.profiles, db.syncOutbox, async () => {
+    await db.profiles.update(LOCAL_PROFILE_ID, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("profile", LOCAL_PROFILE_ID, "upsert", changedAt);
+  });
 }
 
 function newId(): string {
   return crypto.randomUUID();
+}
+
+export async function recordSyncChange(
+  entity: SyncEntity,
+  recordId: string,
+  operation: SyncOutboxItem["operation"],
+  changedAt = new Date().toISOString()
+): Promise<void> {
+  await db.syncOutbox.put({
+    id: `${entity}:${recordId}`,
+    entity,
+    recordId,
+    operation,
+    changedAt,
+    attempts: 0,
+    lastError: null,
+  });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("blossom:sync-needed"));
+  }
+}
+
+export async function getOrCreateSyncState(): Promise<SyncState> {
+  const existing = await db.syncMeta.get("sync");
+  if (existing) return existing;
+  const state: SyncState = {
+    key: "sync",
+    ownerId: null,
+    deviceId: newId(),
+    lastPulledAt: null,
+    lastSyncedAt: null,
+    lastError: null,
+    syncing: false,
+  };
+  await db.syncMeta.add(state);
+  return state;
 }
 
 export async function addMilestone(
@@ -297,16 +408,27 @@ export async function addMilestone(
 ): Promise<Milestone> {
   const now = new Date().toISOString();
   const milestone: Milestone = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.milestones.add(milestone);
+  await db.transaction("rw", db.milestones, db.syncOutbox, async () => {
+    await db.milestones.add(milestone);
+    await recordSyncChange("milestone", milestone.id, "upsert", now);
+  });
   return milestone;
 }
 
 export async function updateMilestone(id: string, patch: Partial<Milestone>): Promise<void> {
-  await db.milestones.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.milestones, db.syncOutbox, async () => {
+    await db.milestones.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("milestone", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteMilestone(id: string): Promise<void> {
-  await db.milestones.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.milestones, db.syncOutbox, async () => {
+    await db.milestones.delete(id);
+    await recordSyncChange("milestone", id, "delete", changedAt);
+  });
 }
 
 export async function addJourneyEvent(
@@ -314,16 +436,23 @@ export async function addJourneyEvent(
 ): Promise<JourneyEvent> {
   const now = new Date().toISOString();
   const event: JourneyEvent = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.journeyEvents.add(event);
+  await db.transaction("rw", db.journeyEvents, db.syncOutbox, async () => {
+    await db.journeyEvents.add(event);
+    await recordSyncChange("journey_event", event.id, "upsert", now);
+  });
   return event;
 }
 
 export async function dismissAuroraNudge(nudgeKey: string): Promise<void> {
   const existing = await db.auroraNudges.get(nudgeKey);
-  await db.auroraNudges.put({
-    nudgeKey,
-    lastShownAt: new Date().toISOString(),
-    dismissedCount: (existing?.dismissedCount ?? 0) + 1,
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.auroraNudges, db.syncOutbox, async () => {
+    await db.auroraNudges.put({
+      nudgeKey,
+      lastShownAt: changedAt,
+      dismissedCount: (existing?.dismissedCount ?? 0) + 1,
+    });
+    await recordSyncChange("aurora_nudge", nudgeKey, "upsert", changedAt);
   });
 }
 
@@ -340,21 +469,29 @@ export async function addMedication(
     updatedAt: now,
     ...input,
   };
-  await db.medications.add(medication);
+  await db.transaction("rw", db.medications, db.syncOutbox, async () => {
+    await db.medications.add(medication);
+    await recordSyncChange("medication", medication.id, "upsert", now);
+  });
   return medication;
 }
 
 export async function updateMedication(id: string, patch: Partial<Medication>): Promise<void> {
-  await db.medications.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medications, db.syncOutbox, async () => {
+    await db.medications.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("medication", id, "upsert", changedAt);
+  });
 }
 
 export async function logDose(
   input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
 ): Promise<void> {
-  await db.medicationLogs.add({
-    id: newId(),
-    loggedAt: new Date().toISOString(),
-    ...input,
+  const changedAt = new Date().toISOString();
+  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, ...input };
+  await db.transaction("rw", db.medicationLogs, db.syncOutbox, async () => {
+    await db.medicationLogs.add(log);
+    await recordSyncChange("medication_log", log.id, "upsert", changedAt);
   });
 }
 
@@ -372,12 +509,19 @@ export async function addAppointment(
     updatedAt: now,
     ...input,
   };
-  await db.appointments.add(appointment);
+  await db.transaction("rw", db.appointments, db.syncOutbox, async () => {
+    await db.appointments.add(appointment);
+    await recordSyncChange("appointment", appointment.id, "upsert", now);
+  });
   return appointment;
 }
 
 export async function updateAppointment(id: string, patch: Partial<Appointment>): Promise<void> {
-  await db.appointments.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.appointments, db.syncOutbox, async () => {
+    await db.appointments.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("appointment", id, "upsert", changedAt);
+  });
 }
 
 // Wellbeing -------------------------------------------------------------------
@@ -390,7 +534,12 @@ export async function addJournalEntry(bodyText: string): Promise<void> {
 export async function addCheckIn(
   input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
 ): Promise<void> {
-  await db.checkIns.add({ id: newId(), createdAt: new Date().toISOString(), ...input });
+  const changedAt = new Date().toISOString();
+  const checkIn: CheckIn = { id: newId(), createdAt: changedAt, updatedAt: changedAt, ...input };
+  await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
+    await db.checkIns.add(checkIn);
+    await recordSyncChange("check_in", checkIn.id, "upsert", changedAt);
+  });
 }
 
 // Goals -----------------------------------------------------------------------
@@ -408,12 +557,19 @@ export async function addGoal(
     completedAt: null,
     ...input,
   };
-  await db.goals.add(goal);
+  await db.transaction("rw", db.goals, db.syncOutbox, async () => {
+    await db.goals.add(goal);
+    await recordSyncChange("goal", goal.id, "upsert", now);
+  });
   return goal;
 }
 
 export async function updateGoal(id: string, patch: Partial<Goal>): Promise<void> {
-  await db.goals.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.goals, db.syncOutbox, async () => {
+    await db.goals.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("goal", id, "upsert", changedAt);
+  });
 }
 
 // Complete a goal and, if asked, enshrine it as a milestone (something that
@@ -455,6 +611,8 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
 }
 
 // Private links -----------------------------------------------------------------
+// Deliberately not synced - these are per-device saved resources, not part
+// of the SyncEntity list.
 
 export async function addPrivateLink(
   input: Pick<PrivateLink, "label" | "url" | "note">
@@ -556,6 +714,8 @@ export async function deleteAllData(): Promise<void> {
       db.checkIns,
       db.goals,
       db.privateLinks,
+      db.syncOutbox,
+      db.syncMeta,
     ],
     async () => {
       await Promise.all([
@@ -570,6 +730,8 @@ export async function deleteAllData(): Promise<void> {
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
+        db.syncOutbox.clear(),
+        db.syncMeta.clear(),
       ]);
     }
   );

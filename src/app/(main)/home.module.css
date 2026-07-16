@@ -158,16 +158,73 @@ a.card:hover {
   text-transform: uppercase;
 }
 
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accountLink {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-raised) 76%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.accountLink:hover {
+  background: var(--bg-raised);
+}
+
+.accountLink svg {
+  width: 19px;
+  height: 19px;
+}
+
+.auroraTitle {
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.auroraActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.auroraAction,
+.auroraDismiss {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auroraAction {
+  background: color-mix(in srgb, var(--lavender) 18%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
 .auroraDismiss {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  flex-shrink: 0;
-  padding: 4px;
-  border-radius: 8px;
 }
 
 .linkRow {
@@ -194,6 +251,30 @@ a.card:hover {
   .overviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 48px;
+  }
+}
+
+@media (max-width: 520px) {
+  .accountLink {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .accountLink span {
+    display: none;
+  }
+
+  .petals {
+    display: none;
+  }
+
+  .auroraCard {
+    flex-direction: column;
+  }
+
+  .auroraActions {
+    width: 100%;
   }
 }
 

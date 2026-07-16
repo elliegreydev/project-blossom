@@ -51,7 +51,7 @@ export default function OnboardingPage() {
   const [auroraMode, setAuroraMode] = useState<AuroraMode>("gentle");
   const [discreetReminders, setDiscreetReminders] = useState(true);
   const [lockSensitive, setLockSensitive] = useState(false);
-  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [setUpSync, setSetUpSync] = useState(false);
 
   useEffect(() => {
     getOrCreateProfile().then((p) => {
@@ -68,7 +68,7 @@ export default function OnboardingPage() {
       setAuroraMode(p.auroraMode ?? "gentle");
       setDiscreetReminders((p.reminderPrivacy ?? "discreet") === "discreet");
       setLockSensitive(p.sensitiveModulesLocked ?? false);
-      setSyncEnabled(p.syncEnabled ?? false);
+      setSetUpSync(false);
       setReady(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,10 +91,10 @@ export default function OnboardingPage() {
       auroraMode,
       reminderPrivacy: discreetReminders ? "discreet" : "detailed",
       sensitiveModulesLocked: lockSensitive,
-      syncEnabled,
+      syncEnabled: false,
       onboardingCompletedAt: new Date().toISOString(),
     });
-    router.replace("/");
+    router.replace(setUpSync ? "/account" : "/");
   }
 
   async function skipRest() {
@@ -305,8 +305,8 @@ export default function OnboardingPage() {
             <div className={styles.optionGrid}>
               <button
                 type="button"
-                className={`${styles.optionCard} ${!syncEnabled ? styles.selected : ""}`}
-                onClick={() => setSyncEnabled(false)}
+                className={`${styles.optionCard} ${!setUpSync ? styles.selected : ""}`}
+                onClick={() => setSetUpSync(false)}
               >
                 <span className={styles.optionTitle}>Keep it local-only</span>
                 <span className={styles.optionDesc}>
@@ -315,12 +315,12 @@ export default function OnboardingPage() {
               </button>
               <button
                 type="button"
-                className={`${styles.optionCard} ${syncEnabled ? styles.selected : ""}`}
-                onClick={() => setSyncEnabled(true)}
+                className={`${styles.optionCard} ${setUpSync ? styles.selected : ""}`}
+                onClick={() => setSetUpSync(true)}
               >
                 <span className={styles.optionTitle}>Set up sync later</span>
                 <span className={styles.optionDesc}>
-                  We&apos;ll remind you in Settings. Not built yet
+                  Review account and sync options after onboarding
                 </span>
               </button>
             </div>
