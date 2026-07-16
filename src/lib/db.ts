@@ -10,7 +10,8 @@ export type ModuleKey =
   | "journal"
   | "goals"
   | "journey"
-  | "bloodTests";
+  | "bloodTests"
+  | "voicePractice";
 
 export interface Profile {
   id: string;
@@ -191,6 +192,38 @@ export interface BloodTestEntry {
   updatedAt: string;
 }
 
+// Voice practice (v1.5) ---------------------------------------------------------
+// Practice goals + session logs only. No score, no "pass" threshold, no
+// automatic judgement, and no comparison to any reference voice - per the
+// locked spec. Not yet wired into account sync, local-only for now.
+
+export type VoicePracticeCategory =
+  | "pitch"
+  | "resonance"
+  | "breathing"
+  | "articulation"
+  | "projection"
+  | "confidence";
+
+export interface VoiceGoal {
+  id: string;
+  title: string;
+  category: VoicePracticeCategory;
+  targetFrequency: string | null;
+  targetDuration: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VoiceSession {
+  id: string;
+  goalId: string;
+  sessionDuration: string | null;
+  comfortRating: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
 // Private links (the user's own saved resources, separate from the curated
 // region resources list) ------------------------------------------------------
 
@@ -248,6 +281,8 @@ type BlossomDb = Dexie & {
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
   bloodTestEntries: EntityTable<BloodTestEntry, "id">;
+  voiceGoals: EntityTable<VoiceGoal, "id">;
+  voiceSessions: EntityTable<VoiceSession, "id">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -329,6 +364,24 @@ function createDb(): BlossomDb {
     goals: "id, status",
     privateLinks: "id",
     bloodTestEntries: "id, testName, date",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(7).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
@@ -681,6 +734,33 @@ export async function deleteBloodTestEntry(id: string): Promise<void> {
   await db.bloodTestEntries.delete(id);
 }
 
+// Voice practice ----------------------------------------------------------------
+
+export async function addVoiceGoal(
+  input: Pick<VoiceGoal, "title" | "category" | "targetFrequency" | "targetDuration">
+): Promise<VoiceGoal> {
+  const now = new Date().toISOString();
+  const goal: VoiceGoal = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.voiceGoals.add(goal);
+  return goal;
+}
+
+export async function deleteVoiceGoal(id: string): Promise<void> {
+  await db.transaction("rw", db.voiceGoals, db.voiceSessions, async () => {
+    await db.voiceGoals.delete(id);
+    const sessions = await db.voiceSessions.where("goalId").equals(id).toArray();
+    await db.voiceSessions.bulkDelete(sessions.map((s) => s.id));
+  });
+}
+
+export async function addVoiceSession(
+  input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note">
+): Promise<VoiceSession> {
+  const session: VoiceSession = { id: newId(), createdAt: new Date().toISOString(), ...input };
+  await db.voiceSessions.add(session);
+  return session;
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -726,6 +806,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     goals,
     privateLinks,
     bloodTestEntries,
+    voiceGoals,
+    voiceSessions,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -738,6 +820,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.goals.toArray(),
     db.privateLinks.toArray(),
     db.bloodTestEntries.toArray(),
+    db.voiceGoals.toArray(),
+    db.voiceSessions.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
@@ -756,6 +840,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     goals,
     privateLinks,
     bloodTestEntries,
+    voiceGoals,
+    voiceSessions,
   };
 }
 
@@ -775,6 +861,8 @@ export async function deleteAllData(): Promise<void> {
       db.goals,
       db.privateLinks,
       db.bloodTestEntries,
+      db.voiceGoals,
+      db.voiceSessions,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -792,6 +880,8 @@ export async function deleteAllData(): Promise<void> {
         db.goals.clear(),
         db.privateLinks.clear(),
         db.bloodTestEntries.clear(),
+        db.voiceGoals.clear(),
+        db.voiceSessions.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

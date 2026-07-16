@@ -8,8 +8,9 @@ import AddMedicationSheet from "./AddMedicationSheet";
 import AddAppointmentSheet from "./AddAppointmentSheet";
 import JournalSheet from "./JournalSheet";
 import AddBloodTestSheet from "./AddBloodTestSheet";
+import LogVoiceSessionSheet from "./LogVoiceSessionSheet";
 
-type Sheet = "milestone" | "medication" | "appointment" | "journal" | "bloodTest" | null;
+type Sheet = "milestone" | "medication" | "appointment" | "journal" | "bloodTest" | "voiceSession" | null;
 
 export default function QuickAdd() {
   const pathname = usePathname();
@@ -32,6 +33,7 @@ export default function QuickAdd() {
     if (pathname.startsWith("/track/medication")) return setSheet("medication");
     if (pathname.startsWith("/track/journal")) return setSheet("journal");
     if (pathname.startsWith("/track/blood-tests")) return setSheet("bloodTest");
+    if (pathname.startsWith("/track/voice")) return setSheet("voiceSession");
     if (pathname.startsWith("/calendar")) return setSheet("appointment");
     setMenuOpen((v) => !v);
   }
@@ -93,6 +95,9 @@ export default function QuickAdd() {
             <button type="button" className={styles.menuItem} onClick={() => open("bloodTest")}>
               Add blood test result
             </button>
+            <button type="button" className={styles.menuItem} onClick={() => open("voiceSession")}>
+              Log voice practice
+            </button>
           </div>
         </>
       )}
@@ -102,6 +107,7 @@ export default function QuickAdd() {
       {sheet === "appointment" && <AddAppointmentSheet onClose={() => setSheet(null)} />}
       {sheet === "journal" && <JournalSheet onClose={() => setSheet(null)} />}
       {sheet === "bloodTest" && <AddBloodTestSheet onClose={() => setSheet(null)} />}
+      {sheet === "voiceSession" && <LogVoiceSessionSheet onClose={() => setSheet(null)} />}
     </>
   );
 }

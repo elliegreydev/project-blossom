@@ -1,0 +1,139 @@
+"use client";
+
+import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import ScreenHeader from "@/components/ScreenHeader";
+import AddVoiceGoalSheet from "@/components/AddVoiceGoalSheet";
+import LogVoiceSessionSheet from "@/components/LogVoiceSessionSheet";
+import { db, deleteVoiceGoal, type VoicePracticeCategory } from "@/lib/db";
+import styles from "@/components/feature.module.css";
+import local from "./voice.module.css";
+
+const CATEGORY_LABELS: Record<VoicePracticeCategory, string> = {
+  pitch: "Pitch",
+  resonance: "Resonance",
+  breathing: "Breathing",
+  articulation: "Articulation",
+  projection: "Projection",
+  confidence: "Confidence",
+};
+
+function dateLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function VoicePracticePage() {
+  const [tab, setTab] = useState<"goals" | "sessions">("goals");
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false);
+  const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
+
+  const goals = useLiveQuery(() => db.voiceGoals.toArray(), []);
+  const sessions = useLiveQuery(() => db.voiceSessions.orderBy("createdAt").reverse().toArray(), []);
+
+  if (goals === undefined || sessions === undefined) return null;
+
+  const goalTitle = (goalId: string) => goals.find((g) => g.id === goalId)?.title ?? "Deleted goal";
+
+  return (
+    <div className={styles.screen}>
+      <ScreenHeader title="Voice practice" backHref="/track" />
+
+      <div className={local.segmented}>
+        <button
+          className={`${local.segment} ${tab === "goals" ? local.active : ""}`}
+          onClick={() => setTab("goals")}
+        >
+          Goals
+        </button>
+        <button
+          className={`${local.segment} ${tab === "sessions" ? local.active : ""}`}
+          onClick={() => setTab("sessions")}
+        >
+          Practice log
+        </button>
+      </div>
+
+      {tab === "goals" ? (
+        <div className={styles.section}>
+          {goals.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyTitle}>No practice goals yet</div>
+              <div className={styles.emptySubtitle}>
+                Set your own pace. There&apos;s no score here and nothing to
+                compare against.
+              </div>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {goals.map((goal) => (
+                <div key={goal.id} className={styles.item}>
+                  <span className={local.categoryTag}>{CATEGORY_LABELS[goal.category]}</span>
+                  <span className={styles.itemTitle}>{goal.title}</span>
+                  {(goal.targetFrequency || goal.targetDuration) && (
+                    <span className={styles.itemMeta}>
+                      {[goal.targetFrequency, goal.targetDuration].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                  <div className={styles.doseActions}>
+                    <button
+                      className={styles.doseButton}
+                      onClick={() => {
+                        setTab("sessions");
+                        setSessionSheetOpen(true);
+                      }}
+                    >
+                      Log session
+                    </button>
+                    <button className={styles.linkButton} onClick={() => deleteVoiceGoal(goal.id)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button className={styles.addButton} onClick={() => setGoalSheetOpen(true)}>
+            + Add goal
+          </button>
+        </div>
+      ) : (
+        <div className={styles.section}>
+          {sessions.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyTitle}>Nothing logged yet</div>
+              <div className={styles.emptySubtitle}>
+                Log a session whenever you practice. Skipping days is fine.
+              </div>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {sessions.map((session) => (
+                <div key={session.id} className={styles.item}>
+                  <div className={styles.itemRow}>
+                    <span className={styles.itemTitle}>{goalTitle(session.goalId)}</span>
+                    <span className={styles.itemMeta}>{dateLabel(session.createdAt)}</span>
+                  </div>
+                  <span className={styles.itemMeta}>
+                    {[
+                      session.sessionDuration,
+                      session.comfortRating ? `Comfort ${session.comfortRating}/5` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                  {session.note && <div className={styles.itemBody}>{session.note}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          <button className={styles.addButton} onClick={() => setSessionSheetOpen(true)}>
+            + Log session
+          </button>
+        </div>
+      )}
+
+      {goalSheetOpen && <AddVoiceGoalSheet onClose={() => setGoalSheetOpen(false)} />}
+      {sessionSheetOpen && <LogVoiceSessionSheet onClose={() => setSessionSheetOpen(false)} />}
+    </div>
+  );
+}

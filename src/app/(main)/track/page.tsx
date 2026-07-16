@@ -75,6 +75,19 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "voicePractice",
+    href: "/track/voice",
+    title: "Voice practice",
+    desc: "Practice goals and session notes, at your own pace",
+    tint: "var(--lavender)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+        <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {
