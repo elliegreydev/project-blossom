@@ -1,71 +1,161 @@
 .screen {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: max(28px, var(--safe-top)) 20px 20px;
+  gap: 34px;
+  padding: max(30px, var(--safe-top)) 20px 32px;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 72px;
+}
+
+.eyebrow {
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .greeting {
   font-family: var(--font-manrope);
   font-weight: 700;
-  font-size: 24px;
+  font-size: clamp(29px, 5vw, 38px);
+  line-height: 1.14;
   color: var(--text-primary);
+}
+
+.petals {
+  position: relative;
+  width: 62px;
+  height: 54px;
+  flex: 0 0 auto;
+  opacity: 0.78;
+}
+
+.petals span {
+  position: absolute;
+  width: 30px;
+  height: 43px;
+  border-radius: 80% 80% 55% 55%;
+  transform-origin: 50% 100%;
+  background: color-mix(in srgb, var(--pink) 58%, transparent);
+}
+
+.petals span:nth-child(1) {
+  left: 16px;
+  top: 2px;
+  transform: rotate(-18deg);
+}
+
+.petals span:nth-child(2) {
+  left: 30px;
+  top: 7px;
+  transform: rotate(32deg);
+  background: color-mix(in srgb, var(--lavender) 58%, transparent);
+}
+
+.petals span:nth-child(3) {
+  left: 2px;
+  top: 10px;
+  transform: rotate(-58deg);
+  background: color-mix(in srgb, var(--mint) 54%, transparent);
+}
+
+.overviewGrid {
+  display: grid;
+  gap: 30px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
 }
 
 .sectionTitle {
   font-family: var(--font-manrope);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 19px;
   color: var(--text-primary);
 }
 
 .emptyRow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 18px 0 4px;
+  color: var(--text-secondary);
   font-size: 14px;
-  color: var(--text-muted);
-  padding: 4px 0;
+  line-height: 1.5;
+}
+
+.emptyRow strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .card {
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
+  padding: 15px 12px;
+  margin-inline: -12px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+a.card:hover {
+  background: var(--bg-raised);
 }
 
 .cardTitle {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .cardMeta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
 .auroraCard {
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--lavender) 22%, var(--bg-raised)), color-mix(in srgb, var(--pink) 18%, var(--bg-raised)));
+  padding: 18px 18px 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
+  border-radius: 16px;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--lavender) 14%, var(--bg-raised)), color-mix(in srgb, var(--pink) 10%, var(--bg)));
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 18px;
 }
 
 .auroraText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 14px;
   color: var(--text-primary);
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.auroraLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .auroraDismiss {
@@ -76,6 +166,8 @@
   font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
+  padding: 4px;
+  border-radius: 8px;
 }
 
 .linkRow {
@@ -85,9 +177,34 @@
 }
 
 .link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 4px;
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
+}
+
+@media (min-width: 720px) {
+  .screen {
+    padding: max(40px, var(--safe-top)) 32px 48px;
+  }
+
+  .overviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .screen {
+    padding-inline: 48px;
+  }
+
+  .hero {
+    min-height: 92px;
+  }
 }
 
 .supportLink {

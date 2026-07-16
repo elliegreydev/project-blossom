@@ -9,7 +9,9 @@
 .progress {
   display: flex;
   gap: 6px;
-  margin-bottom: 32px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 36px;
 }
 
 .progressDot {
@@ -29,7 +31,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 420px;
+  max-width: 500px;
   margin: 0 auto;
   width: 100%;
 }
@@ -43,7 +45,8 @@
 }
 
 .title {
-  font-size: 26px;
+  font-size: clamp(29px, 6vw, 36px);
+  line-height: 1.18;
   color: var(--text-primary);
 }
 
@@ -101,7 +104,13 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-standard),
-    background var(--duration-fast) var(--ease-standard);
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.optionCard:hover {
+  border-color: color-mix(in srgb, var(--lavender) 58%, var(--border));
+  transform: translateY(-1px);
 }
 
 .optionCard.selected {
@@ -135,6 +144,7 @@
 .checkboxRow input {
   width: 18px;
   height: 18px;
+  flex: 0 0 18px;
   accent-color: var(--plum);
 }
 
@@ -148,7 +158,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 420px;
+  max-width: 500px;
   margin: 24px auto 0;
   width: 100%;
 }
@@ -201,4 +211,21 @@
   font-size: 13px;
   cursor: pointer;
   text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primaryButton {
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}
+
+@media (min-width: 720px) {
+  .screen {
+    padding: max(42px, var(--safe-top)) 32px max(32px, var(--safe-bottom));
+  }
+
+  .body {
+    gap: 22px;
+  }
 }

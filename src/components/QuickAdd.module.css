@@ -12,9 +12,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 20px rgba(43, 31, 51, 0.18);
+  box-shadow: 0 8px 24px rgba(43, 31, 51, 0.2);
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-standard);
+  transition: transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 11px 28px rgba(43, 31, 51, 0.24);
 }
 
 .button:active {
@@ -46,6 +52,16 @@
   padding: 8px;
   min-width: 200px;
   box-shadow: 0 10px 30px rgba(43, 31, 51, 0.16);
+  animation: menuIn var(--duration-fast) var(--ease-standard);
+}
+
+.menuTitle {
+  padding: 8px 12px 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .menuItem {
@@ -59,6 +75,9 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  min-height: 42px;
+  transition: background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
 }
 
 .menuItem:hover {
@@ -75,4 +94,24 @@
   font-size: 12px;
   font-weight: 400;
   color: var(--text-muted);
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (min-width: 900px) {
+  .button {
+    right: max(32px, calc((100vw - 240px - 1120px) / 2 + 32px));
+    bottom: 32px;
+  }
+
+  .menu {
+    right: max(32px, calc((100vw - 240px - 1120px) / 2 + 32px));
+    bottom: 100px;
+    min-width: 230px;
+  }
 }

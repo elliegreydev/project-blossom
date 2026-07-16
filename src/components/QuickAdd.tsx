@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./QuickAdd.module.css";
 import AddMilestoneSheet from "./AddMilestoneSheet";
@@ -15,6 +15,15 @@ export default function QuickAdd() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
 
   function handlePress() {
     // On a screen with an obvious primary add action, go straight to it.
@@ -32,7 +41,14 @@ export default function QuickAdd() {
 
   return (
     <>
-      <button type="button" className={styles.button} onClick={handlePress} aria-label="Quick add">
+      <button
+        type="button"
+        className={styles.button}
+        onClick={handlePress}
+        aria-label="Quick add"
+        aria-expanded={menuOpen}
+        aria-controls={menuOpen ? "quick-add-menu" : undefined}
+      >
         <svg
           className={styles.icon}
           viewBox="0 0 24 24"
@@ -47,8 +63,9 @@ export default function QuickAdd() {
 
       {menuOpen && (
         <>
-          <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)} />
-          <div className={styles.menu}>
+          <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)} aria-hidden="true" />
+          <div id="quick-add-menu" className={styles.menu} aria-label="Quick add actions">
+            <div className={styles.menuTitle}>Add something</div>
             <button type="button" className={styles.menuItem} onClick={() => open("milestone")}>
               Add milestone
             </button>

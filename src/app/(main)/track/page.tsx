@@ -72,7 +72,11 @@ export default function TrackPage() {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.title}>Track</div>
+      <header className={styles.pageHeader}>
+        <div className={styles.eyebrow}>Your tools</div>
+        <h1 className={styles.title}>Track</h1>
+        <p className={styles.subtitle}>Choose the space that feels useful today.</p>
+      </header>
       {visible.length === 0 ? (
         <div className={styles.empty}>
           You haven&apos;t turned on any trackers yet. You can enable them in Settings.
@@ -88,6 +92,9 @@ export default function TrackPage() {
                 <div className={styles.cardTitle}>{t.title}</div>
                 <div className={styles.cardDesc}>{t.desc}</div>
               </div>
+              <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
             </Link>
           ))}
         </div>

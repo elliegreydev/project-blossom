@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addPrivateLink } from "@/lib/db";
 
 export default function AddPrivateLinkSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
@@ -20,9 +22,18 @@ export default function AddPrivateLinkSheet({ onClose }: { onClose: () => void }
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className={styles.sheet}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="private-link-sheet-title"
+      >
         <div className={styles.grabber} />
-        <h2 className={styles.title}>Save a link</h2>
+        <h2 id="private-link-sheet-title" className={styles.title}>
+          Save a link
+        </h2>
 
         <div className={styles.field}>
           <span className={styles.label}>Label</span>

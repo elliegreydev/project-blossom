@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { addGoal, type JourneyCategory } from "@/lib/db";
 
 const CATEGORIES: { key: JourneyCategory; label: string }[] = [
@@ -13,6 +14,7 @@ const CATEGORIES: { key: JourneyCategory; label: string }[] = [
 ];
 
 export default function AddGoalSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<JourneyCategory | null>(null);
   const [target, setTarget] = useState("");
@@ -28,13 +30,14 @@ export default function AddGoalSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="goal-sheet-title">
         <div className={styles.grabber} />
-        <h2 className={styles.title}>Add a goal</h2>
+        <h2 id="goal-sheet-title" className={styles.title}>Add a goal</h2>
 
         <div className={styles.field}>
           <span className={styles.label}>What are you working towards?</span>
           <input
+            aria-label="Goal title"
             className={styles.input}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -45,7 +48,7 @@ export default function AddGoalSheet({ onClose }: { onClose: () => void }) {
 
         <div className={styles.field}>
           <span className={styles.label}>Area (optional)</span>
-          <div className={styles.chipRow}>
+          <div className={styles.chipRow} role="group" aria-label="Goal area">
             {CATEGORIES.map((c) => (
               <button
                 key={c.key}
@@ -62,6 +65,7 @@ export default function AddGoalSheet({ onClose }: { onClose: () => void }) {
         <div className={styles.field}>
           <span className={styles.label}>A note or target (optional)</span>
           <input
+            aria-label="Goal note or target"
             className={styles.input}
             value={target}
             onChange={(e) => setTarget(e.target.value)}

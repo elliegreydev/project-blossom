@@ -5,7 +5,9 @@
   background: rgba(43, 31, 51, 0.35);
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   animation: fadeIn var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(3px);
 }
 
 @keyframes fadeIn {
@@ -18,6 +20,7 @@
   width: 100%;
   max-height: 88dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   padding: 20px 20px max(20px, var(--safe-bottom));
@@ -25,6 +28,8 @@
   flex-direction: column;
   gap: 16px;
   animation: slideUp var(--duration-slow) var(--ease-standard);
+  box-shadow: 0 -16px 50px rgba(43, 31, 51, 0.18);
+  scrollbar-color: var(--border) transparent;
 }
 
 @keyframes slideUp {
@@ -72,6 +77,11 @@
   outline: none;
 }
 
+.input,
+.select {
+  min-height: 46px;
+}
+
 .input:focus,
 .textarea:focus,
 .select:focus {
@@ -91,6 +101,7 @@
 }
 
 .chip {
+  min-height: 40px;
   padding: 8px 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
@@ -108,13 +119,20 @@
 }
 
 .actions {
+  position: sticky;
+  bottom: calc(-1 * max(20px, var(--safe-bottom)));
   display: flex;
   gap: 10px;
-  margin-top: 4px;
+  margin: 8px -20px calc(-1 * max(20px, var(--safe-bottom)));
+  padding: 14px 20px max(20px, var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(12px);
 }
 
 .primaryButton {
   flex: 1;
+  min-height: 46px;
   padding: 14px 20px;
   border-radius: var(--radius);
   border: none;
@@ -131,6 +149,7 @@
 }
 
 .tertiaryButton {
+  min-height: 46px;
   padding: 14px 16px;
   border-radius: var(--radius);
   border: none;
@@ -139,4 +158,33 @@
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primaryButton {
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}
+
+@media (min-width: 720px) {
+  .backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    max-width: 680px;
+    max-height: min(88dvh, 820px);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 24px 70px rgba(43, 31, 51, 0.24);
+  }
+
+  .actions {
+    bottom: -24px;
+    margin-inline: -24px;
+    margin-bottom: -24px;
+    padding-inline: 24px;
+  }
 }

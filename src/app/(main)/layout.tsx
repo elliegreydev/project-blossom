@@ -24,14 +24,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     });
   }, [router]);
 
-  if (!checkedOnboarding || !profile) return null;
+  if (!checkedOnboarding || !profile) {
+    return (
+      <main className={styles.loadingScreen} aria-live="polite" aria-label="Opening Blossom">
+        <div className={styles.loadingMark} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <p>Opening your space…</p>
+      </main>
+    );
+  }
 
   const shell = (
-    <>
-      <div className={styles.content}>{children}</div>
-      <QuickAdd />
+    <div className={styles.shell}>
       <BottomNav />
-    </>
+      <main className={styles.content}>{children}</main>
+      <QuickAdd />
+    </div>
   );
 
   return profile.appLockEnabled ? <AppLockGate>{shell}</AppLockGate> : shell;

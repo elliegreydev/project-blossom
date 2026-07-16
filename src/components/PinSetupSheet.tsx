@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import styles from "./Sheet.module.css";
+import { useSheetDialog } from "./useSheetDialog";
 import { setAppLockPin } from "@/lib/db";
 
 type Stage = "enter" | "confirm";
 
 export default function PinSetupSheet({ onClose }: { onClose: () => void }) {
+  const dialogRef = useSheetDialog(onClose);
   const [stage, setStage] = useState<Stage>("enter");
   const [first, setFirst] = useState("");
   const [pin, setPin] = useState("");
@@ -49,9 +51,16 @@ export default function PinSetupSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className={styles.sheet}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pin-setup-sheet-title"
+      >
         <div className={styles.grabber} />
-        <h2 className={styles.title}>
+        <h2 id="pin-setup-sheet-title" className={styles.title}>
           {stage === "enter" ? "Choose a 4-digit PIN" : "Enter it again to confirm"}
         </h2>
         {error && (

@@ -14,7 +14,9 @@
   /* Text */
   --text-primary: var(--plum);
   --text-secondary: #6b5d74;
-  --text-muted: #9a8ea3;
+  --text-muted: #756a7d;
+  --nav-active: var(--plum);
+  --focus-ring: #7564bd;
 
   /* Status (always paired with an icon/label, never colour alone) */
   --status-positive: var(--mint);
@@ -50,7 +52,9 @@
 
     --text-primary: #f1ecf3;
     --text-secondary: #b8aec0;
-    --text-muted: #7d7284;
+    --text-muted: #a398aa;
+    --nav-active: var(--lavender);
+    --focus-ring: var(--lavender);
   }
 }
 
@@ -98,6 +102,24 @@ a {
 
 button {
   font-family: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--plum);
+  background: color-mix(in srgb, var(--pink) 56%, var(--lavender));
 }
 
 @media (prefers-reduced-motion: reduce) {

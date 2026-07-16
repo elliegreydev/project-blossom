@@ -45,14 +45,19 @@ export default function JourneyPage() {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.title}>Journey</div>
+      <header className={styles.pageHeader}>
+        <div className={styles.eyebrow}>Your story</div>
+        <h1 className={styles.title}>Journey</h1>
+        <p className={styles.subtitle}>A quiet timeline of the moments that matter to you.</p>
+      </header>
 
       {visibleCategories.length > 0 && (
-        <div className={styles.filters}>
+        <div className={styles.filters} role="group" aria-label="Filter journey by category">
           <button
             type="button"
             className={`${styles.filterChip} ${activeCategory === null ? styles.active : ""}`}
             onClick={() => setActiveCategory(null)}
+            aria-pressed={activeCategory === null}
           >
             All
           </button>
@@ -62,6 +67,7 @@ export default function JourneyPage() {
               type="button"
               className={`${styles.filterChip} ${activeCategory === cat ? styles.active : ""}`}
               onClick={() => setActiveCategory(cat)}
+              aria-pressed={activeCategory === cat}
             >
               {CATEGORY_LABELS[cat]}
             </button>
@@ -71,19 +77,25 @@ export default function JourneyPage() {
 
       {allEntries.length === 0 ? (
         <div className={styles.empty}>
+          <div className={styles.emptyMark} aria-hidden="true">✦</div>
           <div className={styles.emptyTitle}>Your journey, your pace</div>
           <div className={styles.emptySubtitle}>
-            Nothing here yet. Use the + button whenever you&apos;re ready.
+            This space is yours when you&apos;re ready. The + button is here whenever it feels useful.
           </div>
         </div>
       ) : (
-        <div className={styles.timeline}>
+        <div className={styles.timeline} role="list">
           {allEntries.map((entry) => (
-            <div key={entry.id} className={styles.entry}>
-              <div className={styles.entryTitle}>{entry.title}</div>
-              {formatEntryDate(entry) && <div className={styles.entryMeta}>{formatEntryDate(entry)}</div>}
+            <article key={entry.id} className={styles.entry} role="listitem">
+              <div className={styles.entryTopline}>
+                <div className={styles.entryTitle}>{entry.title}</div>
+                {entry.category && (
+                  <div className={styles.entryCategory}>{CATEGORY_LABELS[entry.category]}</div>
+                )}
+              </div>
+              {formatEntryDate(entry) && <time className={styles.entryMeta}>{formatEntryDate(entry)}</time>}
               {entry.note && <div className={styles.entryNote}>{entry.note}</div>}
-            </div>
+            </article>
           ))}
         </div>
       )}

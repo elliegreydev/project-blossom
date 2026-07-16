@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./BottomNav.module.css";
@@ -72,20 +73,27 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className={styles.nav}>
-      {TABS.map((tab) => {
-        const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`${styles.item} ${active ? styles.active : ""}`}
-          >
-            {tab.icon}
-            <span className={styles.label}>{tab.label}</span>
-          </Link>
-        );
-      })}
+    <nav className={styles.nav} aria-label="Primary navigation">
+      <div className={styles.brand}>
+        <Image src="/icon-192.png" width={38} height={38} alt="" priority />
+        <span>Blossom</span>
+      </div>
+      <div className={styles.items}>
+        {TABS.map((tab) => {
+          const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`${styles.item} ${active ? styles.active : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              {tab.icon}
+              <span className={styles.label}>{tab.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
