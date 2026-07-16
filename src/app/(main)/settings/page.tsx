@@ -59,6 +59,11 @@ export default function SettingsPage() {
         <Row href="/settings/data" title="Data controls" />
         <Row href="/settings/support" title="Help & support" />
       </div>
+
+      <div className={styles.group}>
+        <Row href="/legal/privacy" title="Privacy Policy" />
+        <Row href="/legal/terms" title="Terms of Service" />
+      </div>
     </div>
   );
 }

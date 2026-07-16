@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import styles from "@/components/onboarding.module.css";
@@ -147,6 +148,11 @@ export default function OnboardingPage() {
                 I confirm that I am 18 or older.
               </span>
             </label>
+            <p className={styles.legalLine}>
+              By continuing, you agree to Blossom&apos;s{" "}
+              <Link href="/legal/terms">Terms of Service</Link> and{" "}
+              <Link href="/legal/privacy">Privacy Policy</Link>.
+            </p>
           </>
         )}
 
