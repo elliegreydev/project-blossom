@@ -10,6 +10,7 @@ import JournalSheet from "./JournalSheet";
 import AddBloodTestSheet from "./AddBloodTestSheet";
 import LogVoiceSessionSheet from "./LogVoiceSessionSheet";
 import AddPresentationEntrySheet from "./AddPresentationEntrySheet";
+import AddBodyEntrySheet from "./AddBodyEntrySheet";
 
 type Sheet =
   | "milestone"
@@ -19,6 +20,7 @@ type Sheet =
   | "bloodTest"
   | "voiceSession"
   | "presentation"
+  | "bodyEntry"
   | null;
 
 export default function QuickAdd() {
@@ -44,6 +46,7 @@ export default function QuickAdd() {
     if (pathname.startsWith("/track/blood-tests")) return setSheet("bloodTest");
     if (pathname.startsWith("/track/voice")) return setSheet("voiceSession");
     if (pathname.startsWith("/track/presentation")) return setSheet("presentation");
+    if (pathname.startsWith("/track/body")) return setSheet("bodyEntry");
     if (pathname.startsWith("/calendar")) return setSheet("appointment");
     setMenuOpen((v) => !v);
   }
@@ -111,6 +114,9 @@ export default function QuickAdd() {
             <button type="button" className={styles.menuItem} onClick={() => open("presentation")}>
               Add presentation entry
             </button>
+            <button type="button" className={styles.menuItem} onClick={() => open("bodyEntry")}>
+              Add body & progress entry
+            </button>
           </div>
         </>
       )}
@@ -122,6 +128,7 @@ export default function QuickAdd() {
       {sheet === "bloodTest" && <AddBloodTestSheet onClose={() => setSheet(null)} />}
       {sheet === "voiceSession" && <LogVoiceSessionSheet onClose={() => setSheet(null)} />}
       {sheet === "presentation" && <AddPresentationEntrySheet onClose={() => setSheet(null)} />}
+      {sheet === "bodyEntry" && <AddBodyEntrySheet onClose={() => setSheet(null)} />}
     </>
   );
 }

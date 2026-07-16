@@ -1,0 +1,46 @@
+.entryButton {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.labelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.labelTag {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.measurementRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+
+.measurementValue {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.photoWrap {
+  margin: 8px 0;
+  max-width: 220px;
+}
+
+.expandHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}

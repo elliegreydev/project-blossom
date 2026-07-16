@@ -101,6 +101,19 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "bodyProgress",
+    href: "/track/body",
+    title: "Body & progress",
+    desc: "A quiet, private place to notice change",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 4a8 8 0 1 0 8 8" />
+        <path d="M12 4v8l5 3" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {

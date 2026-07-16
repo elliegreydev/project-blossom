@@ -12,7 +12,8 @@ export type ModuleKey =
   | "journey"
   | "bloodTests"
   | "voicePractice"
-  | "presentation";
+  | "presentation"
+  | "bodyProgress";
 
 export interface Profile {
   id: string;
@@ -252,6 +253,30 @@ export interface PresentationEntry {
   updatedAt: string;
 }
 
+// Body & progress tracking (v1.5) -------------------------------------------------
+// Measurements are free-text {label, value} pairs, not a rigid schema - same
+// approach as blood tests, so nothing implies a "correct" set of things a
+// body should be measured by. Photo follows the same local-only Blob pattern
+// as presentation tracking: private, never synced, never in the JSON export
+// (see exportAllData). No streaks, no charts, no comparison view in this
+// pass - per the locked spec's guardrails against turning this into
+// anything that judges rather than just notices change.
+
+export interface BodyMeasurement {
+  label: string;
+  value: string;
+}
+
+export interface BodyEntry {
+  id: string;
+  date: string;
+  measurements: BodyMeasurement[];
+  photo: Blob | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Private links (the user's own saved resources, separate from the curated
 // region resources list) ------------------------------------------------------
 
@@ -312,6 +337,7 @@ type BlossomDb = Dexie & {
   voiceGoals: EntityTable<VoiceGoal, "id">;
   voiceSessions: EntityTable<VoiceSession, "id">;
   presentationEntries: EntityTable<PresentationEntry, "id">;
+  bodyEntries: EntityTable<BodyEntry, "id">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -430,6 +456,26 @@ function createDb(): BlossomDb {
     voiceGoals: "id, category",
     voiceSessions: "id, goalId, createdAt",
     presentationEntries: "id, category, date",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(9).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
@@ -828,6 +874,21 @@ export async function deletePresentationEntry(id: string): Promise<void> {
   await db.presentationEntries.delete(id);
 }
 
+// Body & progress tracking -------------------------------------------------------
+
+export async function addBodyEntry(
+  input: Pick<BodyEntry, "date" | "measurements" | "photo" | "note">
+): Promise<BodyEntry> {
+  const now = new Date().toISOString();
+  const entry: BodyEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.bodyEntries.add(entry);
+  return entry;
+}
+
+export async function deleteBodyEntry(id: string): Promise<void> {
+  await db.bodyEntries.delete(id);
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -876,6 +937,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceGoals,
     voiceSessions,
     presentationEntriesRaw,
+    bodyEntriesRaw,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -891,6 +953,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.voiceGoals.toArray(),
     db.voiceSessions.toArray(),
     db.presentationEntries.toArray(),
+    db.bodyEntries.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
@@ -900,6 +963,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
   // serialize to "{}"). Strip them and note whether one existed instead of
   // producing a misleading empty object.
   const presentationEntries = presentationEntriesRaw.map((entry) => {
+    const { photo, ...rest } = entry;
+    return { ...rest, hasPhoto: photo !== null };
+  });
+  const bodyEntries = bodyEntriesRaw.map((entry) => {
     const { photo, ...rest } = entry;
     return { ...rest, hasPhoto: photo !== null };
   });
@@ -919,6 +986,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceGoals,
     voiceSessions,
     presentationEntries,
+    bodyEntries,
   };
 }
 
@@ -941,6 +1009,7 @@ export async function deleteAllData(): Promise<void> {
       db.voiceGoals,
       db.voiceSessions,
       db.presentationEntries,
+      db.bodyEntries,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -961,6 +1030,7 @@ export async function deleteAllData(): Promise<void> {
         db.voiceGoals.clear(),
         db.voiceSessions.clear(),
         db.presentationEntries.clear(),
+        db.bodyEntries.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

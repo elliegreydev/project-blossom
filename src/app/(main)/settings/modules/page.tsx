@@ -15,6 +15,7 @@ const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
   { key: "bloodTests", title: "Blood tests", desc: "A private, descriptive record of your results" },
   { key: "voicePractice", title: "Voice practice", desc: "Practice goals and session notes" },
   { key: "presentation", title: "Presentation", desc: "Outfits, hair, makeup, and things you want to try" },
+  { key: "bodyProgress", title: "Body & progress", desc: "A quiet, private place to notice change" },
 ];
 
 export default function ModulesSettingsPage() {
