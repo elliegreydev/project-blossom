@@ -43,6 +43,12 @@ export interface Profile {
   // user's own opt-in rather than the raw Notification.permission value so the
   // UI can tell "never asked" apart from "asked and turned back off".
   notificationsEnabled: boolean;
+  // IANA zone (e.g. "Europe/London"), auto-detected on each device load (see
+  // (main)/layout.tsx). Pushed to the server so the reminder cron can compute
+  // "due now" correctly, but deliberately NOT restored on a sync pull - each
+  // device should keep reflecting its own current zone, not whichever device
+  // last synced.
+  timezone: string | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -558,6 +564,7 @@ export const DEFAULT_PROFILE: Profile = {
   reduceMotion: false,
   textSize: "normal",
   notificationsEnabled: false,
+  timezone: null,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
@@ -574,12 +581,23 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
+  if (existing.timezone === undefined) backfill.timezone = null;
   if (existing.updatedAt === undefined) backfill.updatedAt = existing.createdAt;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
     return { ...existing, ...backfill };
   }
   return existing;
+}
+
+// Refreshes Profile.timezone from the browser if it's drifted (new device,
+// or the user travelled) - called on every app load, see (main)/layout.tsx.
+export async function syncDeviceTimezone(): Promise<void> {
+  if (typeof Intl === "undefined") return;
+  const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!detected || profile?.timezone === detected) return;
+  await updateProfile({ timezone: detected });
 }
 
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {

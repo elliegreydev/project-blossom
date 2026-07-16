@@ -108,6 +108,9 @@ async function localPayload(
         sensitive_modules_locked: profile.sensitiveModulesLocked,
         age_confirmed_at: profile.ageConfirmedAt,
         onboarding_completed_at: profile.onboardingCompletedAt,
+        // Pushed but deliberately never restored on pull (see Profile.timezone
+        // in db.ts) - each device should keep reflecting its own current zone.
+        timezone: profile.timezone,
         created_at: profile.createdAt,
         client_updated_at: changedAt,
       };
@@ -187,6 +190,8 @@ async function localPayload(
             preparation_note: item.preparationNote,
             outcome_note: item.outcomeNote,
             rescheduled_from: item.rescheduledFrom,
+            reminder_settings:
+              item.reminderMinutesBefore != null ? { minutesBefore: item.reminderMinutesBefore } : null,
             created_at: item.createdAt,
           }
         : null;
@@ -388,10 +393,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
       });
       return;
     case "appointment": {
-      // reminderMinutesBefore is device-local only (see db.ts) - a pull must
-      // not wipe out a reminder set on this device just because the synced
-      // row doesn't carry it.
-      const existing = await db.appointments.get(id);
+      const settings = row.reminder_settings as { minutesBefore?: number } | null | undefined;
       await db.appointments.put({
         id,
         title: stringValue(row.title),
@@ -400,7 +402,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         preparationNote: nullableString(row.preparation_note),
         outcomeNote: nullableString(row.outcome_note),
         rescheduledFrom: nullableString(row.rescheduled_from),
-        reminderMinutesBefore: existing?.reminderMinutesBefore ?? null,
+        reminderMinutesBefore: typeof settings?.minutesBefore === "number" ? settings.minutesBefore : null,
         createdAt,
         updatedAt: changedAt,
       } satisfies Appointment);

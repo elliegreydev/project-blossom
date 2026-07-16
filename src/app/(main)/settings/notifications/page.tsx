@@ -1,15 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
+import type { User } from "@supabase/supabase-js";
 import ScreenHeader from "@/components/ScreenHeader";
 import { db, LOCAL_PROFILE_ID, updateProfile } from "@/lib/db";
+import { createClient } from "@/lib/supabase/client";
+import {
+  getExistingPushSubscription,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/push";
 import styles from "@/components/settingsForm.module.css";
 
 export default function NotificationsSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushWorking, setPushWorking] = useState(false);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+    void getExistingPushSubscription().then((sub) => setPushSubscribed(Boolean(sub)));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
   if (!profile) return null;
 
   async function turnOn() {
@@ -30,6 +52,33 @@ export default function NotificationsSettingsPage() {
     await updateProfile({ notificationsEnabled: false });
   }
 
+  async function togglePush() {
+    if (!user) return;
+    setPushWorking(true);
+    setPushMessage(null);
+    try {
+      if (pushSubscribed) {
+        await unsubscribeFromPush();
+        setPushSubscribed(false);
+        setPushMessage("Background reminders are off on this device.");
+      } else {
+        const result = await subscribeToPush(user.id);
+        if (result === "subscribed") {
+          setPushSubscribed(true);
+          setPushMessage("Background reminders are on for this device.");
+        } else if (result === "permission-denied") {
+          setPushMessage("Notifications are blocked for Blossom in your browser settings.");
+        } else {
+          setPushMessage("This browser doesn't support background reminders.");
+        }
+      }
+    } catch {
+      setPushMessage("Something went wrong turning this on. Your other settings are unaffected.");
+    } finally {
+      setPushWorking(false);
+    }
+  }
+
   const browserBlocked =
     typeof window !== "undefined" && "Notification" in window && Notification.permission === "denied";
 
@@ -38,10 +87,11 @@ export default function NotificationsSettingsPage() {
       <ScreenHeader title="Notifications" backHref="/settings" />
 
       <p className={styles.hint}>
-        Reminders fire while Blossom is open in a tab or installed app window -
-        for medication doses and any appointment you&apos;ve added a reminder
-        to. They can&apos;t yet wake a fully closed app; that needs either
-        account sync or a browser feature we&apos;re still evaluating.
+        There are two separate kinds of reminder in Blossom. Below, &ldquo;while
+        Blossom is open&rdquo; works for everyone, on this device, with no
+        account needed. &ldquo;Even when Blossom is closed&rdquo; needs a
+        signed-in, synced account, since delivering a notification to a closed
+        app requires a server to send it.
       </p>
 
       <div className={styles.toggleRow}>
@@ -69,6 +119,33 @@ export default function NotificationsSettingsPage() {
           need to allow them there before this can turn on.
         </p>
       )}
+
+      <div className={styles.toggleRow}>
+        <div className={styles.toggleText}>
+          <span className={styles.toggleTitle}>Even when Blossom is closed</span>
+          <span className={styles.toggleDesc}>
+            {!user
+              ? "Needs a signed-in, synced account"
+              : !profile.syncEnabled
+                ? "Needs sync turned on"
+                : !isPushSupported()
+                  ? "Not supported in this browser"
+                  : pushSubscribed
+                    ? "On for this device"
+                    : "Off"}
+          </span>
+        </div>
+        {user && profile.syncEnabled && isPushSupported() ? (
+          <button type="button" className={styles.primaryButton} onClick={togglePush} disabled={pushWorking}>
+            {pushWorking ? "Working…" : pushSubscribed ? "Turn off" : "Turn on"}
+          </button>
+        ) : (
+          <Link href="/account" className={styles.primaryButton}>
+            {user ? "Turn on sync" : "Sign in"}
+          </Link>
+        )}
+      </div>
+      {pushMessage && <p className={styles.hint}>{pushMessage}</p>}
 
       <div className={styles.field}>
         <span className={styles.label}>Reminder text</span>

@@ -317,6 +317,10 @@ export default function AccountPage() {
                   <li>Milestones, medication, appointments, goals and check-in ratings can sync.</li>
                   <li>Journal writing and check-in notes stay only on this device.</li>
                   <li>You can pause sync without removing local data.</li>
+                  <li>
+                    Unlocks real reminders that reach you even when Blossom is closed - turn it
+                    on under Settings &gt; Notifications.
+                  </li>
                 </ul>
                 <button type="button" className={styles.primaryButton} onClick={connectSync} disabled={syncing}>
                   {syncing ? "Connecting safely…" : "Connect this device"}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, getOrCreateProfile, LOCAL_PROFILE_ID } from "@/lib/db";
+import { db, getOrCreateProfile, LOCAL_PROFILE_ID, syncDeviceTimezone } from "@/lib/db";
 import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
 import AppLockGate from "@/components/AppLockGate";
@@ -23,6 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       }
       setCheckedOnboarding(true);
     });
+    void syncDeviceTimezone();
   }, [router]);
 
   if (!checkedOnboarding || !profile) {

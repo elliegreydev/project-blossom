@@ -89,4 +89,25 @@ assert.equal(noReminderSet.length, 0, "no reminder configured should never fire"
 const past = dueAppointmentReminders([{ ...appt, appointmentAt: "2026-07-16T11:00:00.000Z" }], new Set(), NOW);
 assert.equal(past.length, 0, "an appointment already in the past should not fire");
 
+// Server-side (the reminder cron) doesn't run in the user's own timezone, so
+// dueMedicationReminders takes an explicit IANA zone and must honor it
+// regardless of the machine's own system timezone. NOW is noon UTC, which is
+// 08:00 in America/New_York (EDT, UTC-4) in July.
+const nyMed = { ...med, frequency: { times: ["07:58"], days: null } };
+const dueInNy = dueMedicationReminders([nyMed], [], new Set(), NOW, "America/New_York");
+assert.equal(dueInNy.length, 1, "07:58 local should be 2 minutes ago in America/New_York at this NOW");
+
+const notDueInNy = dueMedicationReminders(
+  [{ ...med, frequency: { times: ["11:58"], days: null } }],
+  [],
+  new Set(),
+  NOW,
+  "America/New_York"
+);
+assert.equal(
+  notDueInNy.length,
+  0,
+  "11:58 is hours away in America/New_York's local time at this NOW - the zone param must actually be used, not ignored"
+);
+
 console.log("reminders.ts tests passed");
