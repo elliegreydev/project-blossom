@@ -5,6 +5,15 @@ import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addAppointment } from "@/lib/db";
 
+const REMINDER_OPTIONS: { label: string; minutes: number | null }[] = [
+  { label: "No reminder", minutes: null },
+  { label: "30 min before", minutes: 30 },
+  { label: "1 hour before", minutes: 60 },
+  { label: "3 hours before", minutes: 180 },
+  { label: "1 day before", minutes: 60 * 24 },
+  { label: "3 days before", minutes: 60 * 24 * 3 },
+];
+
 export default function AddAppointmentSheet({ onClose }: { onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
   const [title, setTitle] = useState("");
@@ -12,6 +21,7 @@ export default function AddAppointmentSheet({ onClose }: { onClose: () => void }
   const [time, setTime] = useState("09:00");
   const [location, setLocation] = useState("");
   const [prep, setPrep] = useState("");
+  const [reminderMinutesBefore, setReminderMinutesBefore] = useState<number | null>(60);
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -23,6 +33,7 @@ export default function AddAppointmentSheet({ onClose }: { onClose: () => void }
       appointmentAt,
       location: location.trim() || null,
       preparationNote: prep.trim() || null,
+      reminderMinutesBefore,
     });
     setSaving(false);
     onClose();
@@ -76,6 +87,22 @@ export default function AddAppointmentSheet({ onClose }: { onClose: () => void }
             onChange={(e) => setPrep(e.target.value)}
             placeholder="Questions to ask, things to bring"
           />
+        </div>
+
+        <div className={styles.field}>
+          <span className={styles.label}>Remind me</span>
+          <div className={styles.chipRow}>
+            {REMINDER_OPTIONS.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                className={`${styles.chip} ${reminderMinutesBefore === option.minutes ? styles.selected : ""}`}
+                onClick={() => setReminderMinutesBefore(option.minutes)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.actions}>

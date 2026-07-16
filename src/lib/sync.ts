@@ -387,7 +387,11 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         updatedAt: changedAt,
       });
       return;
-    case "appointment":
+    case "appointment": {
+      // reminderMinutesBefore is device-local only (see db.ts) - a pull must
+      // not wipe out a reminder set on this device just because the synced
+      // row doesn't carry it.
+      const existing = await db.appointments.get(id);
       await db.appointments.put({
         id,
         title: stringValue(row.title),
@@ -396,10 +400,12 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         preparationNote: nullableString(row.preparation_note),
         outcomeNote: nullableString(row.outcome_note),
         rescheduledFrom: nullableString(row.rescheduled_from),
+        reminderMinutesBefore: existing?.reminderMinutesBefore ?? null,
         createdAt,
         updatedAt: changedAt,
       } satisfies Appointment);
       return;
+    }
     case "check_in": {
       const existing = await db.checkIns.get(id);
       await db.checkIns.put({

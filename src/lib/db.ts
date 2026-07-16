@@ -39,6 +39,10 @@ export interface Profile {
   // Accessibility
   reduceMotion: boolean;
   textSize: "normal" | "large" | "larger";
+  // Local reminders (see src/lib/reminders.ts). Device-local only, mirrors the
+  // user's own opt-in rather than the raw Notification.permission value so the
+  // UI can tell "never asked" apart from "asked and turned back off".
+  notificationsEnabled: boolean;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -131,6 +135,10 @@ export interface Appointment {
   preparationNote: string | null;
   outcomeNote: string | null;
   rescheduledFrom: string | null;
+  // Minutes before appointmentAt to fire a local reminder. Null means no
+  // reminder is configured. Undefined on rows created before this field
+  // existed - callers treat that the same as null.
+  reminderMinutesBefore: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -288,6 +296,16 @@ export interface PrivateLink {
   createdAt: string;
 }
 
+// Local reminders (see src/lib/reminders.ts) -----------------------------------
+// Tracks which reminder slots have already fired a local Notification, so a
+// re-render or app reopen doesn't fire the same reminder twice. Purely
+// operational state - never synced, not part of the data export.
+
+export interface NotifiedReminder {
+  key: string;
+  firedAt: string;
+}
+
 // Sync (optional account sync; see src/lib/sync.ts) ----------------------------
 
 export type SyncEntity =
@@ -338,6 +356,7 @@ type BlossomDb = Dexie & {
   voiceSessions: EntityTable<VoiceSession, "id">;
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
+  notifiedReminders: EntityTable<NotifiedReminder, "key">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -479,6 +498,27 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+  instance.version(10).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -517,6 +557,7 @@ export const DEFAULT_PROFILE: Profile = {
   appLockPinHash: null,
   reduceMotion: false,
   textSize: "normal",
+  notificationsEnabled: false,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
@@ -532,6 +573,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
+  if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.updatedAt === undefined) backfill.updatedAt = existing.createdAt;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
@@ -683,13 +725,15 @@ export async function logDose(
 // Appointments ----------------------------------------------------------------
 
 export async function addAppointment(
-  input: Pick<Appointment, "title" | "appointmentAt" | "location" | "preparationNote">
+  input: Pick<Appointment, "title" | "appointmentAt" | "location" | "preparationNote"> &
+    Partial<Pick<Appointment, "reminderMinutesBefore">>
 ): Promise<Appointment> {
   const now = new Date().toISOString();
   const appointment: Appointment = {
     id: newId(),
     outcomeNote: null,
     rescheduledFrom: null,
+    reminderMinutesBefore: null,
     createdAt: now,
     updatedAt: now,
     ...input,
@@ -793,6 +837,17 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
     d.setHours(h, m, 0, 0);
     return d.toISOString();
   });
+}
+
+// Local reminders --------------------------------------------------------------
+
+export async function notifiedReminderKeys(): Promise<Set<string>> {
+  const rows = await db.notifiedReminders.toArray();
+  return new Set(rows.map((row) => row.key));
+}
+
+export async function markReminderNotified(key: string): Promise<void> {
+  await db.notifiedReminders.put({ key, firedAt: new Date().toISOString() });
 }
 
 // Private links -----------------------------------------------------------------
@@ -1010,6 +1065,7 @@ export async function deleteAllData(): Promise<void> {
       db.voiceSessions,
       db.presentationEntries,
       db.bodyEntries,
+      db.notifiedReminders,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -1031,6 +1087,7 @@ export async function deleteAllData(): Promise<void> {
         db.voiceSessions.clear(),
         db.presentationEntries.clear(),
         db.bodyEntries.clear(),
+        db.notifiedReminders.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

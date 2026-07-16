@@ -7,6 +7,7 @@ import { db, getOrCreateProfile, LOCAL_PROFILE_ID } from "@/lib/db";
 import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
 import AppLockGate from "@/components/AppLockGate";
+import LocalReminderService from "@/components/LocalReminderService";
 import styles from "./layout.module.css";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const shell = (
     <div className={styles.shell}>
+      <LocalReminderService />
       <BottomNav />
       <main className={styles.content}>{children}</main>
       <QuickAdd />
