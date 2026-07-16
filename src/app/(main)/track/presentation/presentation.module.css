@@ -1,0 +1,46 @@
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.segment {
+  flex: 1;
+  min-height: 42px;
+  padding: 9px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.segment.active {
+  background: var(--bg);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(43, 31, 51, 0.08);
+}
+
+.categoryTag {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--pink) 26%, var(--bg-raised));
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.photoWrap {
+  margin: 4px 0;
+  max-width: 220px;
+}

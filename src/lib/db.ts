@@ -11,7 +11,8 @@ export type ModuleKey =
   | "goals"
   | "journey"
   | "bloodTests"
-  | "voicePractice";
+  | "voicePractice"
+  | "presentation";
 
 export interface Profile {
   id: string;
@@ -224,6 +225,33 @@ export interface VoiceSession {
   createdAt: string;
 }
 
+// Presentation tracking (v1.5) ---------------------------------------------------
+// Outfit/hair/makeup/grooming notes and experiments. All fields optional. The
+// photo is a raw Blob stored directly in IndexedDB - private, local-only,
+// NEVER synced and never included in the JSON data export (see
+// exportAllData, which strips it to a hasPhoto flag instead of trying to
+// serialize binary data). Same treatment as body-progress photos will get.
+
+export type PresentationCategory =
+  | "outfit"
+  | "hair"
+  | "makeup"
+  | "clothing"
+  | "grooming"
+  | "experiment";
+
+export interface PresentationEntry {
+  id: string;
+  date: string;
+  category: PresentationCategory;
+  note: string | null;
+  photo: Blob | null;
+  confidenceRating: number | null;
+  wantToTry: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Private links (the user's own saved resources, separate from the curated
 // region resources list) ------------------------------------------------------
 
@@ -283,6 +311,7 @@ type BlossomDb = Dexie & {
   bloodTestEntries: EntityTable<BloodTestEntry, "id">;
   voiceGoals: EntityTable<VoiceGoal, "id">;
   voiceSessions: EntityTable<VoiceSession, "id">;
+  presentationEntries: EntityTable<PresentationEntry, "id">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -382,6 +411,25 @@ function createDb(): BlossomDb {
     bloodTestEntries: "id, testName, date",
     voiceGoals: "id, category",
     voiceSessions: "id, goalId, createdAt",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(8).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
@@ -761,6 +809,25 @@ export async function addVoiceSession(
   return session;
 }
 
+// Presentation tracking ---------------------------------------------------------
+
+export async function addPresentationEntry(
+  input: Pick<PresentationEntry, "date" | "category" | "note" | "photo" | "confidenceRating" | "wantToTry">
+): Promise<PresentationEntry> {
+  const now = new Date().toISOString();
+  const entry: PresentationEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.presentationEntries.add(entry);
+  return entry;
+}
+
+export async function updatePresentationEntry(id: string, patch: Partial<PresentationEntry>): Promise<void> {
+  await db.presentationEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deletePresentationEntry(id: string): Promise<void> {
+  await db.presentationEntries.delete(id);
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -808,6 +875,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     bloodTestEntries,
     voiceGoals,
     voiceSessions,
+    presentationEntriesRaw,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -822,11 +890,19 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.bloodTestEntries.toArray(),
     db.voiceGoals.toArray(),
     db.voiceSessions.toArray(),
+    db.presentationEntries.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
   const safeProfile: Partial<Profile> = { ...profile };
   delete safeProfile.appLockPinHash;
+  // Photos are raw Blobs and can't survive JSON.stringify (they'd silently
+  // serialize to "{}"). Strip them and note whether one existed instead of
+  // producing a misleading empty object.
+  const presentationEntries = presentationEntriesRaw.map((entry) => {
+    const { photo, ...rest } = entry;
+    return { ...rest, hasPhoto: photo !== null };
+  });
   return {
     exportedAt: new Date().toISOString(),
     profile: safeProfile,
@@ -842,6 +918,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     bloodTestEntries,
     voiceGoals,
     voiceSessions,
+    presentationEntries,
   };
 }
 
@@ -863,6 +940,7 @@ export async function deleteAllData(): Promise<void> {
       db.bloodTestEntries,
       db.voiceGoals,
       db.voiceSessions,
+      db.presentationEntries,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -882,6 +960,7 @@ export async function deleteAllData(): Promise<void> {
         db.bloodTestEntries.clear(),
         db.voiceGoals.clear(),
         db.voiceSessions.clear(),
+        db.presentationEntries.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

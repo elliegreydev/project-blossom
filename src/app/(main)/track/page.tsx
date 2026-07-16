@@ -88,6 +88,19 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "presentation",
+    href: "/track/presentation",
+    title: "Presentation",
+    desc: "Outfits, hair, makeup, and things you want to try",
+    tint: "var(--mint)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="8" r="3" />
+        <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {
