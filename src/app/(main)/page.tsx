@@ -10,6 +10,7 @@ import {
   dueDosesToday,
   estimatedMedicationSupplyDays,
   medicationSupplyIsLow,
+  careSupplyNeedsAttention,
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
@@ -44,6 +45,7 @@ export default function HomePage() {
   const meds = useLiveQuery(() => db.medications.toArray(), []);
   const medLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const medicationSupplies = useLiveQuery(() => db.medicationSupplies.toArray(), []);
+  const careSupplies = useLiveQuery(() => db.careSupplies.toArray(), []);
   const appts = useLiveQuery(() => db.appointments.toArray(), []);
   const journalEntries = useLiveQuery(() => db.journalEntries.toArray(), []);
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
@@ -61,6 +63,7 @@ export default function HomePage() {
     meds === undefined ||
     medLogs === undefined ||
     medicationSupplies === undefined ||
+    careSupplies === undefined ||
     appts === undefined ||
     journalEntries === undefined ||
     checkIns === undefined ||
@@ -95,7 +98,7 @@ export default function HomePage() {
 
   const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
 
-  const supplyHeadsUps = meds
+  const medicationSupplyHeadsUps = meds
     .filter((medication) => medication.active)
     .flatMap((medication) => {
       const supply = medicationSupplies.find((item) => item.medicationId === medication.id);
@@ -108,6 +111,12 @@ export default function HomePage() {
       }];
     })
     .slice(0, 2);
+  const supplyHeadsUps = [
+    ...medicationSupplyHeadsUps,
+    ...careSupplies
+      .filter((supply) => careSupplyNeedsAttention(supply))
+      .map((supply) => ({ id: supply.id, label: supply.name, meta: "A supply check may be useful" })),
+  ].slice(0, 3);
 
   // Coming up: next appointments after today.
   const upcoming = appts
@@ -216,7 +225,7 @@ export default function HomePage() {
         <section className={styles.section} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
-              <div className={styles.eyebrow}>Medication</div>
+              <div className={styles.eyebrow}>Supplies</div>
               <h2 id="supply-heads-up-title" className={styles.sectionTitle}>A small supply heads-up</h2>
             </div>
             <Link href="/track/medication" className={styles.link}>Review</Link>

@@ -16,6 +16,7 @@ import {
   type MedicationFrequency,
   type MedicationRoute,
   type MedicationSupplyAdjustmentKind,
+  type CareSupplyAdjustmentKind,
   type ModuleKey,
   type ReminderPrivacy,
   type SyncEntity,
@@ -34,6 +35,8 @@ const SYNC_ORDER: SyncEntity[] = [
   "medication_supply",
   "medication_log",
   "medication_supply_adjustment",
+  "care_supply",
+  "care_supply_adjustment",
   "appointment",
   "check_in",
   "goal",
@@ -48,6 +51,8 @@ const TABLES: Record<SyncEntity, string> = {
   medication_supply: "medication_supplies",
   medication_log: "medication_logs",
   medication_supply_adjustment: "medication_supply_adjustments",
+  care_supply: "care_supplies",
+  care_supply_adjustment: "care_supply_adjustments",
   appointment: "appointments",
   check_in: "check_ins",
   goal: "goals",
@@ -224,6 +229,42 @@ async function localPayload(
           }
         : null;
     }
+    case "care_supply": {
+      const item = await db.careSupplies.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            supply_unit: item.supplyUnit,
+            low_quantity: item.lowQuantity,
+            renewal_date: item.renewalDate,
+            delivery_date: item.deliveryDate,
+            expiry_date: item.expiryDate,
+            provider: item.provider,
+            batch_number: item.batchNumber,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "care_supply_adjustment": {
+      const item = await db.careSupplyAdjustments.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            supply_id: item.supplyId,
+            kind: item.kind,
+            quantity_change: item.quantityChange,
+            quantity_after: item.quantityAfter,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
     case "appointment": {
       const item = await db.appointments.get(recordId);
       return item
@@ -340,6 +381,12 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
       return;
     case "medication_supply_adjustment":
       await db.medicationSupplyAdjustments.delete(id);
+      return;
+    case "care_supply":
+      await db.careSupplies.delete(id);
+      return;
+    case "care_supply_adjustment":
+      await db.careSupplyAdjustments.delete(id);
       return;
     case "appointment":
       await db.appointments.delete(id);
@@ -467,6 +514,36 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         supplyId: stringValue(row.supply_id),
         medicationId: stringValue(row.medication_id),
         kind: stringValue(row.kind) as MedicationSupplyAdjustmentKind,
+        quantityChange: nullableNumber(row.quantity_change) ?? 0,
+        quantityAfter: nullableNumber(row.quantity_after) ?? 0,
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      });
+      return;
+    case "care_supply":
+      await db.careSupplies.put({
+        id,
+        name: stringValue(row.name),
+        category: stringValue(row.category) as "injection" | "care" | "other",
+        quantity: nullableNumber(row.quantity) ?? 0,
+        supplyUnit: stringValue(row.supply_unit),
+        lowQuantity: nullableNumber(row.low_quantity),
+        renewalDate: nullableString(row.renewal_date),
+        deliveryDate: nullableString(row.delivery_date),
+        expiryDate: nullableString(row.expiry_date),
+        provider: nullableString(row.provider),
+        batchNumber: nullableString(row.batch_number),
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      });
+      return;
+    case "care_supply_adjustment":
+      await db.careSupplyAdjustments.put({
+        id,
+        supplyId: stringValue(row.supply_id),
+        kind: stringValue(row.kind) as CareSupplyAdjustmentKind,
         quantityChange: nullableNumber(row.quantity_change) ?? 0,
         quantityAfter: nullableNumber(row.quantity_after) ?? 0,
         note: nullableString(row.note),
@@ -619,6 +696,8 @@ async function enqueueFullSnapshot(): Promise<void> {
     ["medication_supply", await db.medicationSupplies.toArray()],
     ["medication_log", await db.medicationLogs.toArray()],
     ["medication_supply_adjustment", await db.medicationSupplyAdjustments.toArray()],
+    ["care_supply", await db.careSupplies.toArray()],
+    ["care_supply_adjustment", await db.careSupplyAdjustments.toArray()],
     ["appointment", await db.appointments.toArray()],
     ["check_in", await db.checkIns.toArray()],
     ["goal", await db.goals.toArray()],

@@ -214,6 +214,39 @@
   background: color-mix(in srgb, var(--pink) 15%, transparent);
 }
 
+.sectionNote {
+  margin: -4px 0 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.supplyItemButton {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.supplyItemButton:first-child {
+  border-top: 0;
+}
+
+.supplyItemButton[data-low-supply="true"] {
+  padding-inline: 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--pink) 12%, transparent);
+}
+
 @media (prefers-color-scheme: dark) {
   .addButton {
     border-color: var(--lavender);
