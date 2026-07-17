@@ -75,6 +75,39 @@
   line-height: 1.5;
 }
 
+.operationRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.operationRow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.operationRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.operationRow span,
+.mutedCell {
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.actionCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .loadingScreen {
   min-height: 100vh;
   display: flex;

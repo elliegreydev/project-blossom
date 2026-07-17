@@ -1,0 +1,21 @@
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--sky) 42%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sky) 10%, var(--bg-raised));
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notice span {
+  color: var(--text-secondary);
+}
+
+.care {
+  border-color: color-mix(in srgb, var(--lavender) 46%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
+}

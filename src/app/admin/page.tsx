@@ -28,6 +28,12 @@ export default function AdminOverviewPage() {
             Aggregate, anonymous usage - signups, module adoption, regions. No individual data.
           </span>
         </Link>
+        <Link href="/admin/operations" className={styles.card}>
+          <span className={styles.cardTitle}>Operations</span>
+          <span className={styles.cardDesc}>
+            App health, resource review, open-case attention, privacy audit and feature availability.
+          </span>
+        </Link>
       </div>
     </>
   );
