@@ -27,6 +27,7 @@ alter table public.medication_logs
 
 alter table public.appointments
   add column if not exists client_updated_at timestamptz,
+  add column if not exists builder_data jsonb not null default '{}'::jsonb,
   add column if not exists deleted_at timestamptz;
 
 alter table public.check_ins

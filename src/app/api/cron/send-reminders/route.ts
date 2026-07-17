@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { dueAppointmentReminders, dueMedicationReminders } from "@/lib/reminders";
-import type { Appointment, Medication, MedicationLog } from "@/lib/db";
+import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog } from "@/lib/db";
 
 // Triggered every few minutes by the VPS crontab (see docs/PROD_RELEASE.md-
 // style ops notes) with `Authorization: Bearer <CRON_SECRET>`. Only reaches
@@ -111,6 +111,7 @@ export async function GET(request: Request) {
           preparationNote: null,
           outcomeNote: null,
           rescheduledFrom: null,
+          builderData: emptyAppointmentBuilderData(),
           reminderMinutesBefore: typeof settings?.minutesBefore === "number" ? settings.minutesBefore : null,
           createdAt: "",
           updatedAt: "",
