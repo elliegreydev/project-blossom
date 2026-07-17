@@ -324,6 +324,34 @@ export interface JournalEntry {
   updatedAt: string;
 }
 
+// Gender euphoria journal -------------------------------------------------------
+// These are intentionally separate from the everyday journal. Like journal
+// writing and local photos elsewhere in Blossom, they never enter the sync
+// queue or a staff-accessible database table.
+
+export type EuphoriaMomentKind =
+  | "affirming-interaction"
+  | "style"
+  | "voice"
+  | "confidence"
+  | "compliment"
+  | "celebration"
+  | "future-self"
+  | "other";
+
+export interface EuphoriaEntry {
+  id: string;
+  kind: EuphoriaMomentKind;
+  title: string | null;
+  bodyText: string | null;
+  photo: Blob | null;
+  // A local calendar date chosen by the person writing it. Null means this is
+  // a normal entry rather than a time capsule.
+  reopenAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CheckIn {
   id: string;
   mood: number | null;
@@ -551,6 +579,7 @@ type BlossomDb = Dexie & {
   careSupplyAdjustments: EntityTable<CareSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
+  euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
@@ -834,6 +863,34 @@ function createDb(): BlossomDb {
     await tx.table("appointments").toCollection().modify((appointment: Partial<Appointment>) => {
       appointment.builderData ??= emptyAppointmentBuilderData();
     });
+  });
+  instance.version(15).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
   });
   return instance;
 }
@@ -1286,6 +1343,19 @@ export async function addJournalEntry(bodyText: string): Promise<void> {
   await db.journalEntries.add({ id: newId(), bodyText, createdAt: now, updatedAt: now });
 }
 
+export async function addEuphoriaEntry(
+  input: Pick<EuphoriaEntry, "kind" | "title" | "bodyText" | "photo" | "reopenAt">
+): Promise<EuphoriaEntry> {
+  const now = new Date().toISOString();
+  const entry: EuphoriaEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.euphoriaEntries.add(entry);
+  return entry;
+}
+
+export async function deleteEuphoriaEntry(id: string): Promise<void> {
+  await db.euphoriaEntries.delete(id);
+}
+
 export async function addCheckIn(
   input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
 ): Promise<void> {
@@ -1511,6 +1581,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     medicationLogs,
     appointments,
     journalEntries,
+    euphoriaEntriesRaw,
     checkIns,
     goals,
     privateLinks,
@@ -1527,6 +1598,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.medicationLogs.toArray(),
     db.appointments.toArray(),
     db.journalEntries.toArray(),
+    db.euphoriaEntries.toArray(),
     db.checkIns.toArray(),
     db.goals.toArray(),
     db.privateLinks.toArray(),
@@ -1551,6 +1623,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     const { photo, ...rest } = entry;
     return { ...rest, hasPhoto: photo !== null };
   });
+  const euphoriaEntries = euphoriaEntriesRaw.map((entry) => {
+    const { photo, ...rest } = entry;
+    return { ...rest, hasPhoto: photo !== null };
+  });
   return {
     exportedAt: new Date().toISOString(),
     profile: safeProfile,
@@ -1560,6 +1636,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     medicationLogs,
     appointments,
     journalEntries,
+    euphoriaEntries,
     checkIns,
     goals,
     privateLinks,
@@ -1583,6 +1660,7 @@ export async function deleteAllData(): Promise<void> {
       db.medicationLogs,
       db.appointments,
       db.journalEntries,
+      db.euphoriaEntries,
       db.checkIns,
       db.goals,
       db.privateLinks,
@@ -1605,6 +1683,7 @@ export async function deleteAllData(): Promise<void> {
         db.medicationLogs.clear(),
         db.appointments.clear(),
         db.journalEntries.clear(),
+        db.euphoriaEntries.clear(),
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
