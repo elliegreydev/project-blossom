@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
+import JournalSheet from "@/components/JournalSheet";
+import CheckInSheet from "@/components/CheckInSheet";
 import {
   db,
   LOCAL_PROFILE_ID,
@@ -55,6 +57,8 @@ export default function HomePage() {
   const presentationEntries = useLiveQuery(() => db.presentationEntries.toArray(), []);
   const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
   if (
     !profile ||
@@ -97,6 +101,10 @@ export default function HomePage() {
     .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar" }));
 
   const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
+  const lowEnergyMedication = dueDoses[0] ?? null;
+  const lowEnergyAppointment = appts
+    .filter((appointment) => new Date(appointment.appointmentAt) >= now)
+    .sort((a, b) => a.appointmentAt.localeCompare(b.appointmentAt))[0] ?? null;
 
   const medicationSupplyHeadsUps = meds
     .filter((medication) => medication.active)
@@ -128,7 +136,7 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode
+  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode || profile.lowEnergyMode
     ? null
     : selectAuroraSuggestion({
         now,
@@ -178,6 +186,53 @@ export default function HomePage() {
         </div>
       </header>
 
+      {profile.lowEnergyMode ? (
+        <section className={styles.lowEnergy} aria-labelledby="low-energy-title">
+          <div className={styles.lowEnergyIntro}>
+            <div className={styles.eyebrow}>For right now</div>
+            <h2 id="low-energy-title" className={styles.lowEnergyTitle}>Just the essentials</h2>
+          </div>
+
+          <div className={styles.lowEnergyList}>
+            {lowEnergyMedication && (
+              <Link href={lowEnergyMedication.href} className={styles.lowEnergyItem}>
+                <span className={styles.lowEnergyLabel}>Next medication</span>
+                <strong>{lowEnergyMedication.label}</strong>
+                <span>{lowEnergyMedication.meta}</span>
+              </Link>
+            )}
+            {lowEnergyAppointment && (
+              <Link href="/calendar" className={styles.lowEnergyItem}>
+                <span className={styles.lowEnergyLabel}>{new Date(lowEnergyAppointment.appointmentAt) <= todayEnd ? "Today’s appointment" : "Next appointment"}</span>
+                <strong>{lowEnergyAppointment.title}</strong>
+                <span>
+                  {new Date(lowEnergyAppointment.appointmentAt).toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  · {timeLabel(lowEnergyAppointment.appointmentAt)}
+                </span>
+              </Link>
+            )}
+            {!lowEnergyMedication && !lowEnergyAppointment && (
+              <div className={styles.lowEnergyEmpty}>
+                <strong>Nothing else needs your attention today.</strong>
+                <span>You can simply take the day as it comes.</span>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.lowEnergyActions}>
+            <button type="button" className={styles.lowEnergyPrimary} onClick={() => setCheckInOpen(true)}>
+              Check in
+            </button>
+            <button type="button" className={styles.lowEnergySecondary} onClick={() => setJournalOpen(true)}>
+              Write a note
+            </button>
+          </div>
+        </section>
+      ) : (
       <div className={styles.overviewGrid}>
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Today</h2>
@@ -220,8 +275,9 @@ export default function HomePage() {
           )}
         </section>
       </div>
+      )}
 
-      {!profile.gentleMode && supplyHeadsUps.length > 0 && (
+      {!profile.gentleMode && !profile.lowEnergyMode && supplyHeadsUps.length > 0 && (
         <section className={styles.section} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
@@ -239,9 +295,9 @@ export default function HomePage() {
         </section>
       )}
 
-      {!profile.gentleMode && <InstallAppNudge />}
-      {!profile.gentleMode && <SyncNudge />}
-      <AppNotice />
+      {!profile.gentleMode && !profile.lowEnergyMode && <InstallAppNudge />}
+      {!profile.gentleMode && !profile.lowEnergyMode && <SyncNudge />}
+      {!profile.lowEnergyMode && <AppNotice />}
 
       {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
@@ -269,7 +325,7 @@ export default function HomePage() {
         </aside>
       )}
 
-      {!profile.gentleMode && <section className={styles.section}>
+      {!profile.gentleMode && !profile.lowEnergyMode && <section className={styles.section}>
         <div className={styles.linkRow}>
           <div>
             <div className={styles.eyebrow}>Journey</div>
@@ -291,7 +347,7 @@ export default function HomePage() {
         )}
       </section>}
 
-      {profile.gentleMode && (
+      {profile.gentleMode && !profile.lowEnergyMode && (
         <section className={styles.section}>
           <div className={styles.linkRow}>
             <div>
@@ -310,6 +366,8 @@ export default function HomePage() {
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?
       </Link>
+      {journalOpen && <JournalSheet onClose={() => setJournalOpen(false)} />}
+      {checkInOpen && <CheckInSheet onClose={() => setCheckInOpen(false)} />}
     </div>
   );
 }

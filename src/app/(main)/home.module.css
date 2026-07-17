@@ -73,6 +73,98 @@
   gap: 30px;
 }
 
+.lowEnergy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
+}
+
+.lowEnergyIntro {
+  display: flex;
+  flex-direction: column;
+}
+
+.lowEnergyTitle {
+  font-family: var(--font-manrope);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.lowEnergyList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-raised);
+}
+
+.lowEnergyItem,
+.lowEnergyEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 17px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.lowEnergyItem + .lowEnergyItem {
+  border-top: 1px solid var(--border);
+}
+
+.lowEnergyItem:hover {
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
+}
+
+.lowEnergyItem strong,
+.lowEnergyEmpty strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.lowEnergyLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lowEnergyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lowEnergyPrimary,
+.lowEnergySecondary {
+  min-height: 48px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lowEnergyPrimary {
+  border: 1px solid var(--plum);
+  background: var(--plum);
+  color: #fff;
+}
+
+.lowEnergySecondary {
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -275,6 +367,11 @@ a.card:hover {
 
   .auroraActions {
     width: 100%;
+  }
+
+  .lowEnergyActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 

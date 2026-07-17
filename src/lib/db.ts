@@ -38,6 +38,9 @@ export interface Profile {
   // A deliberately quieter presentation for people who find tracking or
   // progress information stressful. It never changes the underlying records.
   gentleMode: boolean;
+  // An even smaller Home view for low-capacity days. This is deliberately
+  // device-local: it is a temporary presentation choice, not account data.
+  lowEnergyMode: boolean;
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
   ageConfirmedAt: string | null;
@@ -822,6 +825,7 @@ export const DEFAULT_PROFILE: Profile = {
   auroraMode: "gentle",
   reminderPrivacy: "discreet",
   gentleMode: false,
+  lowEnergyMode: false,
   sensitiveModulesLocked: false,
   syncEnabled: false,
   ageConfirmedAt: null,
@@ -863,6 +867,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.timezone === undefined) backfill.timezone = null;
   if (existing.gentleMode === undefined) backfill.gentleMode = false;
+  if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
   if (existing.subregion === undefined) backfill.subregion = null;
   // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
