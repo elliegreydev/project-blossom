@@ -146,3 +146,52 @@ select {
 :root[data-text-size="larger"] {
   font-size: 20px;
 }
+
+:root[data-high-contrast="true"] {
+  --bg: #ffffff;
+  --bg-raised: #ffffff;
+  --border: #5d5265;
+  --text-primary: #17121b;
+  --text-secondary: #342a3a;
+  --text-muted: #4c4054;
+  --focus-ring: #3d2b8f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-high-contrast="true"] {
+    --bg: #0d0a0f;
+    --bg-raised: #17121b;
+    --border: #d8d0dc;
+    --text-primary: #ffffff;
+    --text-secondary: #eee8f0;
+    --text-muted: #d6ceda;
+    --focus-ring: #d5c9ff;
+  }
+}
+
+:root[data-large-touch-targets="true"] button,
+:root[data-large-touch-targets="true"] input,
+:root[data-large-touch-targets="true"] select {
+  min-height: 48px;
+}
+
+:root[data-reading-comfort="true"] body {
+  letter-spacing: 0.012em;
+  line-height: 1.65;
+}
+
+:root[data-reading-comfort="true"] h1,
+:root[data-reading-comfort="true"] h2,
+:root[data-reading-comfort="true"] h3,
+:root[data-reading-comfort="true"] h4 {
+  letter-spacing: 0;
+  line-height: 1.28;
+}
+
+:root[data-reduce-visual-noise="true"] {
+  --gradient-brand: var(--bg-raised);
+}
+
+:root[data-reduce-visual-noise="true"] [data-blossom-decoration] {
+  display: none;
+}
