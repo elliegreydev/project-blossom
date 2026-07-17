@@ -1082,6 +1082,45 @@ function createDb(): BlossomDb {
   }).upgrade(async (tx) => {
     await tx.table("euphoriaEntries").clear();
   });
+  // Social Transition Planner is being pulled back for rework - clears any
+  // people/plans/tasks on next load rather than leaving them sitting
+  // unreachable now that the route is gone. Local-only data (never synced),
+  // so this only needs to happen on-device.
+  instance.version(20).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("socialTransitionPeople").clear();
+    await tx.table("socialTransitionPlans").clear();
+    await tx.table("socialTransitionTasks").clear();
+  });
   return instance;
 }
 

@@ -144,21 +144,6 @@ export default function TrackPage() {
               </svg>
             </Link>
         ))}
-        <Link href="/track/transition" className={styles.card}>
-          <div className={styles.cardIcon} style={{ background: "color-mix(in srgb, var(--pink) 22%, var(--bg))" }}>
-            <svg {...ICON_PROPS}>
-              <path d="M5 19V5m0 0h12l-2 3 2 3H5" />
-              <path d="M9 17h10" />
-            </svg>
-          </div>
-          <div className={styles.cardText}>
-            <div className={styles.cardTitle}>Transition planner</div>
-            <div className={styles.cardDesc}>Private plans, people and life-admin notes</div>
-          </div>
-          <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m9 5 7 7-7 7" />
-          </svg>
-        </Link>
       </div>
     </div>
   );
