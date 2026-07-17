@@ -5,14 +5,17 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddMedicationSheet from "@/components/AddMedicationSheet";
 import MedicationSupplySheet from "@/components/MedicationSupplySheet";
+import CareSupplySheet from "@/components/CareSupplySheet";
 import {
   db,
   dueDosesToday,
   estimatedMedicationSupplyDays,
   logDose,
   medicationSupplyIsLow,
+  careSupplyNeedsAttention,
   type DoseStatus,
   type Medication,
+  type CareSupply,
 } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 
@@ -37,10 +40,13 @@ export default function MedicationPage() {
   const logs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const supplies = useLiveQuery(() => db.medicationSupplies.toArray(), []);
   const supplyAdjustments = useLiveQuery(() => db.medicationSupplyAdjustments.toArray(), []);
+  const careSupplies = useLiveQuery(() => db.careSupplies.toArray(), []);
+  const careSupplyAdjustments = useLiveQuery(() => db.careSupplyAdjustments.toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [supplyMedication, setSupplyMedication] = useState<Medication | null>(null);
+  const [careSupply, setCareSupply] = useState<CareSupply | null | "new">(null);
 
-  if (allMeds === undefined || logs === undefined || supplies === undefined || supplyAdjustments === undefined) return null;
+  if (allMeds === undefined || logs === undefined || supplies === undefined || supplyAdjustments === undefined || careSupplies === undefined || careSupplyAdjustments === undefined) return null;
 
   const meds = allMeds.filter((m) => m.active);
   const allSupplies = supplies;
@@ -180,6 +186,30 @@ export default function MedicationPage() {
         </button>
       </div>
 
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>Other supplies</div>
+        <p className={styles.sectionNote}>Keep practical items like needles, wipes or a sharps container in one private place.</p>
+        {careSupplies.length === 0 ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyTitle}>Nothing added yet</div>
+            <div className={styles.emptySubtitle}>You can track what you have, plus renewal, delivery and expiry dates.</div>
+          </div>
+        ) : (
+          <div className={styles.list}>
+            {careSupplies.map((item) => {
+              const needsAttention = careSupplyNeedsAttention(item);
+              return (
+                <button key={item.id} type="button" className={styles.supplyItemButton} data-low-supply={needsAttention || undefined} onClick={() => setCareSupply(item)}>
+                  <span className={styles.itemTitle}>{item.name}</span>
+                  <span className={styles.itemMeta}>{new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(item.quantity)} {item.supplyUnit}{needsAttention ? " · A check may be useful" : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button className={styles.addButton} onClick={() => setCareSupply("new")}>+ Add a supply</button>
+      </div>
+
       {sheetOpen && <AddMedicationSheet onClose={() => setSheetOpen(false)} />}
       {supplyMedication && (
         <MedicationSupplySheet
@@ -187,6 +217,13 @@ export default function MedicationPage() {
           supply={allSupplies.find((supply) => supply.medicationId === supplyMedication.id) ?? null}
           adjustments={supplyAdjustments.filter((adjustment) => adjustment.medicationId === supplyMedication.id)}
           onClose={() => setSupplyMedication(null)}
+        />
+      )}
+      {careSupply && (
+        <CareSupplySheet
+          supply={careSupply === "new" ? null : careSupply}
+          adjustments={careSupply === "new" ? [] : careSupplyAdjustments.filter((adjustment) => adjustment.supplyId === careSupply.id)}
+          onClose={() => setCareSupply(null)}
         />
       )}
     </div>

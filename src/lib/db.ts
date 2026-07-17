@@ -173,6 +173,39 @@ export interface MedicationSupplyAdjustment {
   updatedAt: string;
 }
 
+// Independent supplies cover the practical bits around a medication, such as
+// needles, syringes, alcohol wipes, or a sharps container. They are never
+// inferred from a dose and do not affect treatment records.
+export type CareSupplyAdjustmentKind = "initial" | "restock" | "correction" | "discarded";
+
+export interface CareSupply {
+  id: string;
+  name: string;
+  category: "injection" | "care" | "other";
+  quantity: number;
+  supplyUnit: string;
+  lowQuantity: number | null;
+  renewalDate: string | null;
+  deliveryDate: string | null;
+  expiryDate: string | null;
+  provider: string | null;
+  batchNumber: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CareSupplyAdjustment {
+  id: string;
+  supplyId: string;
+  kind: CareSupplyAdjustmentKind;
+  quantityChange: number;
+  quantityAfter: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Appointments ----------------------------------------------------------------
 
 export interface Appointment {
@@ -364,6 +397,8 @@ export type SyncEntity =
   | "medication_log"
   | "medication_supply"
   | "medication_supply_adjustment"
+  | "care_supply"
+  | "care_supply_adjustment"
   | "appointment"
   | "check_in"
   | "goal"
@@ -423,6 +458,8 @@ type BlossomDb = Dexie & {
   medicationLogs: EntityTable<MedicationLog, "id">;
   medicationSupplies: EntityTable<MedicationSupply, "id">;
   medicationSupplyAdjustments: EntityTable<MedicationSupplyAdjustment, "id">;
+  careSupplies: EntityTable<CareSupply, "id">;
+  careSupplyAdjustments: EntityTable<CareSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
   checkIns: EntityTable<CheckIn, "id">;
@@ -635,6 +672,33 @@ function createDb(): BlossomDb {
     medicationLogs: "id, medicationId, loggedAt",
     medicationSupplies: "id, medicationId, updatedAt",
     medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(13).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
     appointments: "id, appointmentAt",
     journalEntries: "id, createdAt",
     checkIns: "id, createdAt",
@@ -939,6 +1003,61 @@ export async function setMedicationSupplyQuantity(
     await db.medicationSupplyAdjustments.add(adjustment);
     await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
     await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
+  });
+}
+
+export function careSupplyNeedsAttention(supply: CareSupply, today = new Date()): boolean {
+  if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
+  const todayKey = today.toISOString().slice(0, 10);
+  return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some((date) => date !== null && date <= todayKey);
+}
+
+export async function createCareSupply(
+  input: Omit<CareSupply, "id" | "createdAt" | "updatedAt">
+): Promise<CareSupply> {
+  const now = new Date().toISOString();
+  const supply: CareSupply = { id: newId(), createdAt: now, updatedAt: now, ...input, quantity: Math.max(0, input.quantity) };
+  const adjustment: CareSupplyAdjustment = {
+    id: newId(), supplyId: supply.id, kind: "initial", quantityChange: supply.quantity,
+    quantityAfter: supply.quantity, note: "Supply tracking started", createdAt: now, updatedAt: now,
+  };
+  await db.transaction("rw", db.careSupplies, db.careSupplyAdjustments, db.syncOutbox, async () => {
+    await db.careSupplies.add(supply);
+    await db.careSupplyAdjustments.add(adjustment);
+    await recordSyncChange("care_supply", supply.id, "upsert", now);
+    await recordSyncChange("care_supply_adjustment", adjustment.id, "upsert", now);
+  });
+  return supply;
+}
+
+export async function updateCareSupply(
+  id: string,
+  patch: Partial<Omit<CareSupply, "id" | "quantity" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.careSupplies, db.syncOutbox, async () => {
+    await db.careSupplies.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("care_supply", id, "upsert", changedAt);
+  });
+}
+
+export async function setCareSupplyQuantity(
+  supply: CareSupply,
+  quantity: number,
+  kind: Exclude<CareSupplyAdjustmentKind, "initial">,
+  note: string | null = null
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  const quantityAfter = Math.max(0, quantity);
+  const adjustment: CareSupplyAdjustment = {
+    id: newId(), supplyId: supply.id, kind, quantityChange: quantityAfter - supply.quantity,
+    quantityAfter, note, createdAt: changedAt, updatedAt: changedAt,
+  };
+  await db.transaction("rw", db.careSupplies, db.careSupplyAdjustments, db.syncOutbox, async () => {
+    await db.careSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
+    await db.careSupplyAdjustments.add(adjustment);
+    await recordSyncChange("care_supply", supply.id, "upsert", changedAt);
+    await recordSyncChange("care_supply_adjustment", adjustment.id, "upsert", changedAt);
   });
 }
 
