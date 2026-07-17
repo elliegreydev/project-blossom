@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import styles from "./roadmap.module.css";
 
 type Stage = "available" | "next" | "later";
-type Theme = "privacy" | "health" | "daily" | "community" | "data" | "other";
+type Theme = "privacy" | "health" | "daily" | "community" | "data" | "social" | "other";
 
 interface RoadmapItem {
   id: string;
@@ -45,6 +45,7 @@ const THEME_OPTIONS: Array<{ key: Theme | "all"; label: string }> = [
   { key: "daily", label: "Daily life" },
   { key: "community", label: "Community & trust" },
   { key: "data", label: "Data & connections" },
+  { key: "social", label: "Blossom Social" },
 ];
 
 const THEME_DETAILS: Record<Theme, { title: string; description: string }> = {
@@ -68,13 +69,17 @@ const THEME_DETAILS: Record<Theme, { title: string; description: string }> = {
     title: "Data & connections",
     description: "Useful patterns and portability without losing sight of privacy.",
   },
+  social: {
+    title: "Blossom Social",
+    description: "An optional community space, explored one careful phase at a time - all of it research-first and a long way from being built.",
+  },
   other: {
     title: "Other future ideas",
     description: "Thoughtful work that does not fit one neat box yet.",
   },
 };
 
-const THEME_ORDER: Theme[] = ["privacy", "health", "daily", "community", "data", "other"];
+const THEME_ORDER: Theme[] = ["privacy", "health", "daily", "community", "data", "social", "other"];
 
 const ROADMAP_THEMES: Record<string, Theme> = {
   "gentle-mode": "daily",
@@ -110,6 +115,19 @@ const ROADMAP_THEMES: Record<string, Theme> = {
   "wider-tracker-sync": "data",
   "background-reminders": "daily",
   "advanced-charts": "data",
+  "social-foundation-safety": "social",
+  "social-profiles": "social",
+  "social-circles": "social",
+  "social-posts-discussions": "social",
+  "social-celebration-garden": "social",
+  "social-qa": "social",
+  "social-buddy-matching": "social",
+  "social-messaging": "social",
+  "social-events": "social",
+  "social-trusted-contributors": "social",
+  "social-anonymous-posts": "social",
+  "social-organisation-pages": "social",
+  "social-advanced-features": "social",
 };
 
 function themeFor(item: RoadmapItem): Theme {
