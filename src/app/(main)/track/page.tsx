@@ -129,13 +129,8 @@ export default function TrackPage() {
         <h1 className={styles.title}>Track</h1>
         <p className={styles.subtitle}>Choose the space that feels useful today.</p>
       </header>
-      {visible.length === 0 ? (
-        <div className={styles.empty}>
-          You haven&apos;t turned on any trackers yet. You can enable them in Settings.
-        </div>
-      ) : (
-        <div className={styles.cards}>
-          {visible.map((t) => (
+      <div className={styles.cards}>
+        {visible.map((t) => (
             <Link key={t.module} href={t.href} className={styles.card}>
               <div className={styles.cardIcon} style={{ background: `color-mix(in srgb, ${t.tint} 30%, var(--bg))` }}>
                 {t.icon}
@@ -148,9 +143,23 @@ export default function TrackPage() {
                 <path d="m9 5 7 7-7 7" />
               </svg>
             </Link>
-          ))}
-        </div>
-      )}
+        ))}
+        <Link href="/track/transition" className={styles.card}>
+          <div className={styles.cardIcon} style={{ background: "color-mix(in srgb, var(--pink) 22%, var(--bg))" }}>
+            <svg {...ICON_PROPS}>
+              <path d="M5 19V5m0 0h12l-2 3 2 3H5" />
+              <path d="M9 17h10" />
+            </svg>
+          </div>
+          <div className={styles.cardText}>
+            <div className={styles.cardTitle}>Transition planner</div>
+            <div className={styles.cardDesc}>Private plans, people and life-admin notes</div>
+          </div>
+          <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
     </div>
   );
 }

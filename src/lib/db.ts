@@ -352,6 +352,47 @@ export interface EuphoriaEntry {
   updatedAt: string;
 }
 
+// Social transition planner ------------------------------------------------------
+// These records are deliberately device-only. They may contain sensitive
+// personal and safety notes, so they never participate in account sync.
+
+export type SocialPersonStatus = "considering" | "preparing" | "told" | "not-right-now";
+export type SocialPlanKind = "conversation" | "work" | "education" | "online" | "other";
+export type SocialPlanStatus = "considering" | "preparing" | "done" | "paused" | "not-for-me";
+export type SocialTaskStatus = "not-started" | "done" | "paused";
+export type SocialTaskCategory = "name" | "documents" | "healthcare" | "money" | "work-education" | "online" | "other";
+
+export interface SocialTransitionPerson {
+  id: string;
+  label: string;
+  status: SocialPersonStatus;
+  script: string | null;
+  safetyNote: string | null;
+  privateNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SocialTransitionPlan {
+  id: string;
+  title: string;
+  kind: SocialPlanKind;
+  status: SocialPlanStatus;
+  privateNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SocialTransitionTask {
+  id: string;
+  title: string;
+  category: SocialTaskCategory;
+  status: SocialTaskStatus;
+  privateNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CheckIn {
   id: string;
   mood: number | null;
@@ -580,6 +621,9 @@ type BlossomDb = Dexie & {
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
   euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
+  socialTransitionPeople: EntityTable<SocialTransitionPerson, "id">;
+  socialTransitionPlans: EntityTable<SocialTransitionPlan, "id">;
+  socialTransitionTasks: EntityTable<SocialTransitionTask, "id">;
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
@@ -878,6 +922,37 @@ function createDb(): BlossomDb {
     appointments: "id, appointmentAt",
     journalEntries: "id, createdAt",
     euphoriaEntries: "id, createdAt, reopenAt, kind",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(16).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
     checkIns: "id, createdAt",
     goals: "id, status",
     privateLinks: "id",
@@ -1356,6 +1431,75 @@ export async function deleteEuphoriaEntry(id: string): Promise<void> {
   await db.euphoriaEntries.delete(id);
 }
 
+// Social transition planner ------------------------------------------------------
+
+export async function addSocialTransitionPerson(
+  input: Pick<SocialTransitionPerson, "label" | "status" | "script" | "safetyNote" | "privateNote">
+): Promise<SocialTransitionPerson> {
+  const now = new Date().toISOString();
+  const person: SocialTransitionPerson = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.socialTransitionPeople.add(person);
+  return person;
+}
+
+export async function updateSocialTransitionPerson(id: string, patch: Partial<SocialTransitionPerson>): Promise<void> {
+  await db.socialTransitionPeople.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSocialTransitionPerson(id: string): Promise<void> {
+  await db.socialTransitionPeople.delete(id);
+}
+
+export async function addSocialTransitionPlan(
+  input: Pick<SocialTransitionPlan, "title" | "kind" | "status" | "privateNote">
+): Promise<SocialTransitionPlan> {
+  const now = new Date().toISOString();
+  const plan: SocialTransitionPlan = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.socialTransitionPlans.add(plan);
+  return plan;
+}
+
+export async function updateSocialTransitionPlan(id: string, patch: Partial<SocialTransitionPlan>): Promise<void> {
+  await db.socialTransitionPlans.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSocialTransitionPlan(id: string): Promise<void> {
+  await db.socialTransitionPlans.delete(id);
+}
+
+export async function addSocialTransitionTask(
+  input: Pick<SocialTransitionTask, "title" | "category" | "status" | "privateNote">
+): Promise<SocialTransitionTask> {
+  const now = new Date().toISOString();
+  const task: SocialTransitionTask = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.socialTransitionTasks.add(task);
+  return task;
+}
+
+export async function updateSocialTransitionTask(id: string, patch: Partial<SocialTransitionTask>): Promise<void> {
+  await db.socialTransitionTasks.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSocialTransitionTask(id: string): Promise<void> {
+  await db.socialTransitionTasks.delete(id);
+}
+
+export async function addSocialTransitionStarterTasks(): Promise<void> {
+  const existing = await db.socialTransitionTasks.toArray();
+  const starters: Array<Pick<SocialTransitionTask, "title" | "category" | "status" | "privateNote">> = [
+    { title: "Consider a name change", category: "name", status: "not-started", privateNote: null },
+    { title: "Review identity documents", category: "documents", status: "not-started", privateNote: null },
+    { title: "Review healthcare records", category: "healthcare", status: "not-started", privateNote: null },
+    { title: "Review banking or money records", category: "money", status: "not-started", privateNote: null },
+    { title: "Review work or education records", category: "work-education", status: "not-started", privateNote: null },
+    { title: "Review email and online spaces", category: "online", status: "not-started", privateNote: null },
+  ];
+  const missing = starters.filter((starter) => !existing.some((task) => task.title === starter.title));
+  if (missing.length === 0) return;
+  const now = new Date().toISOString();
+  await db.socialTransitionTasks.bulkAdd(missing.map((task) => ({ id: newId(), createdAt: now, updatedAt: now, ...task })));
+}
+
 export async function addCheckIn(
   input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
 ): Promise<void> {
@@ -1582,6 +1726,9 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     appointments,
     journalEntries,
     euphoriaEntriesRaw,
+    socialTransitionPeople,
+    socialTransitionPlans,
+    socialTransitionTasks,
     checkIns,
     goals,
     privateLinks,
@@ -1599,6 +1746,9 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.appointments.toArray(),
     db.journalEntries.toArray(),
     db.euphoriaEntries.toArray(),
+    db.socialTransitionPeople.toArray(),
+    db.socialTransitionPlans.toArray(),
+    db.socialTransitionTasks.toArray(),
     db.checkIns.toArray(),
     db.goals.toArray(),
     db.privateLinks.toArray(),
@@ -1637,6 +1787,9 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     appointments,
     journalEntries,
     euphoriaEntries,
+    socialTransitionPeople,
+    socialTransitionPlans,
+    socialTransitionTasks,
     checkIns,
     goals,
     privateLinks,
@@ -1661,6 +1814,9 @@ export async function deleteAllData(): Promise<void> {
       db.appointments,
       db.journalEntries,
       db.euphoriaEntries,
+      db.socialTransitionPeople,
+      db.socialTransitionPlans,
+      db.socialTransitionTasks,
       db.checkIns,
       db.goals,
       db.privateLinks,
@@ -1684,6 +1840,9 @@ export async function deleteAllData(): Promise<void> {
         db.appointments.clear(),
         db.journalEntries.clear(),
         db.euphoriaEntries.clear(),
+        db.socialTransitionPeople.clear(),
+        db.socialTransitionPlans.clear(),
+        db.socialTransitionTasks.clear(),
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
