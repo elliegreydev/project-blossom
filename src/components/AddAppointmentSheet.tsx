@@ -14,13 +14,7 @@ const REMINDER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "3 days before", minutes: 60 * 24 * 3 },
 ];
 
-export default function AddAppointmentSheet({
-  onClose,
-  rescheduledFrom = null,
-}: {
-  onClose: () => void;
-  rescheduledFrom?: string | null;
-}) {
+export default function AddAppointmentSheet({ onClose }: { onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -40,7 +34,6 @@ export default function AddAppointmentSheet({
       location: location.trim() || null,
       preparationNote: prep.trim() || null,
       reminderMinutesBefore,
-      rescheduledFrom,
     });
     setSaving(false);
     onClose();

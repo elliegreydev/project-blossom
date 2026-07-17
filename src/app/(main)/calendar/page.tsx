@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import AddAppointmentSheet from "@/components/AddAppointmentSheet";
 import { db, type Appointment } from "@/lib/db";
@@ -24,10 +22,6 @@ export default function CalendarPage() {
   const appts = useLiveQuery(() => db.appointments.orderBy("appointmentAt").toArray(), []);
   const [addOpen, setAddOpen] = useState(false);
   const [now] = useState(() => Date.now());
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const requestedAdd = searchParams.get("add") === "1";
 
   if (appts === undefined) return null;
 
@@ -36,7 +30,7 @@ export default function CalendarPage() {
 
   function renderAppt(a: Appointment) {
     return (
-      <Link key={a.id} href={`/calendar/${a.id}`} className={styles.item}>
+      <div key={a.id} className={styles.item}>
         <div className={styles.itemRow}>
           <span className={styles.itemTitle}>{a.title}</span>
           <span className={styles.itemMeta}>{timeLabel(a.appointmentAt)}</span>
@@ -44,8 +38,7 @@ export default function CalendarPage() {
         <span className={styles.itemMeta}>{dayLabel(a.appointmentAt)}</span>
         {a.location && <span className={styles.itemMeta}>{a.location}</span>}
         {a.preparationNote && <div className={styles.itemBody}>{a.preparationNote}</div>}
-        <span className={styles.itemMeta}>Prepare appointment →</span>
-      </Link>
+      </div>
     );
   }
 
@@ -80,15 +73,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {(addOpen || requestedAdd) && (
-        <AddAppointmentSheet
-          rescheduledFrom={searchParams.get("from")}
-          onClose={() => {
-            setAddOpen(false);
-            if (searchParams.get("add") === "1") router.replace("/calendar");
-          }}
-        />
-      )}
+      {addOpen && <AddAppointmentSheet onClose={() => setAddOpen(false)} />}
     </div>
   );
 }
