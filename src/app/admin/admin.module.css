@@ -188,6 +188,20 @@
   gap: 10px;
 }
 
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.checkRow input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--plum);
+}
+
 .primaryButton {
   padding: 10px 16px;
   border-radius: var(--radius);

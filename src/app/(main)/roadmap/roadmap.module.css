@@ -1,0 +1,148 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 760px;
+  padding: max(28px, var(--safe-top)) 20px max(32px, var(--safe-bottom));
+  margin: 0 auto;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 590px;
+}
+
+.eyebrow,
+.stageEyebrow,
+.recent {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: clamp(28px, 7vw, 38px);
+  line-height: 1.1;
+}
+
+.hero p,
+.stageHeader p,
+.item p,
+.note p,
+.empty,
+.loading {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1.4fr);
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.stageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stageHeader h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: 19px;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.item:first-child {
+  padding-top: 0;
+}
+
+.item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.itemHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.item h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.recent {
+  color: var(--plum);
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
+}
+
+.note strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.note a {
+  width: fit-content;
+  margin-top: 4px;
+  color: var(--plum);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+@media (max-width: 560px) {
+  .stage {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .recent,
+  .note a {
+    color: var(--lavender);
+  }
+}

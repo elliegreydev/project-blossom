@@ -34,6 +34,12 @@ export default function AdminOverviewPage() {
             App health, resource review, open-case attention, privacy audit and feature availability.
           </span>
         </Link>
+        <Link href="/admin/roadmap" className={styles.card}>
+          <span className={styles.cardTitle}>Roadmap</span>
+          <span className={styles.cardDesc}>
+            Keep Blossom&apos;s in-app roadmap clear, honest and free from made-up dates.
+          </span>
+        </Link>
       </div>
     </>
   );
