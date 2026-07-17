@@ -291,7 +291,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <Link href="/settings/support" className={styles.supportLink}>
+      <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?
       </Link>
     </div>

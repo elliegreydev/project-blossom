@@ -1,0 +1,137 @@
+.page {
+  min-height: 100vh;
+  padding: max(28px, var(--safe-top)) max(20px, var(--safe-right)) max(36px, var(--safe-bottom)) max(20px, var(--safe-left));
+  background: var(--bg);
+}
+
+.shell {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.back {
+  width: fit-content;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header {
+  padding: 6px 0 4px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin-top: 6px;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.emergencyBanner {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--pink) 24%, var(--bg));
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.select {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.select:focus {
+  border-color: var(--lavender);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resourceItem {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resourceCategory {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sky) 30%, var(--bg-raised));
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.resourceName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.resourceMeta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.moreLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  width: fit-content;
+}

@@ -399,6 +399,9 @@ export default function OnboardingPage() {
             Skip the rest for now
           </button>
         )}
+        <Link href="/crisis-support" className={styles.skipAllButton}>
+          Need support right now?
+        </Link>
       </div>
     </div>
   );

@@ -282,7 +282,7 @@ export default function RoadmapPage() {
         <p>
           We won&apos;t use this page to pressure you with deadlines or collect information for unfinished features. If plans change, we&apos;ll say so plainly.
         </p>
-        <Link href="/settings/support">Need help with Blossom right now?</Link>
+        <Link href="/crisis-support">Need help with Blossom right now?</Link>
       </aside>
     </div>
   );
