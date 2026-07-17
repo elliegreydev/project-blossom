@@ -1161,6 +1161,49 @@ function createDb(): BlossomDb {
       profile.gentleMode = false;
     });
   });
+  // Accessibility Profiles is being pulled back for rework - resets the
+  // preset choice and the four toggles it introduced (reduceMotion and
+  // textSize predate it and are untouched). Not synced, so this only needs
+  // to happen on-device.
+  instance.version(22).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.accessibilityProfile = "custom";
+      profile.highContrast = false;
+      profile.largeTouchTargets = false;
+      profile.readingComfort = false;
+      profile.reduceVisualNoise = false;
+    });
+  });
   return instance;
 }
 
