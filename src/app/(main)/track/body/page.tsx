@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddBodyEntrySheet from "@/components/AddBodyEntrySheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
+import SensitiveModuleGate from "@/components/SensitiveModuleGate";
 import { db, deleteBodyEntry, LOCAL_PROFILE_ID } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./body.module.css";
@@ -22,6 +23,7 @@ export default function BodyProgressPage() {
   if (entries === undefined || profile === undefined) return null;
 
   return (
+    <SensitiveModuleGate>
     <div className={styles.screen}>
       <ScreenHeader title="Body & progress" backHref="/track" />
 
@@ -103,5 +105,6 @@ export default function BodyProgressPage() {
 
       {sheetOpen && <AddBodyEntrySheet onClose={() => setSheetOpen(false)} />}
     </div>
+    </SensitiveModuleGate>
   );
 }

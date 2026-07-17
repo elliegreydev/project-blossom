@@ -1285,10 +1285,17 @@ export async function setMedicationSupplyQuantity(
   });
 }
 
+// Advance-warning window for renewal/delivery/expiry dates, matching the
+// spirit of medication supply's lowSupplyDays heads-up rather than only
+// flagging a care supply once its date has already arrived.
+const CARE_SUPPLY_WARNING_DAYS = 7;
+
 export function careSupplyNeedsAttention(supply: CareSupply, today = new Date()): boolean {
   if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
-  const todayKey = today.toISOString().slice(0, 10);
-  return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some((date) => date !== null && date <= todayKey);
+  const warningKey = new Date(today);
+  warningKey.setDate(warningKey.getDate() + CARE_SUPPLY_WARNING_DAYS);
+  const warningDateKey = warningKey.toISOString().slice(0, 10);
+  return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some((date) => date !== null && date <= warningDateKey);
 }
 
 export async function createCareSupply(
@@ -1723,6 +1730,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     journeyEvents,
     medications,
     medicationLogs,
+    medicationSupplies,
+    medicationSupplyAdjustments,
+    careSupplies,
+    careSupplyAdjustments,
     appointments,
     journalEntries,
     euphoriaEntriesRaw,
@@ -1743,6 +1754,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.journeyEvents.toArray(),
     db.medications.toArray(),
     db.medicationLogs.toArray(),
+    db.medicationSupplies.toArray(),
+    db.medicationSupplyAdjustments.toArray(),
+    db.careSupplies.toArray(),
+    db.careSupplyAdjustments.toArray(),
     db.appointments.toArray(),
     db.journalEntries.toArray(),
     db.euphoriaEntries.toArray(),
@@ -1784,6 +1799,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     journeyEvents,
     medications,
     medicationLogs,
+    medicationSupplies,
+    medicationSupplyAdjustments,
+    careSupplies,
+    careSupplyAdjustments,
     appointments,
     journalEntries,
     euphoriaEntries,
@@ -1811,6 +1830,10 @@ export async function deleteAllData(): Promise<void> {
       db.auroraNudges,
       db.medications,
       db.medicationLogs,
+      db.medicationSupplies,
+      db.medicationSupplyAdjustments,
+      db.careSupplies,
+      db.careSupplyAdjustments,
       db.appointments,
       db.journalEntries,
       db.euphoriaEntries,
@@ -1837,6 +1860,10 @@ export async function deleteAllData(): Promise<void> {
         db.auroraNudges.clear(),
         db.medications.clear(),
         db.medicationLogs.clear(),
+        db.medicationSupplies.clear(),
+        db.medicationSupplyAdjustments.clear(),
+        db.careSupplies.clear(),
+        db.careSupplyAdjustments.clear(),
         db.appointments.clear(),
         db.journalEntries.clear(),
         db.euphoriaEntries.clear(),

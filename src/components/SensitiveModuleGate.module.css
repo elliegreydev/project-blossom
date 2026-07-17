@@ -1,0 +1,8 @@
+.backLink {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+}

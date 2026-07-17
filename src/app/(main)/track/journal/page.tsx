@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
+import SensitiveModuleGate from "@/components/SensitiveModuleGate";
 import JournalSheet from "@/components/JournalSheet";
 import CheckInSheet from "@/components/CheckInSheet";
 import EuphoriaEntrySheet from "@/components/EuphoriaEntrySheet";
@@ -86,6 +87,7 @@ export default function JournalPage() {
   const capsules = euphoriaEntries.filter((entry) => entry.reopenAt);
 
   return (
+    <SensitiveModuleGate>
     <div className={styles.screen}>
       <ScreenHeader title="Journal & check-ins" backHref="/track" />
 
@@ -219,5 +221,6 @@ export default function JournalPage() {
       {checkInOpen && <CheckInSheet onClose={() => setCheckInOpen(false)} />}
       {euphoriaOpen && <EuphoriaEntrySheet onClose={() => setEuphoriaOpen(false)} />}
     </div>
+    </SensitiveModuleGate>
   );
 }

@@ -6,6 +6,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import AddMedicationSheet from "@/components/AddMedicationSheet";
 import MedicationSupplySheet from "@/components/MedicationSupplySheet";
 import CareSupplySheet from "@/components/CareSupplySheet";
+import SensitiveModuleGate from "@/components/SensitiveModuleGate";
 import {
   db,
   LOCAL_PROFILE_ID,
@@ -84,6 +85,7 @@ export default function MedicationPage() {
   }
 
   return (
+    <SensitiveModuleGate>
     <div className={styles.screen}>
       <ScreenHeader title="Medication" backHref="/track" />
 
@@ -230,5 +232,6 @@ export default function MedicationPage() {
         />
       )}
     </div>
+    </SensitiveModuleGate>
   );
 }

@@ -46,7 +46,7 @@ export default function PrivacySettingsPage() {
         <div className={styles.toggleText}>
           <span className={styles.toggleTitle}>Lock sensitive modules</span>
           <span className={styles.toggleDesc}>
-            Require an extra step to open medication, journal, and body-related areas
+            Require your PIN again to open medication, journal, and body-related areas
           </span>
         </div>
         <Toggle
@@ -55,6 +55,9 @@ export default function PrivacySettingsPage() {
           label="Lock sensitive modules"
         />
       </div>
+      {profile.sensitiveModulesLocked && !profile.appLockEnabled && (
+        <p className={styles.hint}>Turn on App lock above first - there&apos;s nothing to check this PIN against yet.</p>
+      )}
 
       <div className={styles.field}>
         <span className={styles.label}>How your data is protected</span>
