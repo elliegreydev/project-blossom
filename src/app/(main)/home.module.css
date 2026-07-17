@@ -73,6 +73,113 @@
   gap: 30px;
 }
 
+.focusPicker,
+.focusPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
+}
+
+.focusPickerIntro,
+.focusHeader {
+  display: flex;
+  flex-direction: column;
+}
+
+.focusPickerTitle,
+.focusTitle {
+  font-family: var(--font-manrope);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.focusChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.focusChoice,
+.focusAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 82px;
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-family: var(--font-inter);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+}
+
+.focusChoice:hover,
+.focusAction:hover {
+  border-color: color-mix(in srgb, var(--lavender) 48%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
+}
+
+.focusChoice strong,
+.focusAction strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.focusChoice span,
+.focusAction span,
+.focusHeader p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.focusHeader {
+  gap: 7px;
+}
+
+.focusHeader p {
+  max-width: 560px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.focusReset {
+  align-self: flex-start;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focusReset:hover {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
+.focusActions {
+  display: grid;
+  gap: 8px;
+}
+
+.focusAction {
+  min-height: 0;
+}
+
 .lowEnergy {
   display: flex;
   flex-direction: column;
@@ -372,6 +479,12 @@ a.card:hover {
   .lowEnergyActions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 720px) {
+  .focusChoiceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -13,6 +13,7 @@ import {
   estimatedMedicationSupplyDays,
   medicationSupplyIsLow,
   careSupplyNeedsAttention,
+  updateProfile,
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
@@ -59,6 +60,7 @@ export default function HomePage() {
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
 
   if (
     !profile ||
@@ -162,6 +164,13 @@ export default function HomePage() {
   }
 
   const name = profile.displayName || "there";
+  const focusContent = focusIntent ? FOCUS_CONTENT[focusIntent] : null;
+
+  function openFocusAction(action: "checkIn" | "journal" | "lowEnergy") {
+    if (action === "checkIn") setCheckInOpen(true);
+    if (action === "journal") setJournalOpen(true);
+    if (action === "lowEnergy") void updateProfile({ lowEnergyMode: true });
+  }
 
   return (
     <div className={styles.screen}>
@@ -232,7 +241,48 @@ export default function HomePage() {
             </button>
           </div>
         </section>
+      ) : focusContent ? (
+        <section className={styles.focusPanel} aria-labelledby="focus-title">
+          <div className={styles.focusHeader}>
+            <div className={styles.eyebrow}>What would help right now?</div>
+            <h2 id="focus-title" className={styles.focusTitle}>{focusContent.title}</h2>
+            <p>{focusContent.description}</p>
+            <button type="button" className={styles.focusReset} onClick={() => setFocusIntent(null)}>
+              Back to Home
+            </button>
+          </div>
+          <div className={styles.focusActions}>
+            {focusContent.actions.map((item) => (
+              item.href ? (
+                <Link key={item.label} href={item.href} className={styles.focusAction}>
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </Link>
+              ) : (
+                <button key={item.label} type="button" className={styles.focusAction} onClick={() => openFocusAction(item.action!)}>
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </button>
+              )
+            ))}
+          </div>
+        </section>
       ) : (
+      <>
+      <section className={styles.focusPicker} aria-labelledby="focus-picker-title">
+        <div className={styles.focusPickerIntro}>
+          <div className={styles.eyebrow}>Start where you are</div>
+          <h2 id="focus-picker-title" className={styles.focusPickerTitle}>What would help right now?</h2>
+        </div>
+        <div className={styles.focusChoiceGrid}>
+          {FOCUS_CHOICES.map((choice) => (
+            <button key={choice.key} type="button" className={styles.focusChoice} onClick={() => setFocusIntent(choice.key)}>
+              <strong>{choice.label}</strong>
+              <span>{choice.description}</span>
+            </button>
+          ))}
+        </div>
+      </section>
       <div className={styles.overviewGrid}>
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Today</h2>
@@ -275,9 +325,10 @@ export default function HomePage() {
           )}
         </section>
       </div>
+      </>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && supplyHeadsUps.length > 0 && (
+      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && supplyHeadsUps.length > 0 && (
         <section className={styles.section} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
@@ -295,11 +346,11 @@ export default function HomePage() {
         </section>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && <InstallAppNudge />}
-      {!profile.gentleMode && !profile.lowEnergyMode && <SyncNudge />}
-      {!profile.lowEnergyMode && <AppNotice />}
+      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <InstallAppNudge />}
+      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <SyncNudge />}
+      {!profile.lowEnergyMode && !focusIntent && <AppNotice />}
 
-      {auroraSuggestion && (
+      {!focusIntent && auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
             <span className={styles.auroraLabel}>{auroraSuggestion.eyebrow}</span>
@@ -325,7 +376,7 @@ export default function HomePage() {
         </aside>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && <section className={styles.section}>
+      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <section className={styles.section}>
         <div className={styles.linkRow}>
           <div>
             <div className={styles.eyebrow}>Journey</div>
@@ -347,7 +398,7 @@ export default function HomePage() {
         )}
       </section>}
 
-      {profile.gentleMode && !profile.lowEnergyMode && (
+      {profile.gentleMode && !profile.lowEnergyMode && !focusIntent && (
         <section className={styles.section}>
           <div className={styles.linkRow}>
             <div>
@@ -371,3 +422,73 @@ export default function HomePage() {
     </div>
   );
 }
+
+type FocusIntent = "organise" | "prepare" | "reflect" | "calm" | "celebrate" | "support";
+
+const FOCUS_CHOICES: Array<{ key: FocusIntent; label: string; description: string }> = [
+  { key: "organise", label: "Organise", description: "See what needs a place." },
+  { key: "prepare", label: "Prepare", description: "Get ready for what is ahead." },
+  { key: "reflect", label: "Reflect", description: "Make a little room for yourself." },
+  { key: "calm", label: "Calm down", description: "Keep things small and steady." },
+  { key: "celebrate", label: "Celebrate", description: "Notice what matters to you." },
+  { key: "support", label: "Find support", description: "Reach trusted help and resources." },
+];
+
+const FOCUS_CONTENT: Record<FocusIntent, {
+  title: string;
+  description: string;
+  actions: Array<{ label: string; description: string; href?: string; action?: "checkIn" | "journal" | "lowEnergy" }>;
+}> = {
+  organise: {
+    title: "A little structure",
+    description: "Pick up only the practical bits that feel useful right now.",
+    actions: [
+      { label: "Medication & supplies", description: "Schedules, doses and the supplies you keep track of.", href: "/track/medication" },
+      { label: "Calendar", description: "Appointments and the things you want to prepare for.", href: "/calendar" },
+      { label: "Goals", description: "A quiet look at what you are working towards.", href: "/track/goals" },
+    ],
+  },
+  prepare: {
+    title: "Get ready, gently",
+    description: "A few places to gather what may help before an appointment or an important day.",
+    actions: [
+      { label: "Appointments", description: "Open your calendar and any private appointment preparation.", href: "/calendar" },
+      { label: "Medication details", description: "Keep the practical information you chose close by.", href: "/track/medication" },
+      { label: "Write a private note", description: "Jot down anything you want to remember.", action: "journal" },
+    ],
+  },
+  reflect: {
+    title: "Make a little space",
+    description: "Nothing needs to be measured or solved. Choose what feels right.",
+    actions: [
+      { label: "Check in", description: "A quick, private way to notice how you are doing.", action: "checkIn" },
+      { label: "Write a note", description: "A few words, or as many as you need.", action: "journal" },
+      { label: "Journal & check-ins", description: "Return to your existing private reflections.", href: "/track/journal" },
+    ],
+  },
+  calm: {
+    title: "Keep it small",
+    description: "You do not need to work through everything today.",
+    actions: [
+      { label: "Use Low-Energy Mode", description: "Show only the next essential things on Home.", action: "lowEnergy" },
+      { label: "A quick check-in", description: "Pause and note only what feels useful.", action: "checkIn" },
+      { label: "Need support right now?", description: "Open verified support and crisis information.", href: "/crisis-support" },
+    ],
+  },
+  celebrate: {
+    title: "Notice what matters",
+    description: "Your progress is yours. There is no comparison here.",
+    actions: [
+      { label: "Your journey", description: "Look back at the moments you chose to keep.", href: "/journey" },
+      { label: "Goals", description: "See the things you have been moving towards.", href: "/track/goals" },
+    ],
+  },
+  support: {
+    title: "Find support",
+    description: "Clear support information, without needing to explain yourself first.",
+    actions: [
+      { label: "Crisis & support resources", description: "Region-aware support that is available without finishing onboarding.", href: "/crisis-support" },
+      { label: "Help with Blossom", description: "Practical help and support for using the app.", href: "/settings/support" },
+    ],
+  },
+};
