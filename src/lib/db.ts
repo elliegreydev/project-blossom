@@ -7,6 +7,7 @@ import type { ResourceCategory } from "./regionResources";
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
 export type ReminderPrivacy = "discreet" | "detailed";
+export type AccessibilityProfile = "custom" | "lowVision" | "readingComfort" | "lowCognitiveLoad" | "migraineFriendly" | "largeTouchTargets";
 
 export type ModuleKey =
   | "medication"
@@ -51,6 +52,11 @@ export interface Profile {
   // Accessibility
   reduceMotion: boolean;
   textSize: "normal" | "large" | "larger";
+  highContrast: boolean;
+  largeTouchTargets: boolean;
+  readingComfort: boolean;
+  reduceVisualNoise: boolean;
+  accessibilityProfile: AccessibilityProfile;
   // Local reminders (see src/lib/reminders.ts). Device-local only, mirrors the
   // user's own opt-in rather than the raw Notification.permission value so the
   // UI can tell "never asked" apart from "asked and turned back off".
@@ -827,6 +833,11 @@ export const DEFAULT_PROFILE: Profile = {
   appLockPinHash: null,
   reduceMotion: false,
   textSize: "normal",
+  highContrast: false,
+  largeTouchTargets: false,
+  readingComfort: false,
+  reduceVisualNoise: false,
+  accessibilityProfile: "custom",
   notificationsEnabled: false,
   timezone: null,
 };
@@ -844,6 +855,11 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
+  if (existing.highContrast === undefined) backfill.highContrast = false;
+  if (existing.largeTouchTargets === undefined) backfill.largeTouchTargets = false;
+  if (existing.readingComfort === undefined) backfill.readingComfort = false;
+  if (existing.reduceVisualNoise === undefined) backfill.reduceVisualNoise = false;
+  if (existing.accessibilityProfile === undefined) backfill.accessibilityProfile = "custom";
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.timezone === undefined) backfill.timezone = null;
   if (existing.gentleMode === undefined) backfill.gentleMode = false;

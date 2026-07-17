@@ -170,7 +170,7 @@ export default function HomePage() {
             </svg>
             <span>Account &amp; sync</span>
           </Link>
-          <div className={styles.petals} aria-hidden="true">
+          <div className={styles.petals} data-blossom-decoration aria-hidden="true">
             <span />
             <span />
             <span />

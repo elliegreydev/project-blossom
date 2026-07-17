@@ -11,7 +11,11 @@ export default function AccessibilityEffects() {
     const root = document.documentElement;
     root.dataset.textSize = profile?.textSize ?? "normal";
     root.dataset.reduceMotion = profile?.reduceMotion ? "true" : "false";
-  }, [profile?.textSize, profile?.reduceMotion]);
+    root.dataset.highContrast = profile?.highContrast ? "true" : "false";
+    root.dataset.largeTouchTargets = profile?.largeTouchTargets ? "true" : "false";
+    root.dataset.readingComfort = profile?.readingComfort ? "true" : "false";
+    root.dataset.reduceVisualNoise = profile?.reduceVisualNoise ? "true" : "false";
+  }, [profile?.textSize, profile?.reduceMotion, profile?.highContrast, profile?.largeTouchTargets, profile?.readingComfort, profile?.reduceVisualNoise]);
 
   return null;
 }
