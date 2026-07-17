@@ -128,7 +128,7 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode
+  const auroraSuggestion = auroraHiddenForSession
     ? null
     : selectAuroraSuggestion({
         now,
@@ -223,7 +223,7 @@ export default function HomePage() {
         </section>
       </div>
 
-      {!profile.gentleMode && supplyHeadsUps.length > 0 && (
+      {supplyHeadsUps.length > 0 && (
         <section className={styles.section} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
@@ -241,12 +241,8 @@ export default function HomePage() {
         </section>
       )}
 
-      {!profile.gentleMode && (
-        <>
-          <InstallAppNudge />
-          <SyncNudge />
-        </>
-      )}
+      <InstallAppNudge />
+      <SyncNudge />
 
       {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
@@ -274,45 +270,27 @@ export default function HomePage() {
         </aside>
       )}
 
-      {!profile.gentleMode && (
-        <section className={styles.section}>
-          <div className={styles.linkRow}>
-            <div>
-              <div className={styles.eyebrow}>Journey</div>
-              <h2 className={styles.sectionTitle}>Recent activity</h2>
+      <section className={styles.section}>
+        <div className={styles.linkRow}>
+          <div>
+            <div className={styles.eyebrow}>Journey</div>
+            <h2 className={styles.sectionTitle}>Recent activity</h2>
+          </div>
+          <Link href="/journey" className={styles.link}>
+            View all
+          </Link>
+        </div>
+        {recentJourney.length === 0 ? (
+          <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div>
+        ) : (
+          recentJourney.map((entry) => (
+            <div key={entry.id} className={styles.card}>
+              <div className={styles.cardTitle}>{entry.title}</div>
+              {formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}
             </div>
-            <Link href="/journey" className={styles.link}>
-              View all
-            </Link>
-          </div>
-          {recentJourney.length === 0 ? (
-            <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div>
-          ) : (
-            recentJourney.map((entry) => (
-              <div key={entry.id} className={styles.card}>
-                <div className={styles.cardTitle}>{entry.title}</div>
-                {formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}
-              </div>
-            ))
-          )}
-        </section>
-      )}
-
-      {profile.gentleMode && (
-        <section className={styles.section}>
-          <div className={styles.linkRow}>
-            <div>
-              <div className={styles.eyebrow}>At your pace</div>
-              <h2 className={styles.sectionTitle}>A small place to land</h2>
-            </div>
-            <Link href="/track/journal" className={styles.link}>Reflect</Link>
-          </div>
-          <div className={styles.emptyRow}>
-            <strong>You do not need to track everything today.</strong>
-            <span>Notes and check-ins are here whenever they feel useful.</span>
-          </div>
-        </section>
-      )}
+          ))
+        )}
+      </section>
 
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?

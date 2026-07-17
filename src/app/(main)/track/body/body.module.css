@@ -34,11 +34,6 @@
   font-weight: 500;
 }
 
-.measurementHidden {
-  margin-top: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
 
 .photoWrap {
   margin: 8px 0;

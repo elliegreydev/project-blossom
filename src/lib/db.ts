@@ -1121,6 +1121,46 @@ function createDb(): BlossomDb {
     await tx.table("socialTransitionPlans").clear();
     await tx.table("socialTransitionTasks").clear();
   });
+  // Gentle Mode is being pulled back for rework - resets the preference on
+  // next load rather than leaving it silently on for a feature that's no
+  // longer reachable in Settings. gentle_mode is synced, so the server-side
+  // column was already reset directly (see reset_gentle_mode.sql); this
+  // just keeps a device that hasn't synced yet consistent too.
+  instance.version(21).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.gentleMode = false;
+    });
+  });
   return instance;
 }
 
