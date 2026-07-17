@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddBodyEntrySheet from "@/components/AddBodyEntrySheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
-import { db, deleteBodyEntry } from "@/lib/db";
+import { db, deleteBodyEntry, LOCAL_PROFILE_ID } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./body.module.css";
 
@@ -15,10 +15,11 @@ function dateLabel(iso: string): string {
 
 export default function BodyProgressPage() {
   const entries = useLiveQuery(() => db.bodyEntries.orderBy("date").reverse().toArray(), []);
+  const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  if (entries === undefined) return null;
+  if (entries === undefined || profile === undefined) return null;
 
   return (
     <div className={styles.screen}>
@@ -61,7 +62,10 @@ export default function BodyProgressPage() {
 
                   {expanded && (
                     <>
-                      {entry.measurements.length > 0 && (
+                      {entry.measurements.length > 0 && profile?.gentleMode && (
+                        <div className={local.measurementHidden}>Measurements are hidden while Gentle Mode is on.</div>
+                      )}
+                      {entry.measurements.length > 0 && !profile?.gentleMode && (
                         <div style={{ marginTop: 6 }}>
                           {entry.measurements.map((m, i) => (
                             <div key={i} className={local.measurementRow}>

@@ -128,7 +128,7 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const auroraSuggestion = auroraHiddenForSession
+  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode
     ? null
     : selectAuroraSuggestion({
         now,
@@ -221,7 +221,7 @@ export default function HomePage() {
         </section>
       </div>
 
-      {supplyHeadsUps.length > 0 && (
+      {!profile.gentleMode && supplyHeadsUps.length > 0 && (
         <section className={styles.section} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
@@ -239,8 +239,8 @@ export default function HomePage() {
         </section>
       )}
 
-      <InstallAppNudge />
-      <SyncNudge />
+      {!profile.gentleMode && <InstallAppNudge />}
+      {!profile.gentleMode && <SyncNudge />}
       <AppNotice />
 
       {auroraSuggestion && (
@@ -269,7 +269,7 @@ export default function HomePage() {
         </aside>
       )}
 
-      <section className={styles.section}>
+      {!profile.gentleMode && <section className={styles.section}>
         <div className={styles.linkRow}>
           <div>
             <div className={styles.eyebrow}>Journey</div>
@@ -289,7 +289,23 @@ export default function HomePage() {
             </div>
           ))
         )}
-      </section>
+      </section>}
+
+      {profile.gentleMode && (
+        <section className={styles.section}>
+          <div className={styles.linkRow}>
+            <div>
+              <div className={styles.eyebrow}>At your pace</div>
+              <h2 className={styles.sectionTitle}>A small place to land</h2>
+            </div>
+            <Link href="/track/journal" className={styles.link}>Reflect</Link>
+          </div>
+          <div className={styles.emptyRow}>
+            <strong>You do not need to track everything today.</strong>
+            <span>Notes and check-ins are here whenever they feel useful.</span>
+          </div>
+        </section>
+      )}
 
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?

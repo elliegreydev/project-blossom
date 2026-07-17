@@ -34,6 +34,7 @@ create table if not exists public.profiles (
   enabled_modules           text[] not null default array['journey','medication','appointments','journal','goals'],
   aurora_mode               text not null default 'gentle' check (aurora_mode in ('quiet','gentle','supportive','disabled')),
   reminder_privacy          text not null default 'discreet' check (reminder_privacy in ('discreet','detailed')),
+  gentle_mode               boolean not null default false,
   sensitive_modules_locked  boolean not null default false,
   app_lock_type             text check (app_lock_type in ('none','pin','biometric')),
   age_confirmed_at          timestamptz,

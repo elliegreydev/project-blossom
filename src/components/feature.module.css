@@ -249,6 +249,20 @@
   background: color-mix(in srgb, var(--pink) 12%, transparent);
 }
 
+.section[data-gentle-mode="true"] .supplyItemButton .itemMeta {
+  font-size: 0;
+}
+
+.section[data-gentle-mode="true"] .supplyItemButton .itemMeta::after {
+  content: "Supply tracking is on";
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.section[data-gentle-mode="true"] .supplyItemButton[data-low-supply="true"] .itemMeta::after {
+  content: "A supply check may be useful";
+}
+
 @media (prefers-color-scheme: dark) {
   .addButton {
     border-color: var(--lavender);
