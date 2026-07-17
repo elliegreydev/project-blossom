@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./settings.module.css";
 
 const CHEVRON = (
@@ -32,6 +34,26 @@ const AURORA_LABELS: Record<string, string> = {
 
 export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
+  const [isStaff, setIsStaff] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+
+    async function checkStaffAccess() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return;
+
+      const { data, error } = await supabase.rpc("is_staff");
+      if (!cancelled && !error) setIsStaff(data === true);
+    }
+
+    void checkStaffAccess();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!profile) return null;
 
   return (
@@ -64,6 +86,15 @@ export default function SettingsPage() {
         <Row href="/legal/privacy" title="Privacy Policy" />
         <Row href="/legal/terms" title="Terms of Service" />
       </div>
+
+      {isStaff && (
+        <div className={styles.adminSection}>
+          <p className={styles.sectionLabel}>App management</p>
+          <div className={styles.group}>
+            <Row href="/admin" title="Admin tools" meta="Staff only" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
