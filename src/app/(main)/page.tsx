@@ -13,7 +13,6 @@ import {
   estimatedMedicationSupplyDays,
   medicationSupplyIsLow,
   careSupplyNeedsAttention,
-  updateDeviceProfile,
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
@@ -102,11 +101,6 @@ export default function HomePage() {
     })
     .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar" }));
 
-  const lowEnergyMedication = dueDoses[0] ?? null;
-  const lowEnergyAppointment = appts
-    .filter((appointment) => new Date(appointment.appointmentAt) >= now)
-    .sort((a, b) => a.appointmentAt.localeCompare(b.appointmentAt))[0] ?? null;
-
   const medicationSupplyHeadsUps = meds
     .filter((medication) => medication.active)
     .flatMap((medication) => {
@@ -137,7 +131,7 @@ export default function HomePage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
 
-  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode || profile.lowEnergyMode
+  const auroraSuggestion = auroraHiddenForSession || profile.gentleMode
     ? null
     : selectAuroraSuggestion({
         now,
@@ -166,10 +160,9 @@ export default function HomePage() {
   const focusContent = focusIntent ? FOCUS_CONTENT[focusIntent] : null;
   const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
 
-  function openFocusAction(action: "checkIn" | "journal" | "lowEnergy") {
+  function openFocusAction(action: "checkIn" | "journal") {
     if (action === "checkIn") setCheckInOpen(true);
     if (action === "journal") setJournalOpen(true);
-    if (action === "lowEnergy") void updateDeviceProfile({ lowEnergyMode: true });
   }
 
   return (
@@ -197,54 +190,7 @@ export default function HomePage() {
 
       <AppNotice />
 
-      {profile.lowEnergyMode ? (
-        <section className={styles.lowEnergy} aria-labelledby="low-energy-title">
-          <div className={styles.lowEnergyIntro}>
-            <div className={styles.eyebrow}>For right now</div>
-            <h2 id="low-energy-title" className={styles.lowEnergyTitle}>Just the essentials</h2>
-          </div>
-
-          <div className={styles.lowEnergyList}>
-            {lowEnergyMedication && (
-              <Link href={lowEnergyMedication.href} className={styles.lowEnergyItem}>
-                <span className={styles.lowEnergyLabel}>Next medication</span>
-                <strong>{lowEnergyMedication.label}</strong>
-                <span>{lowEnergyMedication.meta}</span>
-              </Link>
-            )}
-            {lowEnergyAppointment && (
-              <Link href="/calendar" className={styles.lowEnergyItem}>
-                <span className={styles.lowEnergyLabel}>{new Date(lowEnergyAppointment.appointmentAt) <= todayEnd ? "Today’s appointment" : "Next appointment"}</span>
-                <strong>{lowEnergyAppointment.title}</strong>
-                <span>
-                  {new Date(lowEnergyAppointment.appointmentAt).toLocaleDateString("en-GB", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}{" "}
-                  · {timeLabel(lowEnergyAppointment.appointmentAt)}
-                </span>
-              </Link>
-            )}
-            {!lowEnergyMedication && !lowEnergyAppointment && (
-              <div className={styles.lowEnergyEmpty}>
-                <strong>Nothing else needs your attention today.</strong>
-                <span>You can simply take the day as it comes.</span>
-              </div>
-            )}
-          </div>
-
-          <div className={styles.lowEnergyActions}>
-            <button type="button" className={styles.lowEnergyPrimary} onClick={() => setCheckInOpen(true)}>
-              Check in
-            </button>
-            <button type="button" className={styles.lowEnergySecondary} onClick={() => setJournalOpen(true)}>
-              Write a note
-            </button>
-          </div>
-        </section>
-      ) : (
-        <>
+      <>
         {focusContent ? (
         <section className={styles.focusPanel} aria-labelledby="focus-title">
           <div className={styles.focusHeader}>
@@ -423,7 +369,6 @@ export default function HomePage() {
         </section>
       )}
       </>
-      )}
 
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?
@@ -448,7 +393,7 @@ const FOCUS_CHOICES: Array<{ key: FocusIntent; label: string; description: strin
 const FOCUS_CONTENT: Record<FocusIntent, {
   title: string;
   description: string;
-  actions: Array<{ label: string; description: string; href?: string; action?: "checkIn" | "journal" | "lowEnergy" }>;
+  actions: Array<{ label: string; description: string; href?: string; action?: "checkIn" | "journal" }>;
 }> = {
   organise: {
     title: "A little structure",
@@ -481,7 +426,6 @@ const FOCUS_CONTENT: Record<FocusIntent, {
     title: "Keep it small",
     description: "You do not need to work through everything today.",
     actions: [
-      { label: "Use Low-Energy Mode", description: "Show only the next essential things on Home.", action: "lowEnergy" },
       { label: "A quick check-in", description: "Pause and note only what feels useful.", action: "checkIn" },
       { label: "Need support right now?", description: "Open verified support and crisis information.", href: "/crisis-support" },
     ],
