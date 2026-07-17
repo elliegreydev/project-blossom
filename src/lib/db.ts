@@ -140,6 +140,39 @@ export interface MedicationLog {
   updatedAt: string;
 }
 
+export type MedicationSupplyAdjustmentKind = "initial" | "dose" | "restock" | "correction" | "discarded";
+
+// Supply tracking is optional and deliberately separate from a medication's
+// dose/unit. "amountPerDose" is only the amount to remove from a person-owned
+// stock counter after they mark a dose as taken. Blossom never derives it or
+// makes any treatment recommendation from it.
+export interface MedicationSupply {
+  id: string;
+  medicationId: string;
+  quantity: number;
+  supplyUnit: string;
+  amountPerDose: number;
+  lowSupplyDays: number | null;
+  renewalDate: string | null;
+  expiryDate: string | null;
+  pharmacy: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicationSupplyAdjustment {
+  id: string;
+  supplyId: string;
+  medicationId: string;
+  kind: MedicationSupplyAdjustmentKind;
+  quantityChange: number;
+  quantityAfter: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Appointments ----------------------------------------------------------------
 
 export interface Appointment {
@@ -329,6 +362,8 @@ export type SyncEntity =
   | "journey_event"
   | "medication"
   | "medication_log"
+  | "medication_supply"
+  | "medication_supply_adjustment"
   | "appointment"
   | "check_in"
   | "goal"
@@ -386,6 +421,8 @@ type BlossomDb = Dexie & {
   auroraNudges: EntityTable<AuroraNudgeState, "nudgeKey">;
   medications: EntityTable<Medication, "id">;
   medicationLogs: EntityTable<MedicationLog, "id">;
+  medicationSupplies: EntityTable<MedicationSupply, "id">;
+  medicationSupplyAdjustments: EntityTable<MedicationSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
   checkIns: EntityTable<CheckIn, "id">;
@@ -584,6 +621,31 @@ function createDb(): BlossomDb {
     // account. Refreshed from the network on app load (see
     // src/lib/regionResources.ts's syncRegionResourcesCache) and seeded from
     // a bundled fallback if a device has never been online.
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(12).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
     cachedRegionResources: "id, country, subregion",
     cachedLegalContextNotes: "id, country, subregion",
     syncOutbox: "id, entity, changedAt",
@@ -798,14 +860,124 @@ export async function updateMedication(id: string, patch: Partial<Medication>): 
   });
 }
 
+export function estimatedMedicationSupplyDays(medication: Medication, supply: MedicationSupply): number | null {
+  if (!medication.frequency || supply.amountPerDose <= 0 || supply.quantity < 0) return null;
+  const dosesPerWeek = medication.frequency.times.length * (medication.frequency.days?.length ?? 7);
+  if (dosesPerWeek <= 0) return null;
+  const averageUsePerDay = (dosesPerWeek / 7) * supply.amountPerDose;
+  return averageUsePerDay > 0 ? Math.max(0, Math.floor(supply.quantity / averageUsePerDay)) : null;
+}
+
+export function medicationSupplyIsLow(medication: Medication, supply: MedicationSupply): boolean {
+  const estimatedDays = estimatedMedicationSupplyDays(medication, supply);
+  return estimatedDays !== null && supply.lowSupplyDays !== null && estimatedDays <= supply.lowSupplyDays;
+}
+
+export async function createMedicationSupply(
+  input: Pick<MedicationSupply, "medicationId" | "quantity" | "supplyUnit" | "amountPerDose" | "lowSupplyDays" | "renewalDate" | "expiryDate" | "pharmacy" | "note">
+): Promise<MedicationSupply> {
+  const now = new Date().toISOString();
+  const supply: MedicationSupply = {
+    id: newId(),
+    createdAt: now,
+    updatedAt: now,
+    ...input,
+    quantity: Math.max(0, input.quantity),
+  };
+  const adjustment: MedicationSupplyAdjustment = {
+    id: newId(),
+    supplyId: supply.id,
+    medicationId: supply.medicationId,
+    kind: "initial",
+    quantityChange: supply.quantity,
+    quantityAfter: supply.quantity,
+    note: "Supply tracking started",
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.transaction("rw", db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    await db.medicationSupplies.add(supply);
+    await db.medicationSupplyAdjustments.add(adjustment);
+    await recordSyncChange("medication_supply", supply.id, "upsert", now);
+    await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", now);
+  });
+  return supply;
+}
+
+export async function updateMedicationSupply(
+  id: string,
+  patch: Partial<Omit<MedicationSupply, "id" | "medicationId" | "quantity" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medicationSupplies, db.syncOutbox, async () => {
+    await db.medicationSupplies.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("medication_supply", id, "upsert", changedAt);
+  });
+}
+
+export async function setMedicationSupplyQuantity(
+  supply: MedicationSupply,
+  quantity: number,
+  kind: Extract<MedicationSupplyAdjustmentKind, "restock" | "correction" | "discarded">,
+  note: string | null = null
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  const quantityAfter = Math.max(0, quantity);
+  const adjustment: MedicationSupplyAdjustment = {
+    id: newId(),
+    supplyId: supply.id,
+    medicationId: supply.medicationId,
+    kind,
+    quantityChange: quantityAfter - supply.quantity,
+    quantityAfter,
+    note,
+    createdAt: changedAt,
+    updatedAt: changedAt,
+  };
+  await db.transaction("rw", db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
+    await db.medicationSupplyAdjustments.add(adjustment);
+    await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+    await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
+  });
+}
+
 export async function logDose(
   input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
   const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, ...input };
-  await db.transaction("rw", db.medicationLogs, db.syncOutbox, async () => {
+  await db.transaction("rw", db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationLogs.add(log);
     await recordSyncChange("medication_log", log.id, "upsert", changedAt);
+
+    if (input.status !== "taken") return;
+    const alreadyTaken = input.scheduledTime
+      ? await db.medicationLogs
+          .where("medicationId")
+          .equals(input.medicationId)
+          .and((entry) => entry.id !== log.id && entry.scheduledTime === input.scheduledTime && entry.status === "taken")
+          .first()
+      : null;
+    const supply = await db.medicationSupplies.where("medicationId").equals(input.medicationId).first();
+    if (!supply || alreadyTaken) return;
+
+    const quantityAfter = Math.max(0, supply.quantity - supply.amountPerDose);
+    const adjustment: MedicationSupplyAdjustment = {
+      id: newId(),
+      supplyId: supply.id,
+      medicationId: supply.medicationId,
+      kind: "dose",
+      quantityChange: quantityAfter - supply.quantity,
+      quantityAfter,
+      note: null,
+      createdAt: changedAt,
+      updatedAt: changedAt,
+    };
+    await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
+    await db.medicationSupplyAdjustments.add(adjustment);
+    await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+    await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
   });
 }
 

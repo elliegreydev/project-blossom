@@ -8,6 +8,8 @@ import {
   LOCAL_PROFILE_ID,
   dismissAuroraNudge,
   dueDosesToday,
+  estimatedMedicationSupplyDays,
+  medicationSupplyIsLow,
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
@@ -41,6 +43,7 @@ export default function HomePage() {
   const journeyEvents = useLiveQuery(() => db.journeyEvents.toArray(), []);
   const meds = useLiveQuery(() => db.medications.toArray(), []);
   const medLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
+  const medicationSupplies = useLiveQuery(() => db.medicationSupplies.toArray(), []);
   const appts = useLiveQuery(() => db.appointments.toArray(), []);
   const journalEntries = useLiveQuery(() => db.journalEntries.toArray(), []);
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
@@ -57,6 +60,7 @@ export default function HomePage() {
     journeyEvents === undefined ||
     meds === undefined ||
     medLogs === undefined ||
+    medicationSupplies === undefined ||
     appts === undefined ||
     journalEntries === undefined ||
     checkIns === undefined ||
@@ -90,6 +94,20 @@ export default function HomePage() {
     .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar" }));
 
   const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
+
+  const supplyHeadsUps = meds
+    .filter((medication) => medication.active)
+    .flatMap((medication) => {
+      const supply = medicationSupplies.find((item) => item.medicationId === medication.id);
+      if (!supply || !medicationSupplyIsLow(medication, supply)) return [];
+      const days = estimatedMedicationSupplyDays(medication, supply);
+      return [{
+        id: medication.id,
+        label: medication.name,
+        meta: days === null ? "A supply check may be useful" : `Around ${days} ${days === 1 ? "day" : "days"} left`,
+      }];
+    })
+    .slice(0, 2);
 
   // Coming up: next appointments after today.
   const upcoming = appts
@@ -193,6 +211,24 @@ export default function HomePage() {
           )}
         </section>
       </div>
+
+      {supplyHeadsUps.length > 0 && (
+        <section className={styles.section} aria-labelledby="supply-heads-up-title">
+          <div className={styles.linkRow}>
+            <div>
+              <div className={styles.eyebrow}>Medication</div>
+              <h2 id="supply-heads-up-title" className={styles.sectionTitle}>A small supply heads-up</h2>
+            </div>
+            <Link href="/track/medication" className={styles.link}>Review</Link>
+          </div>
+          {supplyHeadsUps.map((supply) => (
+            <Link key={supply.id} href="/track/medication" className={styles.card}>
+              <div className={styles.cardTitle}>{supply.label}</div>
+              <div className={styles.cardMeta}>{supply.meta}</div>
+            </Link>
+          ))}
+        </section>
+      )}
 
       <InstallAppNudge />
       <SyncNudge />
