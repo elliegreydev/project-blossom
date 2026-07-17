@@ -5,6 +5,25 @@
   gap: 8px;
 }
 
+.editingNote,
+.blankCanvasNote {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.editingNote strong,
+.blankCanvasNote strong {
+  color: var(--text-primary);
+}
+
+.blankCanvasNote {
+  padding: 11px 12px;
+  border-left: 2px solid var(--lavender);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: color-mix(in srgb, var(--lavender) 8%, var(--bg-raised));
+}
+
 .deviceTab,
 .choice,
 .widthButton,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
@@ -52,19 +52,58 @@ function applyPreset(key: (typeof PRESETS)[number]["key"]): HomeLayoutConfig {
   return { ...base, visibleBlocks: [], pinnedTools: [] };
 }
 
+function layoutsMatch(left: HomeLayoutConfig, right: HomeLayoutConfig): boolean {
+  return (
+    left.density === right.density &&
+    left.todayContent === right.todayContent &&
+    left.visibleBlocks.join("|") === right.visibleBlocks.join("|") &&
+    left.order.join("|") === right.order.join("|") &&
+    left.pinnedTools.join("|") === right.pinnedTools.join("|") &&
+    left.order.every((key) => left.blockWidths[key] === right.blockWidths[key])
+  );
+}
+
+function subscribeToScreenLayout(onChange: () => void): () => void {
+  const query = window.matchMedia("(min-width: 720px)");
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function currentScreenLayout(): "phone" | "desktop" {
+  return window.matchMedia("(min-width: 720px)").matches ? "desktop" : "phone";
+}
+
+function serverScreenLayout(): "phone" {
+  return "phone";
+}
+
 export default function HomeSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
-  const [device, setDevice] = useState<"phone" | "desktop">("phone");
+  const detectedDevice = useSyncExternalStore(subscribeToScreenLayout, currentScreenLayout, serverScreenLayout);
+  const [chosenDevice, setChosenDevice] = useState<"phone" | "desktop" | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
   if (!profile) return null;
+
+  // Start on the layout this screen is actually using. The separate layouts
+  // are useful, but making everyone manually spot the right tab was not.
+  const device = chosenDevice ?? detectedDevice;
 
   const layout = device === "phone" ? profile.homePhoneLayout : profile.homeDesktopLayout;
 
-  function save(next: HomeLayoutConfig) {
-    void updateDeviceProfile(device === "phone" ? { homePhoneLayout: next } : { homeDesktopLayout: next });
+  async function save(next: HomeLayoutConfig) {
+    setSaveStatus("saving");
+    try {
+      await updateDeviceProfile(device === "phone" ? { homePhoneLayout: next } : { homeDesktopLayout: next });
+      setSaveStatus("saved");
+      window.setTimeout(() => setSaveStatus("idle"), 1800);
+    } catch {
+      setSaveStatus("error");
+    }
   }
 
   function patch(patchValue: Partial<HomeLayoutConfig>) {
-    save({ ...layout, ...patchValue });
+    void save({ ...layout, ...patchValue });
   }
 
   function toggleBlock(key: HomeBlockKey, enabled: boolean) {
@@ -91,22 +130,33 @@ export default function HomeSettingsPage() {
 
       <div className={local.deviceTabs} role="tablist" aria-label="Choose a Home layout to edit">
         {(["phone", "desktop"] as const).map((item) => (
-          <button key={item} type="button" role="tab" aria-selected={device === item} className={`${local.deviceTab} ${device === item ? local.active : ""}`} onClick={() => setDevice(item)}>
+          <button key={item} type="button" role="tab" aria-selected={device === item} className={`${local.deviceTab} ${device === item ? local.active : ""}`} onClick={() => setChosenDevice(item)}>
             {item === "phone" ? "Phone" : "Desktop"}
           </button>
         ))}
       </div>
 
+      <p className={local.editingNote} aria-live="polite">
+        You&apos;re editing the layout currently used on this <strong>{device}</strong>.
+        {saveStatus === "saving" && " Saving…"}
+        {saveStatus === "saved" && " Saved."}
+        {saveStatus === "error" && " Couldn&apos;t save that change. Please try again."}
+      </p>
+
       <div className={styles.field}>
         <span className={styles.label}>Start with a layout</span>
         <div className={styles.optionGrid}>
-          {PRESETS.map((preset) => (
-            <button key={preset.key} type="button" className={styles.optionCard} onClick={() => save(applyPreset(preset.key))}>
+          {PRESETS.map((preset) => {
+            const active = layoutsMatch(layout, applyPreset(preset.key));
+            return (
+            <button key={preset.key} type="button" aria-pressed={active} className={`${styles.optionCard} ${active ? styles.selected : ""}`} onClick={() => void save(applyPreset(preset.key))}>
               <span className={styles.optionTitle}>{preset.title}</span>
               <span className={styles.optionDesc}>{preset.description}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
+        {layout.visibleBlocks.length === 0 && <p className={local.blankCanvasNote}><strong>Blank canvas is active.</strong> Turn on the blocks you want below, or choose Blossom default to bring them all back.</p>}
       </div>
 
       <div className={styles.field}>
