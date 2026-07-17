@@ -213,6 +213,8 @@ export default function HomePage() {
         </div>
       </header>
 
+      <AppNotice />
+
       {profile.lowEnergyMode ? (
         <section className={styles.lowEnergy} aria-labelledby="low-energy-title">
           <div className={styles.lowEnergyIntro}>
@@ -441,7 +443,6 @@ export default function HomePage() {
       </div>
       )}
 
-      {!profile.lowEnergyMode && <AppNotice />}
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?
       </Link>
