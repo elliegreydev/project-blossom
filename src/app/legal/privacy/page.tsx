@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Draft - last updated 16 July 2026</p>
+          <p className={styles.updated}>Draft - last updated 17 July 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -85,8 +85,9 @@ export default function PrivacyPolicyPage() {
             <h2>How your data is protected</h2>
             <p>
               Synced data is protected by row-level security, meaning the
-              database itself enforces that only your own signed-in account
-              can read or write your rows. Data is encrypted at rest by our
+              database itself enforces that your own signed-in account can
+              read and write your rows - with one exception, described
+              below for support requests. Data is encrypted at rest by our
               hosting provider. Being fully honest about where we are today:
               this is not yet full end-to-end encryption, so it&apos;s
               theoretically possible for someone with direct database
@@ -94,6 +95,26 @@ export default function PrivacyPolicyPage() {
               that&apos;s true of most apps at this stage. We consider this a
               real limitation, not a footnote, and stronger encryption for
               synced data is something we want to build toward.
+            </p>
+          </section>
+
+          <section>
+            <h2>If you contact us for support</h2>
+            <p>
+              If you reach out to us for help with your account, a staff
+              member can open a support case to see your synced account data
+              - your profile, medications and schedules, appointments,
+              goals, and milestones - so they can actually help you.
+            </p>
+            <p>
+              This access is deliberately narrow: it only exists while a
+              case is open for your account, every access is logged
+              (who, when, which case), and it&apos;s switched off the moment
+              the case is closed. It never reaches journal entries,
+              check-in notes, or anything from body/progress, blood test,
+              voice practice, or presentation tracking - those never sync to
+              our servers at all, regardless of support access, so they
+              simply aren&apos;t there to be seen.
             </p>
           </section>
 
@@ -122,8 +143,9 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Support resources</h2>
             <p>
-              The regional support resources shown in the app are a static,
-              human-curated list. Viewing them doesn&apos;t share any data
+              The regional support resources shown in the app are a
+              human-curated list maintained by our team, not pulled from an
+              external directory. Viewing them doesn&apos;t share any data
               with those organisations, and Blossom isn&apos;t affiliated
               with them.
             </p>

@@ -13,12 +13,15 @@ import styles from "./support.module.css";
 export default function SupportSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const links = useLiveQuery(() => db.privateLinks.toArray(), []);
+  const cachedResources = useLiveQuery(() => db.cachedRegionResources.toArray(), []);
+  const cachedLegalNotes = useLiveQuery(() => db.cachedLegalContextNotes.toArray(), []);
   const [addOpen, setAddOpen] = useState(false);
 
-  if (!profile || links === undefined) return null;
+  if (!profile || links === undefined || cachedResources === undefined || cachedLegalNotes === undefined)
+    return null;
 
-  const resources = resourcesForRegion(profile.region, profile.subregion);
-  const legalContext = legalContextFor(profile.region, profile.subregion);
+  const resources = resourcesForRegion(cachedResources, profile.region, profile.subregion);
+  const legalContext = legalContextFor(cachedLegalNotes, profile.region, profile.subregion);
   const placeLabel = [profile.subregion, profile.region].filter(Boolean).join(", ");
 
   return (

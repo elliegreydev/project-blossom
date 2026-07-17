@@ -1,4 +1,8 @@
 import Dexie, { type EntityTable } from "dexie";
+// Type-only import - erased at compile time, so this doesn't create a real
+// runtime circular dependency even though regionResources.ts imports the
+// `db` value from this file.
+import type { ResourceCategory } from "./regionResources";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -350,6 +354,31 @@ export interface SyncState {
   syncing: boolean;
 }
 
+export interface CachedRegionResource {
+  id: string;
+  country: string;
+  subregion: string | null;
+  cityName: string | null;
+  orgName: string;
+  category: ResourceCategory;
+  contactInfo: string;
+  availability: string | null;
+  lastReviewedAt: string;
+  sourceUrl: string;
+  note: string | null;
+}
+
+// Keyed by `${country}|${subregion}` since a legal context note is always
+// subregion-specific (never a whole-country note in this dataset).
+export interface CachedLegalContextNote {
+  id: string;
+  country: string;
+  subregion: string;
+  note: string;
+  sourceUrl: string;
+  lastReviewedAt: string;
+}
+
 type BlossomDb = Dexie & {
   profiles: EntityTable<Profile, "id">;
   milestones: EntityTable<Milestone, "id">;
@@ -368,6 +397,8 @@ type BlossomDb = Dexie & {
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
   notifiedReminders: EntityTable<NotifiedReminder, "key">;
+  cachedRegionResources: EntityTable<CachedRegionResource, "id">;
+  cachedLegalContextNotes: EntityTable<CachedLegalContextNote, "id">;
   syncOutbox: EntityTable<SyncOutboxItem, "id">;
   syncMeta: EntityTable<SyncState, "key">;
 };
@@ -527,6 +558,34 @@ function createDb(): BlossomDb {
     presentationEntries: "id, category, date",
     bodyEntries: "id, date",
     notifiedReminders: "key, firedAt",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(11).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    // Cached copies of the staff-editable Supabase resource tables, so
+    // support resources keep working offline / for local-only users with no
+    // account. Refreshed from the network on app load (see
+    // src/lib/regionResources.ts's syncRegionResourcesCache) and seeded from
+    // a bundled fallback if a device has never been online.
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });

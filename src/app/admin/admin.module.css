@@ -1,0 +1,229 @@
+.page {
+  min-height: 100vh;
+  padding: max(28px, var(--safe-top)) max(20px, var(--safe-right)) max(36px, var(--safe-bottom)) max(20px, var(--safe-left));
+  background: var(--bg);
+}
+
+.shell {
+  width: min(100%, 780px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.navLink {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.navLink.active {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.title {
+  font-size: 24px;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardDesc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.loadingScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: top;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.input,
+.select,
+.textarea {
+  font-family: var(--font-inter);
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--lavender);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.primaryButton {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dangerButton {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--pink);
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.badgeReviewed {
+  background: color-mix(in srgb, var(--mint) 34%, var(--bg-raised));
+  color: #1d6e4f;
+}
+
+.badgeUnreviewed {
+  background: color-mix(in srgb, var(--pink) 30%, var(--bg-raised));
+  color: #9c3f27;
+}
+
+.badgeOpen {
+  background: color-mix(in srgb, var(--pink) 30%, var(--bg-raised));
+  color: #9c3f27;
+}
+
+.badgeClosed {
+  background: color-mix(in srgb, var(--sky) 30%, var(--bg-raised));
+  color: #2a5a8c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primaryButton {
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}

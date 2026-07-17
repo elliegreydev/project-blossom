@@ -12,6 +12,14 @@
 // states came back with no named community org in this research pass and
 // are deliberately left with only national-level fallback resources rather
 // than shipping something invented.
+//
+// As of the staff resource-management build, Supabase's region_resources /
+// legal_context_notes tables are the real source of truth - staff edit
+// those via /admin/resources. The arrays in this file are only the
+// bundled fallback for a device that's never had network access.
+
+import { db } from "./db";
+import { createClient } from "./supabase/client";
 
 export type ResourceCategory =
   | "emergency"
@@ -70,7 +78,12 @@ const CATEGORY_ORDER: ResourceCategory[] = [
   "general",
 ];
 
-export const REGION_RESOURCES: RegionResource[] = [
+// Bundled offline/never-synced fallback - staff now edit the live copy in
+// Supabase via /admin/resources. This array only matters for a device that
+// has never had network access to fetch the live data (see
+// syncRegionResourcesCache below), so it doesn't need to stay perfectly in
+// sync with the DB - just reasonably current.
+const FALLBACK_REGION_RESOURCES: RegionResource[] = [
   {
     id: "uk-samaritans",
     country: "United Kingdom",
@@ -2192,7 +2205,7 @@ export const REGION_RESOURCES: RegionResource[] = [
   },
 ];
 
-export const LEGAL_CONTEXT_NOTES: LegalContextNote[] = [
+const FALLBACK_LEGAL_CONTEXT_NOTES: LegalContextNote[] = [
 {
     country: "Australia",
     subregion: "Northern Territory",
@@ -2384,16 +2397,27 @@ export const LEGAL_CONTEXT_NOTES: LegalContextNote[] = [
   },
 ];
 
-export function resourcesForRegion(country: string | null, subregion: string | null): RegionResource[] {
+// Pure filtering/sorting, given whatever resource list the caller has on
+// hand (live from Dexie's cache via useLiveQuery, or the bundled fallback
+// directly - see syncRegionResourcesCache for how the cache gets filled).
+export function resourcesForRegion(
+  resources: RegionResource[],
+  country: string | null,
+  subregion: string | null
+): RegionResource[] {
   if (!country) return [];
-  return REGION_RESOURCES.filter(
-    (r) => r.country === country && (r.subregion === null || r.subregion === subregion)
-  ).sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+  return resources
+    .filter((r) => r.country === country && (r.subregion === null || r.subregion === subregion))
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
 }
 
-export function legalContextFor(country: string | null, subregion: string | null): LegalContextNote | null {
+export function legalContextFor(
+  notes: LegalContextNote[],
+  country: string | null,
+  subregion: string | null
+): LegalContextNote | null {
   if (!country || !subregion) return null;
-  return LEGAL_CONTEXT_NOTES.find((n) => n.country === country && n.subregion === subregion) ?? null;
+  return notes.find((n) => n.country === country && n.subregion === subregion) ?? null;
 }
 
 export const CATEGORY_LABELS: Record<ResourceCategory, string> = {
@@ -2404,3 +2428,96 @@ export const CATEGORY_LABELS: Record<ResourceCategory, string> = {
   housing: "Housing",
   general: "General information",
 };
+
+function legalNoteId(country: string, subregion: string): string {
+  return `${country}|${subregion}`;
+}
+
+type RegionResourceRow = {
+  id: string;
+  country: string;
+  subregion: string | null;
+  city_name: string | null;
+  org_name: string;
+  category: ResourceCategory;
+  contact_info: string;
+  availability: string | null;
+  source_url: string;
+  note: string | null;
+  last_reviewed_at: string;
+};
+
+type LegalContextNoteRow = {
+  country: string;
+  subregion: string;
+  note: string;
+  source_url: string;
+  last_reviewed_at: string;
+};
+
+function fromResourceRow(row: RegionResourceRow): CachedRegionResourceInput {
+  return {
+    id: row.id,
+    country: row.country,
+    subregion: row.subregion,
+    cityName: row.city_name,
+    orgName: row.org_name,
+    category: row.category,
+    contactInfo: row.contact_info,
+    availability: row.availability,
+    sourceUrl: row.source_url,
+    note: row.note,
+    lastReviewedAt: row.last_reviewed_at,
+  };
+}
+
+function fromLegalNoteRow(row: LegalContextNoteRow): CachedLegalContextNoteInput {
+  return {
+    id: legalNoteId(row.country, row.subregion),
+    country: row.country,
+    subregion: row.subregion,
+    note: row.note,
+    sourceUrl: row.source_url,
+    lastReviewedAt: row.last_reviewed_at,
+  };
+}
+
+type CachedRegionResourceInput = RegionResource;
+type CachedLegalContextNoteInput = LegalContextNote & { id: string };
+
+// Called on every app load (see (main)/layout.tsx). Seeds the local cache
+// from the bundled fallback the first time a device ever opens Blossom (so
+// there's always something to show immediately, even offline), then tries a
+// live fetch from Supabase to replace it with whatever staff have published
+// - resources are public data, so this works with no account and no sign-in.
+export async function syncRegionResourcesCache(): Promise<void> {
+  const cachedCount = await db.cachedRegionResources.count();
+  if (cachedCount === 0) {
+    await db.cachedRegionResources.bulkPut(FALLBACK_REGION_RESOURCES);
+    await db.cachedLegalContextNotes.bulkPut(
+      FALLBACK_LEGAL_CONTEXT_NOTES.map((n) => ({ ...n, id: legalNoteId(n.country, n.subregion) }))
+    );
+  }
+
+  try {
+    const supabase = createClient();
+    const [resourcesRes, notesRes] = await Promise.all([
+      supabase.from("region_resources").select("*"),
+      supabase.from("legal_context_notes").select("*"),
+    ]);
+    if (resourcesRes.error || notesRes.error || !resourcesRes.data || !notesRes.data) return;
+
+    const resources = resourcesRes.data.map((row) => fromResourceRow(row as RegionResourceRow));
+    const notes = notesRes.data.map((row) => fromLegalNoteRow(row as LegalContextNoteRow));
+
+    await db.transaction("rw", db.cachedRegionResources, db.cachedLegalContextNotes, async () => {
+      await db.cachedRegionResources.clear();
+      await db.cachedRegionResources.bulkPut(resources);
+      await db.cachedLegalContextNotes.clear();
+      await db.cachedLegalContextNotes.bulkPut(notes);
+    });
+  } catch {
+    // Offline or the request failed - the cache (fallback or last-fetched)
+    // stays as-is, which is the right behavior rather than clearing it.
+  }
+}
