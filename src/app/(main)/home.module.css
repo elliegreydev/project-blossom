@@ -73,63 +73,6 @@
   gap: 30px;
 }
 
-.homeCanvas {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 30px;
-}
-
-.homeBlock {
-  min-width: 0;
-}
-
-.homeBlockWide,
-.homeBlockHalf {
-  grid-column: 1 / -1;
-}
-
-.homeCanvas[data-density="compact"] {
-  gap: 20px;
-}
-
-.homeCanvas[data-density="spacious"] {
-  gap: 42px;
-}
-
-.homeCanvas[data-density="compact"] .card {
-  padding-block: 10px;
-}
-
-.homeCanvas[data-density="spacious"] .card,
-.homeCanvas[data-density="spacious"] .focusChoice,
-.homeCanvas[data-density="spacious"] .focusAction {
-  padding: 18px;
-}
-
-.pinnedTools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 14px;
-}
-
-.pinnedTool {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--bg-raised);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.pinnedTool:hover {
-  border-color: color-mix(in srgb, var(--lavender) 48%, var(--border));
-}
-
 .focusPicker,
 .focusPanel {
   display: flex;
@@ -507,23 +450,6 @@ a.card:hover {
   .overviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 48px;
-  }
-
-  .homeCanvas {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 36px 48px;
-  }
-
-  .homeBlockHalf {
-    grid-column: span 1;
-  }
-
-  .homeCanvas[data-density="compact"] {
-    gap: 24px 30px;
-  }
-
-  .homeCanvas[data-density="spacious"] {
-    gap: 48px 64px;
   }
 }
 
