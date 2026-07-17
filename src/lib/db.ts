@@ -20,6 +20,11 @@ export interface Profile {
   displayName: string | null;
   pronouns: string | null;
   region: string | null;
+  // State/province/nation within region, e.g. "Texas" or "Scotland". Only
+  // meaningful for countries with real sub-national variation - see
+  // SUBREGIONS in regionResources.ts. Null for countries without one (e.g.
+  // Ireland) or if the user hasn't picked one yet.
+  subregion: string | null;
   dateFormat: string | null;
   hrtStatus: HrtStatus;
   enabledModules: ModuleKey[];
@@ -547,6 +552,7 @@ export const DEFAULT_PROFILE: Profile = {
   displayName: null,
   pronouns: null,
   region: null,
+  subregion: null,
   dateFormat: null,
   hrtStatus: null,
   enabledModules: ["medication", "appointments", "journal", "goals", "journey"],
@@ -582,6 +588,10 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.textSize === undefined) backfill.textSize = "normal";
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.timezone === undefined) backfill.timezone = null;
+  if (existing.subregion === undefined) backfill.subregion = null;
+  // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
+  // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
+  if (existing.region === "UK") backfill.region = "United Kingdom";
   if (existing.updatedAt === undefined) backfill.updatedAt = existing.createdAt;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);

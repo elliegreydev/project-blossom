@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import { db, LOCAL_PROFILE_ID, updateProfile, type HrtStatus } from "@/lib/db";
+import { COUNTRIES, SUBREGIONS } from "@/lib/regionResources";
 import styles from "@/components/settingsForm.module.css";
 
 const HRT_OPTIONS: { key: NonNullable<HrtStatus>; title: string }[] = [
@@ -62,12 +63,48 @@ export default function ProfileSettingsPage() {
       </div>
 
       <div className={styles.field}>
-        <span className={styles.label}>Region</span>
-        <input className={styles.input} value="UK" disabled />
-        <span className={styles.hint}>
-          Only the UK is available right now. More regions are on the way.
-        </span>
+        <span className={styles.label}>Country</span>
+        <select
+          className={styles.select}
+          value={profile.region ?? ""}
+          onChange={(e) =>
+            updateProfile({ region: e.target.value || null, subregion: null })
+          }
+        >
+          <option value="">Prefer not to say</option>
+          {COUNTRIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
+
+      {profile.region && SUBREGIONS[profile.region as keyof typeof SUBREGIONS] && (
+        <div className={styles.field}>
+          <span className={styles.label}>
+            {profile.region === "United States"
+              ? "State"
+              : profile.region === "Canada"
+                ? "Province or territory"
+                : profile.region === "Australia"
+                  ? "State or territory"
+                  : "Nation"}
+          </span>
+          <select
+            className={styles.select}
+            value={profile.subregion ?? ""}
+            onChange={(e) => updateProfile({ subregion: e.target.value || null })}
+          >
+            <option value="">Prefer not to say</option>
+            {SUBREGIONS[profile.region as keyof typeof SUBREGIONS]!.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className={styles.field}>
         <span className={styles.label}>HRT tracking</span>

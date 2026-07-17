@@ -86,6 +86,22 @@
   border-color: var(--lavender);
 }
 
+.select {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.select:focus {
+  border-color: var(--lavender);
+}
+
 .optionGrid {
   display: flex;
   flex-direction: column;

@@ -38,6 +38,21 @@
   border-color: var(--lavender);
 }
 
+.select {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.select:focus {
+  border-color: var(--lavender);
+}
+
 .input:disabled {
   opacity: 0.5;
 }

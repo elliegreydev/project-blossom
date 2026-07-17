@@ -43,3 +43,36 @@
   color: var(--text-primary);
   line-height: 1.5;
 }
+
+.resourceCity {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.legalContext {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--pink) 55%, var(--border));
+  background: color-mix(in srgb, var(--pink) 10%, var(--bg-raised));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.legalContextLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.legalContextNote {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}

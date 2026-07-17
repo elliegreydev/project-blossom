@@ -14,6 +14,7 @@ import {
   updateProfile,
   LOCAL_PROFILE_ID,
 } from "@/lib/db";
+import { COUNTRIES, SUBREGIONS } from "@/lib/regionResources";
 
 const TOTAL_STEPS = 8;
 
@@ -46,7 +47,8 @@ export default function OnboardingPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [pronouns, setPronouns] = useState("");
-  const [region, setRegion] = useState("UK");
+  const [region, setRegion] = useState("");
+  const [subregion, setSubregion] = useState("");
   const [hrtStatus, setHrtStatus] = useState<HrtStatus>(null);
   const [modules, setModules] = useState<ModuleKey[]>(MODULES.map((m) => m.key));
   const [auroraMode, setAuroraMode] = useState<AuroraMode>("gentle");
@@ -63,7 +65,8 @@ export default function OnboardingPage() {
       setStep(p.onboardingStep ?? 0);
       setDisplayName(p.displayName ?? "");
       setPronouns(p.pronouns ?? "");
-      setRegion(p.region ?? "UK");
+      setRegion(p.region ?? "");
+      setSubregion(p.subregion ?? "");
       setHrtStatus(p.hrtStatus);
       setModules(p.enabledModules?.length ? p.enabledModules : MODULES.map((m) => m.key));
       setAuroraMode(p.auroraMode ?? "gentle");
@@ -87,6 +90,7 @@ export default function OnboardingPage() {
       displayName: displayName.trim() || null,
       pronouns: pronouns.trim() || null,
       region: region || null,
+      subregion: subregion || null,
       hrtStatus,
       enabledModules: modules,
       auroraMode,
@@ -189,13 +193,47 @@ export default function OnboardingPage() {
             <div className={styles.eyebrow}>Region</div>
             <h1 className={styles.title}>Where are you based?</h1>
             <p className={styles.subtitle}>
-              This helps us show relevant support resources and date formats. Only UK
-              content is available for now. More regions are on the way.
+              This helps us show relevant support resources. More countries will be
+              added over time - if yours isn&apos;t listed yet, you can skip this.
             </p>
             <div className={styles.field}>
-              <span className={styles.label}>Region</span>
-              <input className={styles.input} value={region} disabled />
+              <span className={styles.label}>Country</span>
+              <select
+                className={styles.select}
+                value={region}
+                onChange={(e) => {
+                  setRegion(e.target.value);
+                  setSubregion("");
+                }}
+              >
+                <option value="">Prefer not to say</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {region && SUBREGIONS[region as keyof typeof SUBREGIONS] && (
+              <div className={styles.field}>
+                <span className={styles.label}>
+                  {region === "United States" ? "State" : region === "Canada" ? "Province or territory" : region === "Australia" ? "State or territory" : "Nation"}
+                </span>
+                <select
+                  className={styles.select}
+                  value={subregion}
+                  onChange={(e) => setSubregion(e.target.value)}
+                >
+                  <option value="">Prefer not to say</option>
+                  {SUBREGIONS[region as keyof typeof SUBREGIONS]!.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </>
         )}
 

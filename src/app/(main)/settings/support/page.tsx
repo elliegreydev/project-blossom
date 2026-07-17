@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddPrivateLinkSheet from "@/components/AddPrivateLinkSheet";
 import { db, LOCAL_PROFILE_ID, deletePrivateLink } from "@/lib/db";
-import { resourcesForRegion, CATEGORY_LABELS } from "@/lib/regionResources";
+import { resourcesForRegion, legalContextFor, CATEGORY_LABELS } from "@/lib/regionResources";
 import formStyles from "@/components/settingsForm.module.css";
 import featureStyles from "@/components/feature.module.css";
 import styles from "./support.module.css";
@@ -17,7 +17,9 @@ export default function SupportSettingsPage() {
 
   if (!profile || links === undefined) return null;
 
-  const resources = resourcesForRegion(profile.region);
+  const resources = resourcesForRegion(profile.region, profile.subregion);
+  const legalContext = legalContextFor(profile.region, profile.subregion);
+  const placeLabel = [profile.subregion, profile.region].filter(Boolean).join(", ");
 
   return (
     <div className={formStyles.screen}>
@@ -31,18 +33,41 @@ export default function SupportSettingsPage() {
 
       <div className={featureStyles.section}>
         <div className={featureStyles.sectionTitle}>
-          {profile.region ? `${profile.region} resources` : "Resources"}
+          {placeLabel ? `${placeLabel} resources` : "Resources"}
         </div>
+
+        {legalContext && (
+          <div className={styles.legalContext}>
+            <span className={styles.legalContextLabel}>Current legal context</span>
+            <span className={styles.legalContextNote}>{legalContext.note}</span>
+            <a
+              href={legalContext.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.resourceMeta}
+              style={{ textDecoration: "underline" }}
+            >
+              Check the latest status
+            </a>
+            <span className={styles.resourceReviewed}>As of {legalContext.lastReviewedAt}</span>
+          </div>
+        )}
+
         {resources.length === 0 ? (
           <p className={formStyles.hint}>
-            No region-specific resources are available yet for your region.
+            {profile.region
+              ? "We don't have local organizations for your area yet - support resources are still being added."
+              : "Set your country in Settings to see local support resources."}
           </p>
         ) : (
           <div className={featureStyles.list}>
             {resources.map((r) => (
               <div key={r.id} className={styles.resourceItem}>
                 <span className={styles.resourceCategory}>{CATEGORY_LABELS[r.category]}</span>
-                <span className={styles.resourceName}>{r.orgName}</span>
+                <span className={styles.resourceName}>
+                  {r.cityName && <span className={styles.resourceCity}>{r.cityName} · </span>}
+                  {r.orgName}
+                </span>
                 <span className={styles.resourceMeta}>{r.contactInfo}</span>
                 {r.availability && <span className={styles.resourceMeta}>{r.availability}</span>}
                 <a
