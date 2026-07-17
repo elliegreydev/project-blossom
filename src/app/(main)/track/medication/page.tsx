@@ -8,6 +8,7 @@ import MedicationSupplySheet from "@/components/MedicationSupplySheet";
 import CareSupplySheet from "@/components/CareSupplySheet";
 import {
   db,
+  LOCAL_PROFILE_ID,
   dueDosesToday,
   estimatedMedicationSupplyDays,
   logDose,
@@ -42,11 +43,12 @@ export default function MedicationPage() {
   const supplyAdjustments = useLiveQuery(() => db.medicationSupplyAdjustments.toArray(), []);
   const careSupplies = useLiveQuery(() => db.careSupplies.toArray(), []);
   const careSupplyAdjustments = useLiveQuery(() => db.careSupplyAdjustments.toArray(), []);
+  const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [sheetOpen, setSheetOpen] = useState(false);
   const [supplyMedication, setSupplyMedication] = useState<Medication | null>(null);
   const [careSupply, setCareSupply] = useState<CareSupply | null | "new">(null);
 
-  if (allMeds === undefined || logs === undefined || supplies === undefined || supplyAdjustments === undefined || careSupplies === undefined || careSupplyAdjustments === undefined) return null;
+  if (allMeds === undefined || logs === undefined || supplies === undefined || supplyAdjustments === undefined || careSupplies === undefined || careSupplyAdjustments === undefined || profile === undefined) return null;
 
   const meds = allMeds.filter((m) => m.active);
   const allSupplies = supplies;
@@ -74,6 +76,7 @@ export default function MedicationPage() {
   function supplyLabel(medication: Medication): string {
     const supply = allSupplies.find((item) => item.medicationId === medication.id);
     if (!supply) return "Set up supply tracking";
+    if (profile?.gentleMode) return medicationSupplyIsLow(medication, supply) ? "A supply check may be useful" : "Supply tracking is on";
     const days = estimatedMedicationSupplyDays(medication, supply);
     if (medicationSupplyIsLow(medication, supply)) return "Supply: running low soon";
     if (days !== null) return `Supply: around ${days} ${days === 1 ? "day" : "days"} left`;
@@ -122,7 +125,7 @@ export default function MedicationPage() {
                                 : "var(--lavender)",
                           }}
                         />
-                        {status === "taken" ? "Taken" : status === "skipped" ? "Skipped" : "Delayed"}
+                        {status === "taken" ? "Taken" : status === "skipped" ? (profile?.gentleMode ? "Not taken" : "Skipped") : "Delayed"}
                       </span>
                     ) : (
                       <div className={styles.doseActions}>
@@ -133,7 +136,7 @@ export default function MedicationPage() {
                           Delayed
                         </button>
                         <button className={styles.doseButton} onClick={() => handleLog(med, slotIso, "skipped")}>
-                          Skipped
+                          {profile?.gentleMode ? "Not today" : "Skipped"}
                         </button>
                       </div>
                     )}
@@ -186,7 +189,7 @@ export default function MedicationPage() {
         </button>
       </div>
 
-      <div className={styles.section}>
+      <div className={styles.section} data-gentle-mode={profile?.gentleMode || undefined}>
         <div className={styles.sectionTitle}>Other supplies</div>
         <p className={styles.sectionNote}>Keep practical items like needles, wipes or a sharps container in one private place.</p>
         {careSupplies.length === 0 ? (

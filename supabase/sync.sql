@@ -2,7 +2,8 @@
 -- Run after schema.sql. This migration is idempotent and safe to re-run.
 
 alter table public.profiles
-  add column if not exists client_updated_at timestamptz;
+  add column if not exists client_updated_at timestamptz,
+  add column if not exists gentle_mode boolean not null default false;
 
 alter table public.milestones
   add column if not exists approximate_date text,

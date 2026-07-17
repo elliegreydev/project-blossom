@@ -34,6 +34,9 @@ export interface Profile {
   enabledModules: ModuleKey[];
   auroraMode: AuroraMode;
   reminderPrivacy: ReminderPrivacy;
+  // A deliberately quieter presentation for people who find tracking or
+  // progress information stressful. It never changes the underlying records.
+  gentleMode: boolean;
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
   ageConfirmedAt: string | null;
@@ -812,6 +815,7 @@ export const DEFAULT_PROFILE: Profile = {
   enabledModules: ["medication", "appointments", "journal", "goals", "journey"],
   auroraMode: "gentle",
   reminderPrivacy: "discreet",
+  gentleMode: false,
   sensitiveModulesLocked: false,
   syncEnabled: false,
   ageConfirmedAt: null,
@@ -842,6 +846,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.textSize === undefined) backfill.textSize = "normal";
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.timezone === undefined) backfill.timezone = null;
+  if (existing.gentleMode === undefined) backfill.gentleMode = false;
   if (existing.subregion === undefined) backfill.subregion = null;
   // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
