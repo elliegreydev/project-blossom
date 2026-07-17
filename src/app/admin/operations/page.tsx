@@ -96,6 +96,10 @@ export default function OperationsPage() {
           <span className={styles.cardTitle}>App notices</span>
           <span className={styles.cardDesc}>Draft a short, expiry-bound maintenance or service notice.</span>
         </Link>
+        <Link href="/admin/roadmap" className={styles.card}>
+          <span className={styles.cardTitle}>Roadmap</span>
+          <span className={styles.cardDesc}>Manage the calm, member-facing view of Blossom&apos;s direction.</span>
+        </Link>
       </div>
 
       <h2 className={styles.cardTitle} style={{ marginTop: 20 }}>Feature availability</h2>
