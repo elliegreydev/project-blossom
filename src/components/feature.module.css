@@ -188,6 +188,32 @@
   border-radius: 8px;
 }
 
+.supplyButton {
+  align-self: flex-start;
+  min-height: 34px;
+  margin: 3px -8px -5px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-family: var(--font-inter);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.supplyButton:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--lavender) 12%, transparent);
+}
+
+.supplyButton[data-low-supply="true"] {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--pink) 15%, transparent);
+}
+
 @media (prefers-color-scheme: dark) {
   .addButton {
     border-color: var(--lavender);
