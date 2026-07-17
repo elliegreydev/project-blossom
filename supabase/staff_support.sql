@@ -25,8 +25,16 @@ create table if not exists public.support_cases (
   status      text not null default 'open' check (status in ('open', 'closed')),
   opened_by   uuid not null references auth.users(id),
   created_at  timestamptz not null default now(),
-  closed_at   timestamptz
+  closed_at   timestamptz,
+  access_expires_at timestamptz not null default (now() + interval '72 hours')
 );
+alter table public.support_cases
+  add column if not exists access_expires_at timestamptz;
+update public.support_cases
+  set access_expires_at = created_at + interval '72 hours'
+  where status = 'open' and access_expires_at is null;
+alter table public.support_cases
+  alter column access_expires_at set default (now() + interval '72 hours');
 create index if not exists support_cases_user_idx on public.support_cases (user_id, status);
 alter table public.support_cases enable row level security;
 
@@ -59,7 +67,9 @@ set search_path = public
 as $$
   select public.is_staff() and exists (
     select 1 from public.support_cases
-    where user_id = target_user_id and status = 'open'
+    where user_id = target_user_id
+      and status = 'open'
+      and access_expires_at > now()
   );
 $$;
 revoke all on function public.has_open_support_case(uuid) from public;

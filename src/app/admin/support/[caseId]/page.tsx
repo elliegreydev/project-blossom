@@ -11,6 +11,7 @@ interface SupportCase {
   status: "open" | "closed";
   created_at: string;
   closed_at: string | null;
+  access_expires_at: string | null;
 }
 
 interface CaseData {
@@ -82,6 +83,18 @@ export default function SupportCaseDetailPage({ params }: { params: Promise<{ ca
     void loadCase();
   }
 
+  async function extendAccess() {
+    setClosing(true);
+    const supabase = createClient();
+    await supabase
+      .from("support_cases")
+      .update({ access_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() })
+      .eq("id", caseId)
+      .eq("status", "open");
+    setClosing(false);
+    void loadCase();
+  }
+
   if (loading) return <p className={styles.subtitle}>Loading…</p>;
   if (!supportCase) return <p className={styles.subtitle}>Case not found.</p>;
 
@@ -94,18 +107,25 @@ export default function SupportCaseDetailPage({ params }: { params: Promise<{ ca
         </span>
         {" "}Opened {new Date(supportCase.created_at).toLocaleString()}
         {supportCase.closed_at && ` · Closed ${new Date(supportCase.closed_at).toLocaleString()}`}
+        {supportCase.access_expires_at && ` · Access until ${new Date(supportCase.access_expires_at).toLocaleString("en-GB")}`}
       </p>
 
       {supportCase.status === "open" && (
-        <button type="button" className={styles.dangerButton} style={{ width: "fit-content" }} onClick={closeCase} disabled={closing}>
-          {closing ? "Closing…" : "Close case"}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className={styles.secondaryButton} style={{ width: "fit-content" }} onClick={extendAccess} disabled={closing}>
+            Extend access 72 hours
+          </button>
+          <button type="button" className={styles.dangerButton} style={{ width: "fit-content" }} onClick={closeCase} disabled={closing}>
+            {closing ? "Closing…" : "Close case"}
+          </button>
+        </div>
       )}
 
-      {supportCase.status === "closed" ? (
+      {supportCase.status === "closed" || (supportCase.access_expires_at !== null && new Date(supportCase.access_expires_at) <= new Date()) ? (
         <p className={styles.subtitle}>
-          This case is closed, so account data is no longer accessible here - that access was
-          scoped to the open period only, not open-ended.
+          {supportCase.status === "closed"
+            ? "This case is closed, so account data is no longer accessible here - that access was scoped to the open period only, not open-ended."
+            : "This case is still listed as open, but its temporary account access has expired. Extend access only if the member still needs active help."}
         </p>
       ) : (
         <>

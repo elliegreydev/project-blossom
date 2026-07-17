@@ -53,6 +53,8 @@ export default function AdminResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [filterCountry, setFilterCountry] = useState<string>("");
   const [filterReviewed, setFilterReviewed] = useState<string>("");
+  const [filterAttention, setFilterAttention] = useState<string>("");
+  const [reviewCutoff] = useState(() => Date.now() - 180 * 24 * 60 * 60 * 1000);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState(emptyDraft());
   const [creating, setCreating] = useState(false);
@@ -140,10 +142,12 @@ export default function AdminResourcesPage() {
     if (filterCountry && r.country !== filterCountry) return false;
     if (filterReviewed === "unreviewed" && r.reviewed_by_staff) return false;
     if (filterReviewed === "reviewed" && !r.reviewed_by_staff) return false;
+    if (filterAttention === "overdue" && new Date(r.last_reviewed_at).getTime() > reviewCutoff) return false;
     return true;
   });
 
   const unreviewedCount = resources.filter((r) => !r.reviewed_by_staff).length;
+  const overdueCount = resources.filter((r) => new Date(r.last_reviewed_at).getTime() <= reviewCutoff).length;
 
   if (loading) return <p className={styles.subtitle}>Loading…</p>;
 
@@ -153,6 +157,7 @@ export default function AdminResourcesPage() {
       <p className={styles.subtitle}>
         {resources.length} resources, {legalNotes.length} legal-context notes.{" "}
         {unreviewedCount > 0 ? `${unreviewedCount} still need your review.` : "All caught up."}
+        {overdueCount > 0 && ` ${overdueCount} have not been checked in six months.`}
       </p>
 
       <div className={styles.formGrid}>
@@ -163,6 +168,13 @@ export default function AdminResourcesPage() {
             {COUNTRIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Attention</span>
+          <select className={styles.select} value={filterAttention} onChange={(e) => setFilterAttention(e.target.value)}>
+            <option value="">Everything</option>
+            <option value="overdue">Review overdue</option>
           </select>
         </div>
         <div className={styles.field}>

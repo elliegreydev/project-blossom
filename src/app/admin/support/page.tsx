@@ -12,6 +12,7 @@ interface SupportCase {
   status: "open" | "closed";
   created_at: string;
   closed_at: string | null;
+  access_expires_at: string | null;
 }
 
 export default function AdminSupportPage() {
@@ -132,6 +133,7 @@ export default function AdminSupportPage() {
             <tr>
               <th>Subject</th>
               <th>Opened</th>
+              <th>Access until</th>
               <th></th>
             </tr>
           </thead>
@@ -140,6 +142,7 @@ export default function AdminSupportPage() {
               <tr key={c.id}>
                 <td>{c.subject}</td>
                 <td>{new Date(c.created_at).toLocaleString()}</td>
+                <td>{c.access_expires_at ? new Date(c.access_expires_at).toLocaleString("en-GB") : "Set when admin operations is enabled"}</td>
                 <td>
                   <Link href={`/admin/support/${c.id}`} className={styles.secondaryButton}>
                     Open
@@ -164,6 +167,7 @@ export default function AdminSupportPage() {
               <th>Subject</th>
               <th>Opened</th>
               <th>Closed</th>
+              <th>Access ended</th>
               <th></th>
             </tr>
           </thead>
@@ -173,6 +177,7 @@ export default function AdminSupportPage() {
                 <td>{c.subject}</td>
                 <td>{new Date(c.created_at).toLocaleDateString()}</td>
                 <td>{c.closed_at ? new Date(c.closed_at).toLocaleDateString() : "-"}</td>
+                <td>{c.access_expires_at ? new Date(c.access_expires_at).toLocaleDateString("en-GB") : "-"}</td>
                 <td>
                   <Link href={`/admin/support/${c.id}`} className={styles.secondaryButton}>
                     View
