@@ -183,6 +183,7 @@ create table if not exists public.appointments (
   location          text,
   preparation_note  text,
   outcome_note      text,
+  builder_data      jsonb not null default '{}'::jsonb,
   reminder_settings jsonb,
   rescheduled_from  uuid references public.appointments(id) on delete set null,
   created_at        timestamptz not null default now(),

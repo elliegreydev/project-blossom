@@ -208,6 +208,40 @@ export interface CareSupplyAdjustment {
 
 // Appointments ----------------------------------------------------------------
 
+export interface AppointmentBuilderItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface AppointmentBuilderData {
+  questions: AppointmentBuilderItem[];
+  bringList: AppointmentBuilderItem[];
+  documentsReceived: AppointmentBuilderItem[];
+  followUps: AppointmentBuilderItem[];
+  travelNote: string | null;
+  accessibilityNeeds: string | null;
+  communicationPreferences: string | null;
+  privateNotes: string | null;
+  medicationChangesNote: string | null;
+  completedAt: string | null;
+}
+
+export function emptyAppointmentBuilderData(): AppointmentBuilderData {
+  return {
+    questions: [],
+    bringList: [],
+    documentsReceived: [],
+    followUps: [],
+    travelNote: null,
+    accessibilityNeeds: null,
+    communicationPreferences: null,
+    privateNotes: null,
+    medicationChangesNote: null,
+    completedAt: null,
+  };
+}
+
 export interface Appointment {
   id: string;
   title: string;
@@ -216,6 +250,10 @@ export interface Appointment {
   preparationNote: string | null;
   outcomeNote: string | null;
   rescheduledFrom: string | null;
+  // An optional private workspace for preparing and reflecting on an
+  // appointment. Keeping it alongside the appointment means it stays
+  // local-first and can use the existing, user-only sync path.
+  builderData: AppointmentBuilderData;
   // Minutes before appointmentAt to fire a local reminder. Null means no
   // reminder is configured. Undefined on rows created before this field
   // existed - callers treat that the same as null.
@@ -715,6 +753,37 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+  instance.version(14).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("appointments").toCollection().modify((appointment: Partial<Appointment>) => {
+      appointment.builderData ??= emptyAppointmentBuilderData();
+    });
+  });
   return instance;
 }
 
@@ -1104,13 +1173,14 @@ export async function logDose(
 
 export async function addAppointment(
   input: Pick<Appointment, "title" | "appointmentAt" | "location" | "preparationNote"> &
-    Partial<Pick<Appointment, "reminderMinutesBefore">>
+    Partial<Pick<Appointment, "reminderMinutesBefore" | "rescheduledFrom">>
 ): Promise<Appointment> {
   const now = new Date().toISOString();
   const appointment: Appointment = {
     id: newId(),
     outcomeNote: null,
     rescheduledFrom: null,
+    builderData: emptyAppointmentBuilderData(),
     reminderMinutesBefore: null,
     createdAt: now,
     updatedAt: now,

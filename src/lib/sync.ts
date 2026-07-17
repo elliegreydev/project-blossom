@@ -6,6 +6,7 @@ import {
   LOCAL_PROFILE_ID,
   recordSyncChange,
   type Appointment,
+  emptyAppointmentBuilderData,
   type AuroraMode,
   type CheckIn,
   type DatePrecision,
@@ -85,6 +86,33 @@ function nullableNumber(value: unknown): number | null {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function appointmentBuilderData(value: unknown): Appointment["builderData"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return emptyAppointmentBuilderData();
+  const record = value as Record<string, unknown>;
+  const items = (key: string) => Array.isArray(record[key])
+    ? record[key]
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+      .map((item) => ({
+        id: stringValue(item.id),
+        text: stringValue(item.text),
+        done: item.done === true,
+      }))
+      .filter((item) => item.id && item.text)
+    : [];
+  return {
+    questions: items("questions"),
+    bringList: items("bringList"),
+    documentsReceived: items("documentsReceived"),
+    followUps: items("followUps"),
+    travelNote: nullableString(record.travelNote),
+    accessibilityNeeds: nullableString(record.accessibilityNeeds),
+    communicationPreferences: nullableString(record.communicationPreferences),
+    privateNotes: nullableString(record.privateNotes),
+    medicationChangesNote: nullableString(record.medicationChangesNote),
+    completedAt: nullableString(record.completedAt),
+  };
 }
 
 function normalizedClientTime(localTime: string, clockOffsetMs: number): string {
@@ -277,6 +305,7 @@ async function localPayload(
             preparation_note: item.preparationNote,
             outcome_note: item.outcomeNote,
             rescheduled_from: item.rescheduledFrom,
+            builder_data: item.builderData ?? emptyAppointmentBuilderData(),
             reminder_settings:
               item.reminderMinutesBefore != null ? { minutesBefore: item.reminderMinutesBefore } : null,
             created_at: item.createdAt,
@@ -561,6 +590,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         preparationNote: nullableString(row.preparation_note),
         outcomeNote: nullableString(row.outcome_note),
         rescheduledFrom: nullableString(row.rescheduled_from),
+        builderData: appointmentBuilderData(row.builder_data),
         reminderMinutesBefore: typeof settings?.minutesBefore === "number" ? settings.minutesBefore : null,
         createdAt,
         updatedAt: changedAt,
