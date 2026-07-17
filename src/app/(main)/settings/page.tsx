@@ -83,7 +83,7 @@ export default function SettingsPage() {
       </div>
 
       <div className={styles.group}>
-        <Row href="/roadmap" title="Blossom roadmap" meta="What&apos;s here and what&apos;s next" />
+        <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
         <Row href="/legal/privacy" title="Privacy Policy" />
         <Row href="/legal/terms" title="Terms of Service" />
       </div>
