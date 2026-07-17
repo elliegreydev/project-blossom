@@ -8,6 +8,41 @@ export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
 export type ReminderPrivacy = "discreet" | "detailed";
 export type AccessibilityProfile = "custom" | "lowVision" | "readingComfort" | "lowCognitiveLoad" | "migraineFriendly" | "largeTouchTargets";
+export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges";
+export type HomeDensity = "compact" | "standard" | "spacious";
+export type HomeTodayContent = "both" | "medication" | "appointments" | "none";
+export type HomeShortcutKey = "medication" | "calendar" | "journal" | "goals" | "journey";
+
+export interface HomeLayoutConfig {
+  visibleBlocks: HomeBlockKey[];
+  order: HomeBlockKey[];
+  density: HomeDensity;
+  todayContent: HomeTodayContent;
+  pinnedTools: HomeShortcutKey[];
+  blockWidths: Record<HomeBlockKey, "wide" | "half">;
+}
+
+export const HOME_BLOCK_KEYS: HomeBlockKey[] = ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"];
+
+export function defaultHomeLayout(): HomeLayoutConfig {
+  return {
+    visibleBlocks: ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"],
+    order: ["focus", "today", "upcoming", "pinned", "supplies", "journey", "aurora", "nudges"],
+    density: "standard",
+    todayContent: "both",
+    pinnedTools: [],
+    blockWidths: {
+      focus: "wide",
+      today: "half",
+      upcoming: "half",
+      supplies: "half",
+      pinned: "half",
+      journey: "wide",
+      aurora: "wide",
+      nudges: "wide",
+    },
+  };
+}
 
 export type ModuleKey =
   | "medication"
@@ -41,6 +76,10 @@ export interface Profile {
   // An even smaller Home view for low-capacity days. This is deliberately
   // device-local: it is a temporary presentation choice, not account data.
   lowEnergyMode: boolean;
+  // Home is a per-device space. These choices never enter sync or change what
+  // another device looks like.
+  homePhoneLayout: HomeLayoutConfig;
+  homeDesktopLayout: HomeLayoutConfig;
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
   ageConfirmedAt: string | null;
@@ -826,6 +865,8 @@ export const DEFAULT_PROFILE: Profile = {
   reminderPrivacy: "discreet",
   gentleMode: false,
   lowEnergyMode: false,
+  homePhoneLayout: defaultHomeLayout(),
+  homeDesktopLayout: defaultHomeLayout(),
   sensitiveModulesLocked: false,
   syncEnabled: false,
   ageConfirmedAt: null,
@@ -868,6 +909,8 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.timezone === undefined) backfill.timezone = null;
   if (existing.gentleMode === undefined) backfill.gentleMode = false;
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
+  if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();
+  if (existing.homeDesktopLayout === undefined) backfill.homeDesktopLayout = defaultHomeLayout();
   if (existing.subregion === undefined) backfill.subregion = null;
   // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
@@ -896,6 +939,15 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
     await db.profiles.update(LOCAL_PROFILE_ID, { ...patch, updatedAt: changedAt });
     await recordSyncChange("profile", LOCAL_PROFILE_ID, "upsert", changedAt);
   });
+}
+
+// Personal presentation choices belong to the device they were made on. Keep
+// them out of the sync queue so a calmer phone layout never surprises someone
+// on their desktop (or vice versa).
+export async function updateDeviceProfile(
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout">>
+): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, patch);
 }
 
 function newId(): string {

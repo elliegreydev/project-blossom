@@ -65,6 +65,7 @@ export default function SettingsPage() {
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
         <Row href="/settings/gentle" title="Gentle Mode" meta={profile.gentleMode ? "On" : "Off"} />
         <Row href="/settings/low-energy" title="Low-Energy Mode" meta={profile.lowEnergyMode ? "On" : "Off"} />
+        <Row href="/settings/home" title="Home screen" meta="Customise this device" />
         <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
       </div>
 

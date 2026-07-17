@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
-import { db, LOCAL_PROFILE_ID, updateProfile } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, updateDeviceProfile } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 
 export default function LowEnergyModeSettingsPage() {
@@ -21,7 +21,7 @@ export default function LowEnergyModeSettingsPage() {
         type="button"
         className={`${styles.optionCard} ${enabled ? styles.selected : ""}`}
         aria-pressed={enabled}
-        onClick={() => void updateProfile({ lowEnergyMode: !enabled })}
+        onClick={() => void updateDeviceProfile({ lowEnergyMode: !enabled })}
       >
         <span className={styles.optionTitle}>{enabled ? "Low-Energy Mode is on" : "Turn on Low-Energy Mode"}</span>
         <span className={styles.optionDesc}>

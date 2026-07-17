@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import JournalSheet from "@/components/JournalSheet";
@@ -13,7 +13,9 @@ import {
   estimatedMedicationSupplyDays,
   medicationSupplyIsLow,
   careSupplyNeedsAttention,
-  updateProfile,
+  updateDeviceProfile,
+  type HomeBlockKey,
+  type HomeShortcutKey,
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
@@ -61,6 +63,15 @@ export default function HomePage() {
   const [journalOpen, setJournalOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 720px)");
+    const sync = () => setIsDesktop(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   if (
     !profile ||
@@ -102,7 +113,6 @@ export default function HomePage() {
     })
     .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar" }));
 
-  const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
   const lowEnergyMedication = dueDoses[0] ?? null;
   const lowEnergyAppointment = appts
     .filter((appointment) => new Date(appointment.appointmentAt) >= now)
@@ -165,11 +175,19 @@ export default function HomePage() {
 
   const name = profile.displayName || "there";
   const focusContent = focusIntent ? FOCUS_CONTENT[focusIntent] : null;
+  const homeLayout = isDesktop ? profile.homeDesktopLayout : profile.homePhoneLayout;
+  const visible = (key: HomeBlockKey) => homeLayout.visibleBlocks.includes(key);
+  const blockOrder = (key: HomeBlockKey) => Math.max(0, homeLayout.order.indexOf(key)) + 1;
+  const blockClass = (key: HomeBlockKey) => `${styles.homeBlock} ${homeLayout.blockWidths[key] === "half" ? styles.homeBlockHalf : styles.homeBlockWide}`;
+  const blockStyle = (key: HomeBlockKey) => ({ order: blockOrder(key) });
+  const todayVisible = homeLayout.todayContent === "both" || homeLayout.todayContent === "medication";
+  const appointmentsVisible = homeLayout.todayContent === "both" || homeLayout.todayContent === "appointments";
+  const selectedTodayItems = [...(todayVisible ? dueDoses : []), ...(appointmentsVisible ? todayAppts : [])].slice(0, 3);
 
   function openFocusAction(action: "checkIn" | "journal" | "lowEnergy") {
     if (action === "checkIn") setCheckInOpen(true);
     if (action === "journal") setJournalOpen(true);
-    if (action === "lowEnergy") void updateProfile({ lowEnergyMode: true });
+    if (action === "lowEnergy") void updateDeviceProfile({ lowEnergyMode: true });
   }
 
   return (
@@ -241,8 +259,10 @@ export default function HomePage() {
             </button>
           </div>
         </section>
-      ) : focusContent ? (
-        <section className={styles.focusPanel} aria-labelledby="focus-title">
+      ) : (
+        <div className={styles.homeCanvas} data-density={homeLayout.density}>
+        {focusContent ? (
+        <section className={`${styles.focusPanel} ${blockClass("focus")}`} style={blockStyle("focus")} aria-labelledby="focus-title">
           <div className={styles.focusHeader}>
             <div className={styles.eyebrow}>What would help right now?</div>
             <h2 id="focus-title" className={styles.focusTitle}>{focusContent.title}</h2>
@@ -269,7 +289,7 @@ export default function HomePage() {
         </section>
       ) : (
       <>
-      <section className={styles.focusPicker} aria-labelledby="focus-picker-title">
+      {visible("focus") && <section className={`${styles.focusPicker} ${blockClass("focus")}`} style={blockStyle("focus")} aria-labelledby="focus-picker-title">
         <div className={styles.focusPickerIntro}>
           <div className={styles.eyebrow}>Start where you are</div>
           <h2 id="focus-picker-title" className={styles.focusPickerTitle}>What would help right now?</h2>
@@ -282,26 +302,26 @@ export default function HomePage() {
             </button>
           ))}
         </div>
-      </section>
-      <div className={styles.overviewGrid}>
-        <section className={styles.section}>
+      </section>}
+      {(visible("today") || visible("upcoming")) && <div className={styles.overviewGrid} style={{ order: Math.min(blockOrder("today"), blockOrder("upcoming")) }}>
+        {visible("today") && <section className={`${styles.section} ${blockClass("today")}`}>
           <h2 className={styles.sectionTitle}>Today</h2>
-          {todayItems.length === 0 ? (
+          {homeLayout.todayContent === "none" || selectedTodayItems.length === 0 ? (
             <div className={styles.emptyRow}>
               <strong>Nothing needs you right now.</strong>
               <span>A quiet day is allowed.</span>
             </div>
           ) : (
-            todayItems.map((item) => (
+            selectedTodayItems.map((item) => (
               <Link key={item.id} href={item.href} className={styles.card}>
                 <div className={styles.cardTitle}>{item.label}</div>
                 <div className={styles.cardMeta}>{item.meta}</div>
               </Link>
             ))
           )}
-        </section>
+        </section>}
 
-        <section className={styles.section}>
+        {visible("upcoming") && <section className={`${styles.section} ${blockClass("upcoming")}`}>
           <h2 className={styles.sectionTitle}>Coming up</h2>
           {upcoming.length === 0 ? (
             <div className={styles.emptyRow}>
@@ -323,13 +343,20 @@ export default function HomePage() {
               </Link>
             ))
           )}
-        </section>
-      </div>
+        </section>}
+      </div>}
       </>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && supplyHeadsUps.length > 0 && (
-        <section className={styles.section} aria-labelledby="supply-heads-up-title">
+      {visible("pinned") && homeLayout.pinnedTools.length > 0 && !focusIntent && (
+        <section className={`${styles.section} ${blockClass("pinned")}`} style={blockStyle("pinned")} aria-labelledby="pinned-tools-title">
+          <div className={styles.linkRow}><div><div className={styles.eyebrow}>Your shortcuts</div><h2 id="pinned-tools-title" className={styles.sectionTitle}>Pinned tools</h2></div></div>
+          <div className={styles.pinnedTools}>{homeLayout.pinnedTools.map((tool) => <Link key={tool} href={PINNED_TOOLS[tool].href} className={styles.pinnedTool}>{PINNED_TOOLS[tool].label}</Link>)}</div>
+        </section>
+      )}
+
+      {!profile.gentleMode && !focusIntent && visible("supplies") && supplyHeadsUps.length > 0 && (
+        <section className={`${styles.section} ${blockClass("supplies")}`} style={blockStyle("supplies")} aria-labelledby="supply-heads-up-title">
           <div className={styles.linkRow}>
             <div>
               <div className={styles.eyebrow}>Supplies</div>
@@ -346,12 +373,10 @@ export default function HomePage() {
         </section>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <InstallAppNudge />}
-      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <SyncNudge />}
-      {!profile.lowEnergyMode && !focusIntent && <AppNotice />}
+      {!profile.gentleMode && !focusIntent && visible("nudges") && <div className={blockClass("nudges")} style={blockStyle("nudges")}><InstallAppNudge /><SyncNudge /></div>}
 
-      {!focusIntent && auroraSuggestion && (
-        <aside className={styles.auroraCard} aria-label="Aurora suggestion">
+      {!focusIntent && visible("aurora") && auroraSuggestion && (
+        <aside className={`${styles.auroraCard} ${blockClass("aurora")}`} style={blockStyle("aurora")} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
             <span className={styles.auroraLabel}>{auroraSuggestion.eyebrow}</span>
             <strong className={styles.auroraTitle}>{auroraSuggestion.title}</strong>
@@ -376,7 +401,7 @@ export default function HomePage() {
         </aside>
       )}
 
-      {!profile.gentleMode && !profile.lowEnergyMode && !focusIntent && <section className={styles.section}>
+      {!profile.gentleMode && !focusIntent && visible("journey") && <section className={`${styles.section} ${blockClass("journey")}`} style={blockStyle("journey")}>
         <div className={styles.linkRow}>
           <div>
             <div className={styles.eyebrow}>Journey</div>
@@ -398,8 +423,8 @@ export default function HomePage() {
         )}
       </section>}
 
-      {profile.gentleMode && !profile.lowEnergyMode && !focusIntent && (
-        <section className={styles.section}>
+      {profile.gentleMode && !focusIntent && visible("focus") && (
+        <section className={`${styles.section} ${blockClass("focus")}`} style={blockStyle("focus")}>
           <div className={styles.linkRow}>
             <div>
               <div className={styles.eyebrow}>At your pace</div>
@@ -413,7 +438,10 @@ export default function HomePage() {
           </div>
         </section>
       )}
+      </div>
+      )}
 
+      {!profile.lowEnergyMode && <AppNotice />}
       <Link href="/crisis-support" className={styles.supportLink}>
         Need support right now?
       </Link>
@@ -491,4 +519,12 @@ const FOCUS_CONTENT: Record<FocusIntent, {
       { label: "Help with Blossom", description: "Practical help and support for using the app.", href: "/settings/support" },
     ],
   },
+};
+
+const PINNED_TOOLS: Record<HomeShortcutKey, { label: string; href: string }> = {
+  medication: { label: "Medication", href: "/track/medication" },
+  calendar: { label: "Calendar", href: "/calendar" },
+  journal: { label: "Journal & check-ins", href: "/track/journal" },
+  goals: { label: "Goals", href: "/track/goals" },
+  journey: { label: "Journey", href: "/journey" },
 };
