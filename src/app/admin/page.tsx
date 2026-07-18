@@ -41,6 +41,12 @@ export default function AdminOverviewPage() {
             Open a case to help someone with their account. Every access is logged.
           </span>
         </Link>
+        <Link href="/admin/ideas" className={styles.card}>
+          <span className={styles.cardTitle}>Ideas & bug reports</span>
+          <span className={styles.cardDesc}>
+            Triage feature ideas from the public board and bug reports sent in by users.
+          </span>
+        </Link>
         <Link href="/admin/analytics" className={styles.card}>
           <span className={styles.cardTitle}>Analytics</span>
           <span className={styles.cardDesc}>
