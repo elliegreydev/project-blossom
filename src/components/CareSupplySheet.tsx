@@ -5,12 +5,16 @@ import styles from "./Sheet.module.css";
 import supplyStyles from "./MedicationSupplySheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import {
+  clearCareSupplySnooze,
   createCareSupply,
   setCareSupplyQuantity,
+  snoozeCareSupply,
   updateCareSupply,
   type CareSupply,
   type CareSupplyAdjustment,
 } from "@/lib/db";
+
+const CARE_SUPPLY_WARNING_DAYS = 7;
 
 const CATEGORIES = [
   ["injection", "Injection supply"],
@@ -85,7 +89,35 @@ export default function CareSupplySheet({
     onClose();
   }
 
+  async function snoozeFor(days: number) {
+    if (!supply) return;
+    setSaving(true);
+    await snoozeCareSupply(supply.id, days);
+    setSaving(false);
+    onClose();
+  }
+
+  async function clearSnooze() {
+    if (!supply) return;
+    setSaving(true);
+    await clearCareSupplySnooze(supply.id);
+    setSaving(false);
+    onClose();
+  }
+
   const recentAdjustments = [...adjustments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
+
+  const isSnoozed = Boolean(supply?.snoozedUntil && new Date(supply.snoozedUntil).getTime() > Date.now());
+  const warningDateKey = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + CARE_SUPPLY_WARNING_DAYS);
+    return d.toISOString().slice(0, 10);
+  })();
+  const wouldNeedAttention = Boolean(
+    supply &&
+      ((supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) ||
+        [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some((date) => date !== null && date <= warningDateKey))
+  );
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -116,6 +148,30 @@ export default function CareSupplySheet({
               </div>
             </div>
           </section>
+        )}
+
+        {supply && isSnoozed && (
+          <div className={styles.field}>
+            <span className={styles.label}>Heads-up snoozed</span>
+            <p className={supplyStyles.explainer}>
+              Quiet until {new Date(supply.snoozedUntil!).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.
+            </p>
+            <button type="button" className={styles.tertiaryButton} style={{ alignSelf: "flex-start" }} disabled={saving} onClick={() => void clearSnooze()}>
+              Turn the heads-up back on
+            </button>
+          </div>
+        )}
+
+        {supply && wouldNeedAttention && !isSnoozed && (
+          <div className={styles.field}>
+            <span className={styles.label}>Remind me again later</span>
+            <p className={supplyStyles.explainer}>Quiet this heads-up for a while - it comes back on its own.</p>
+            <div className={supplyStyles.inlineAction}>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(3)}>3 days</button>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(7)}>1 week</button>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(14)}>2 weeks</button>
+            </div>
+          </div>
         )}
 
         <div className={styles.field}>

@@ -18,14 +18,72 @@ export default function BodyProgressPage() {
   const entries = useLiveQuery(() => db.bodyEntries.orderBy("date").reverse().toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"entries" | "byMeasurement">("entries");
 
   if (entries === undefined) return null;
+
+  const byMeasurement = new Map<string, { date: string; value: string }[]>();
+  for (const entry of entries) {
+    for (const measurement of entry.measurements) {
+      const list = byMeasurement.get(measurement.label) ?? [];
+      list.push({ date: entry.date, value: measurement.value });
+      byMeasurement.set(measurement.label, list);
+    }
+  }
+  const measurementGroups = [...byMeasurement.entries()]
+    .map(([label, values]) => ({ label, values: values.sort((a, b) => b.date.localeCompare(a.date)) }))
+    .sort((a, b) => (b.values[0]?.date ?? "").localeCompare(a.values[0]?.date ?? ""));
 
   return (
     <SensitiveModuleGate>
     <div className={styles.screen}>
       <ScreenHeader title="Body & progress" backHref="/track" />
 
+      {entries.length > 0 && (
+        <div className={local.segmented}>
+          <button
+            className={`${local.segment} ${tab === "entries" ? local.active : ""}`}
+            onClick={() => setTab("entries")}
+          >
+            All entries
+          </button>
+          <button
+            className={`${local.segment} ${tab === "byMeasurement" ? local.active : ""}`}
+            onClick={() => setTab("byMeasurement")}
+          >
+            By measurement
+          </button>
+        </div>
+      )}
+
+      {tab === "byMeasurement" && entries.length > 0 ? (
+        <div className={styles.section}>
+          {measurementGroups.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyTitle}>No measurements noted yet</div>
+              <div className={styles.emptySubtitle}>
+                Entries without any measurements won&apos;t show up here - that&apos;s completely fine.
+              </div>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {measurementGroups.map((group) => (
+                <div key={group.label} className={styles.item}>
+                  <div className={styles.itemTitle}>{group.label}</div>
+                  <div className={local.byMeasurementGroup}>
+                    {group.values.map((v, i) => (
+                      <div key={i} className={local.byMeasurementRow}>
+                        <span className={styles.itemMeta}>{dateLabel(v.date)}</span>
+                        <span>{v.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
       <div className={styles.section}>
         {entries.length === 0 ? (
           <div className={styles.empty}>
@@ -98,6 +156,7 @@ export default function BodyProgressPage() {
           + Add entry
         </button>
       </div>
+      )}
 
       {sheetOpen && <AddBodyEntrySheet onClose={() => setSheetOpen(false)} />}
     </div>

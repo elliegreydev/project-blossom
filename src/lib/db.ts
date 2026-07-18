@@ -91,6 +91,11 @@ export interface Profile {
   // accessibility preference set on one device never applies to another.
   appLockEnabled: boolean;
   appLockPinHash: string | null;
+  // A registered platform authenticator (Face ID / Touch ID / Windows
+  // Hello / Android biometric), stored as its base64url credential id.
+  // Device-local like the PIN itself - a biometric enrolled on one device
+  // means nothing on another. See src/lib/webauthn.ts.
+  webauthnCredentialId: string | null;
   // Accessibility
   reduceMotion: boolean;
   textSize: "normal" | "large" | "larger";
@@ -214,6 +219,9 @@ export interface MedicationSupply {
   expiryDate: string | null;
   pharmacy: string | null;
   note: string | null;
+  // A low-supply heads-up can be dismissed for a while rather than only
+  // ever on or off - see snoozeMedicationSupply.
+  snoozedUntil: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -248,6 +256,9 @@ export interface CareSupply {
   provider: string | null;
   batchNumber: string | null;
   note: string | null;
+  // A "needs attention" heads-up can be dismissed for a while rather than
+  // only ever on or off - see snoozeCareSupply.
+  snoozedUntil: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1255,6 +1266,7 @@ export const DEFAULT_PROFILE: Profile = {
   updatedAt: new Date().toISOString(),
   appLockEnabled: false,
   appLockPinHash: null,
+  webauthnCredentialId: null,
   reduceMotion: false,
   textSize: "normal",
   highContrast: false,
@@ -1277,6 +1289,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   const backfill: Partial<Profile> = {};
   if (existing.appLockEnabled === undefined) backfill.appLockEnabled = false;
   if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
+  if (existing.webauthnCredentialId === undefined) backfill.webauthnCredentialId = null;
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
   if (existing.highContrast === undefined) backfill.highContrast = false;
@@ -1461,6 +1474,7 @@ export function estimatedMedicationSupplyDays(medication: Medication, supply: Me
 }
 
 export function medicationSupplyIsLow(medication: Medication, supply: MedicationSupply): boolean {
+  if (supply.snoozedUntil && new Date(supply.snoozedUntil).getTime() > Date.now()) return false;
   const estimatedDays = estimatedMedicationSupplyDays(medication, supply);
   return estimatedDays !== null && supply.lowSupplyDays !== null && estimatedDays <= supply.lowSupplyDays;
 }
@@ -1473,6 +1487,7 @@ export async function createMedicationSupply(
     id: newId(),
     createdAt: now,
     updatedAt: now,
+    snoozedUntil: null,
     ...input,
     quantity: Math.max(0, input.quantity),
   };
@@ -1540,6 +1555,7 @@ export async function setMedicationSupplyQuantity(
 const CARE_SUPPLY_WARNING_DAYS = 7;
 
 export function careSupplyNeedsAttention(supply: CareSupply, today = new Date()): boolean {
+  if (supply.snoozedUntil && new Date(supply.snoozedUntil).getTime() > today.getTime()) return false;
   if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
   const warningKey = new Date(today);
   warningKey.setDate(warningKey.getDate() + CARE_SUPPLY_WARNING_DAYS);
@@ -1548,10 +1564,10 @@ export function careSupplyNeedsAttention(supply: CareSupply, today = new Date())
 }
 
 export async function createCareSupply(
-  input: Omit<CareSupply, "id" | "createdAt" | "updatedAt">
+  input: Omit<CareSupply, "id" | "createdAt" | "updatedAt" | "snoozedUntil">
 ): Promise<CareSupply> {
   const now = new Date().toISOString();
-  const supply: CareSupply = { id: newId(), createdAt: now, updatedAt: now, ...input, quantity: Math.max(0, input.quantity) };
+  const supply: CareSupply = { id: newId(), createdAt: now, updatedAt: now, snoozedUntil: null, ...input, quantity: Math.max(0, input.quantity) };
   const adjustment: CareSupplyAdjustment = {
     id: newId(), supplyId: supply.id, kind: "initial", quantityChange: supply.quantity,
     quantityAfter: supply.quantity, note: "Supply tracking started", createdAt: now, updatedAt: now,
@@ -1594,6 +1610,25 @@ export async function setCareSupplyQuantity(
     await recordSyncChange("care_supply", supply.id, "upsert", changedAt);
     await recordSyncChange("care_supply_adjustment", adjustment.id, "upsert", changedAt);
   });
+}
+
+// Dismisses a low-supply heads-up for a while rather than only ever on or
+// off. It comes back on its own once the snooze passes - nothing else about
+// the supply record changes.
+export async function snoozeMedicationSupply(id: string, days: number): Promise<void> {
+  await updateMedicationSupply(id, { snoozedUntil: new Date(Date.now() + days * 86400000).toISOString() });
+}
+
+export async function clearMedicationSupplySnooze(id: string): Promise<void> {
+  await updateMedicationSupply(id, { snoozedUntil: null });
+}
+
+export async function snoozeCareSupply(id: string, days: number): Promise<void> {
+  await updateCareSupply(id, { snoozedUntil: new Date(Date.now() + days * 86400000).toISOString() });
+}
+
+export async function clearCareSupplySnooze(id: string): Promise<void> {
+  await updateCareSupply(id, { snoozedUntil: null });
 }
 
 export async function logDose(
@@ -2000,7 +2035,7 @@ export async function setAppLockPin(pin: string): Promise<void> {
 }
 
 export async function disableAppLock(): Promise<void> {
-  await updateProfile({ appLockEnabled: false, appLockPinHash: null });
+  await updateProfile({ appLockEnabled: false, appLockPinHash: null, webauthnCredentialId: null });
 }
 
 export async function verifyAppLockPin(pin: string): Promise<boolean> {
@@ -2008,6 +2043,17 @@ export async function verifyAppLockPin(pin: string): Promise<boolean> {
   if (!profile?.appLockPinHash) return true;
   const hash = await hashPin(pin);
   return hash === profile.appLockPinHash;
+}
+
+// Face ID / Touch ID / Windows Hello / Android biometric, as a faster
+// alternative to typing the PIN. Registering doesn't replace the PIN - it's
+// still the fallback if biometrics fail or aren't available.
+export async function setBiometricUnlockCredential(credentialId: string): Promise<void> {
+  await updateProfile({ webauthnCredentialId: credentialId });
+}
+
+export async function clearBiometricUnlockCredential(): Promise<void> {
+  await updateProfile({ webauthnCredentialId: null });
 }
 
 // Data export / deletion -----------------------------------------------------------

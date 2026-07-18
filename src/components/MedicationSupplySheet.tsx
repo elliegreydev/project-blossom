@@ -5,8 +5,11 @@ import styles from "./Sheet.module.css";
 import supplyStyles from "./MedicationSupplySheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import {
+  clearMedicationSupplySnooze,
   createMedicationSupply,
+  estimatedMedicationSupplyDays,
   setMedicationSupplyQuantity,
+  snoozeMedicationSupply,
   updateMedicationSupply,
   type Medication,
   type MedicationSupply,
@@ -98,9 +101,29 @@ export default function MedicationSupplySheet({
     onClose();
   }
 
+  async function snoozeFor(days: number) {
+    if (!supply) return;
+    setSaving(true);
+    await snoozeMedicationSupply(supply.id, days);
+    setSaving(false);
+    onClose();
+  }
+
+  async function clearSnooze() {
+    if (!supply) return;
+    setSaving(true);
+    await clearMedicationSupplySnooze(supply.id);
+    setSaving(false);
+    onClose();
+  }
+
   const recentAdjustments = [...adjustments]
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
     .slice(0, 4);
+
+  const estimatedDaysLeft = supply ? estimatedMedicationSupplyDays(medication, supply) : null;
+  const wouldBeLow = Boolean(supply && supply.lowSupplyDays !== null && estimatedDaysLeft !== null && estimatedDaysLeft <= supply.lowSupplyDays);
+  const isSnoozed = Boolean(supply?.snoozedUntil && new Date(supply.snoozedUntil).getTime() > Date.now());
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -137,6 +160,30 @@ export default function MedicationSupplySheet({
               </div>
             </div>
           </section>
+        )}
+
+        {supply && isSnoozed && (
+          <div className={styles.field}>
+            <span className={styles.label}>Heads-up snoozed</span>
+            <p className={supplyStyles.explainer}>
+              Quiet until {new Date(supply.snoozedUntil!).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.
+            </p>
+            <button type="button" className={styles.tertiaryButton} style={{ alignSelf: "flex-start" }} disabled={saving} onClick={() => void clearSnooze()}>
+              Turn the heads-up back on
+            </button>
+          </div>
+        )}
+
+        {supply && wouldBeLow && !isSnoozed && (
+          <div className={styles.field}>
+            <span className={styles.label}>Remind me again later</span>
+            <p className={supplyStyles.explainer}>Quiet the low-supply heads-up for a while - it comes back on its own.</p>
+            <div className={supplyStyles.inlineAction}>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(3)}>3 days</button>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(7)}>1 week</button>
+              <button type="button" className={styles.tertiaryButton} disabled={saving} onClick={() => void snoozeFor(14)}>2 weeks</button>
+            </div>
+          </div>
         )}
 
         <div className={styles.field}>

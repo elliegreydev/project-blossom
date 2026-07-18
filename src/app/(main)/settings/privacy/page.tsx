@@ -1,18 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
 import PinSetupSheet from "@/components/PinSetupSheet";
-import { db, LOCAL_PROFILE_ID, updateProfile, disableAppLock } from "@/lib/db";
+import {
+  db,
+  LOCAL_PROFILE_ID,
+  updateProfile,
+  disableAppLock,
+  clearBiometricUnlockCredential,
+  setBiometricUnlockCredential,
+} from "@/lib/db";
+import { isPlatformAuthenticatorAvailable, registerBiometricUnlock } from "@/lib/webauthn";
 import styles from "@/components/settingsForm.module.css";
 
 export default function PrivacySettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [pinSetupOpen, setPinSetupOpen] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void isPlatformAuthenticatorAvailable().then((available) => {
+      if (!cancelled) setBiometricSupported(available);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!profile) return null;
+
+  async function toggleBiometric(enable: boolean) {
+    setBiometricError(false);
+    if (!enable) {
+      await clearBiometricUnlockCredential();
+      return;
+    }
+    setBiometricBusy(true);
+    const credentialId = await registerBiometricUnlock();
+    setBiometricBusy(false);
+    if (credentialId) await setBiometricUnlockCredential(credentialId);
+    else setBiometricError(true);
+  }
 
   return (
     <div className={styles.screen}>
@@ -40,6 +74,28 @@ export default function PrivacySettingsPage() {
         >
           Change PIN
         </button>
+      )}
+
+      {profile.appLockEnabled && biometricSupported && (
+        <div className={styles.toggleRow}>
+          <div className={styles.toggleText}>
+            <span className={styles.toggleTitle}>Unlock with Face ID / Touch ID</span>
+            <span className={styles.toggleDesc}>
+              {profile.webauthnCredentialId
+                ? "On - your PIN still works as a fallback"
+                : "A faster alternative to typing your PIN, using this device's own biometric unlock"}
+            </span>
+          </div>
+          <Toggle
+            checked={Boolean(profile.webauthnCredentialId)}
+            onChange={(v) => void toggleBiometric(v)}
+            label="Biometric unlock"
+          />
+        </div>
+      )}
+      {biometricBusy && <p className={styles.hint}>Waiting for your device…</p>}
+      {biometricError && (
+        <p className={styles.hint}>That didn&apos;t work - your PIN is untouched and still works as normal.</p>
       )}
 
       <div className={styles.toggleRow}>

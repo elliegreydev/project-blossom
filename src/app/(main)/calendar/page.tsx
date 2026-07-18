@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import AddAppointmentSheet from "@/components/AddAppointmentSheet";
 import { db, type Appointment } from "@/lib/db";
+import { downloadIcs } from "@/lib/ics";
 import styles from "@/components/feature.module.css";
 
 function dayLabel(iso: string): string {
@@ -28,6 +29,10 @@ export default function CalendarPage() {
   const upcoming = appts.filter((a) => new Date(a.appointmentAt).getTime() >= now);
   const past = appts.filter((a) => new Date(a.appointmentAt).getTime() < now).reverse();
 
+  function slugForFilename(title: string): string {
+    return title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "appointment";
+  }
+
   function renderAppt(a: Appointment) {
     return (
       <div key={a.id} className={styles.item}>
@@ -38,6 +43,13 @@ export default function CalendarPage() {
         <span className={styles.itemMeta}>{dayLabel(a.appointmentAt)}</span>
         {a.location && <span className={styles.itemMeta}>{a.location}</span>}
         {a.preparationNote && <div className={styles.itemBody}>{a.preparationNote}</div>}
+        <button
+          type="button"
+          className={styles.linkButton}
+          onClick={() => downloadIcs(`${slugForFilename(a.title)}.ics`, [a])}
+        >
+          Add to calendar
+        </button>
       </div>
     );
   }
@@ -59,7 +71,17 @@ export default function CalendarPage() {
             </div>
           </div>
         ) : (
-          <div className={styles.list}>{upcoming.map(renderAppt)}</div>
+          <>
+            <button
+              type="button"
+              className={styles.linkButton}
+              style={{ alignSelf: "flex-start", padding: "0 0 4px" }}
+              onClick={() => downloadIcs("blossom-appointments.ics", upcoming)}
+            >
+              Add all to calendar
+            </button>
+            <div className={styles.list}>{upcoming.map(renderAppt)}</div>
+          </>
         )}
         <button className={styles.addButton} onClick={() => setAddOpen(true)}>
           + Add appointment

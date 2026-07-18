@@ -18,6 +18,32 @@
   color: var(--text-primary);
 }
 
+.biometricButton {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--plum);
+  background: var(--plum);
+  color: #fff;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.biometricButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (prefers-color-scheme: dark) {
+  .biometricButton {
+    border-color: var(--lavender);
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}
+
 .dots {
   display: flex;
   gap: 14px;

@@ -12,6 +12,7 @@ export default function DataSettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   async function handleExport() {
     const data = await exportAllData();
@@ -22,6 +23,17 @@ export default function DataSettingsPage() {
     a.download = `blossom-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleExportPdf() {
+    setGeneratingPdf(true);
+    try {
+      const [data, { buildDataExportPdf }] = await Promise.all([exportAllData(), import("@/lib/pdfExport")]);
+      const doc = buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]);
+      doc.save(`blossom-export-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setGeneratingPdf(false);
+    }
   }
 
   async function handleDelete() {
@@ -40,10 +52,18 @@ export default function DataSettingsPage() {
         <span className={styles.label}>Export your data</span>
         <p className={styles.hint}>
           Download everything you&apos;ve added as a single file you can keep.
+          The PDF is meant to actually be read (or brought somewhere) - the
+          JSON is meant to be a complete backup. Neither includes your
+          photos, which stay local-only.
         </p>
-        <button type="button" className={styles.primaryButton} onClick={handleExport}>
-          Export as JSON
-        </button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" className={styles.primaryButton} disabled={generatingPdf} onClick={() => void handleExportPdf()}>
+            {generatingPdf ? "Preparing PDF…" : "Export as PDF"}
+          </button>
+          <button type="button" className={styles.tertiaryButton} onClick={handleExport}>
+            Export as JSON
+          </button>
+        </div>
       </div>
 
       <div className={styles.field}>

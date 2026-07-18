@@ -34,6 +34,16 @@ export default function VoicePracticePage() {
 
   const goalTitle = (goalId: string) => goals.find((g) => g.id === goalId)?.title ?? "Deleted goal";
 
+  const sessionsByGoal = new Map<string, typeof sessions>();
+  for (const session of sessions) {
+    const list = sessionsByGoal.get(session.goalId) ?? [];
+    list.push(session);
+    sessionsByGoal.set(session.goalId, list);
+  }
+  const sessionGroups = [...sessionsByGoal.entries()]
+    .map(([goalId, items]) => ({ goalId, items }))
+    .sort((a, b) => (b.items[0]?.createdAt ?? "").localeCompare(a.items[0]?.createdAt ?? ""));
+
   return (
     <div className={styles.screen}>
       <ScreenHeader title="Voice practice" backHref="/track" />
@@ -107,21 +117,25 @@ export default function VoicePracticePage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {sessions.map((session) => (
-                <div key={session.id} className={styles.item}>
-                  <div className={styles.itemRow}>
-                    <span className={styles.itemTitle}>{goalTitle(session.goalId)}</span>
-                    <span className={styles.itemMeta}>{dateLabel(session.createdAt)}</span>
-                  </div>
-                  <span className={styles.itemMeta}>
-                    {[
-                      session.sessionDuration,
-                      session.comfortRating ? `Comfort ${session.comfortRating}/5` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                  {session.note && <div className={styles.itemBody}>{session.note}</div>}
+              {sessionGroups.map((group) => (
+                <div key={group.goalId} className={styles.item}>
+                  <div className={styles.itemTitle}>{goalTitle(group.goalId)}</div>
+                  {group.items.map((session) => (
+                    <div key={session.id} style={{ marginTop: 8 }}>
+                      <div className={styles.itemRow}>
+                        <span className={styles.itemMeta}>{dateLabel(session.createdAt)}</span>
+                      </div>
+                      <span className={styles.itemMeta}>
+                        {[
+                          session.sessionDuration,
+                          session.comfortRating ? `Comfort ${session.comfortRating}/5` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                      {session.note && <div className={styles.itemBody}>{session.note}</div>}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

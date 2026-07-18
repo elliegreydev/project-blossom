@@ -1,14 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { verifyAppLockPin } from "@/lib/db";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db, LOCAL_PROFILE_ID, verifyAppLockPin } from "@/lib/db";
+import { isPlatformAuthenticatorAvailable, verifyBiometricUnlock } from "@/lib/webauthn";
 import styles from "./AppLockGate.module.css";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
 
 export default function PinEntry({ title, onSuccess }: { title: string; onSuccess: () => void }) {
+  const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricPending, setBiometricPending] = useState(false);
+  const [biometricFailed, setBiometricFailed] = useState(false);
+
+  const credentialId = profile?.webauthnCredentialId ?? null;
+
+  useEffect(() => {
+    if (!credentialId) return;
+    let cancelled = false;
+    void isPlatformAuthenticatorAvailable().then((available) => {
+      if (!cancelled) setBiometricSupported(available);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [credentialId]);
+
+  async function tryBiometric(id: string) {
+    setBiometricPending(true);
+    setBiometricFailed(false);
+    const ok = await verifyBiometricUnlock(id);
+    setBiometricPending(false);
+    if (ok) onSuccess();
+    else setBiometricFailed(true);
+  }
+
+  // Offers biometric unlock the moment it's ready, so most opens need no
+  // tap at all - a cancel or failure just leaves the PIN pad below as the
+  // fallback, same as tapping the button again would.
+  useEffect(() => {
+    if (biometricSupported && credentialId) void tryBiometric(credentialId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [biometricSupported]);
 
   useEffect(() => {
     if (pin.length !== 4) return;
@@ -36,6 +72,16 @@ export default function PinEntry({ title, onSuccess }: { title: string; onSucces
   return (
     <>
       <div className={styles.title}>{title}</div>
+      {credentialId && biometricSupported && (
+        <button
+          type="button"
+          className={styles.biometricButton}
+          disabled={biometricPending}
+          onClick={() => void tryBiometric(credentialId)}
+        >
+          {biometricPending ? "Waiting…" : biometricFailed ? "Try again" : "Unlock with Face ID / Touch ID"}
+        </button>
+      )}
       <div className={styles.dots}>
         {[0, 1, 2, 3].map((i) => (
           <div

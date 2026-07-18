@@ -224,6 +224,7 @@ async function localPayload(
             expiry_date: item.expiryDate,
             pharmacy: item.pharmacy,
             note: item.note,
+            snoozed_until: item.snoozedUntil,
             created_at: item.createdAt,
           }
         : null;
@@ -275,6 +276,7 @@ async function localPayload(
             provider: item.provider,
             batch_number: item.batchNumber,
             note: item.note,
+            snoozed_until: item.snoozedUntil,
             created_at: item.createdAt,
           }
         : null;
@@ -524,6 +526,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         expiryDate: nullableString(row.expiry_date),
         pharmacy: nullableString(row.pharmacy),
         note: nullableString(row.note),
+        snoozedUntil: nullableString(row.snoozed_until),
         createdAt,
         updatedAt: changedAt,
       });
@@ -566,6 +569,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         provider: nullableString(row.provider),
         batchNumber: nullableString(row.batch_number),
         note: nullableString(row.note),
+        snoozedUntil: nullableString(row.snoozed_until),
         createdAt,
         updatedAt: changedAt,
       });
