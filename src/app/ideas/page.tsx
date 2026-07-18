@@ -15,6 +15,7 @@ interface FeatureItem {
   status: FeatureStatus;
   vote_count: number;
   created_at: string;
+  reviewed_at: string | null;
 }
 
 const STATUS_LABELS: Record<FeatureStatus, string> = {
@@ -73,9 +74,12 @@ export default function IdeasPage() {
     setBoardLoading(true);
     const supabase = createClient();
     const { data } = await supabase
-      .from("feedback_items")
-      .select("id,title,description,status,vote_count,created_at")
-      .eq("type", "feature")
+      // A view, not the base table - only ever exposes feature-type rows
+      // and public-safe columns (no review_note/reviewed_by), so a raw
+      // request can't reach staff-internal commentary or bug reports even
+      // if it asks for more than the app requests.
+      .from("feedback_items_public")
+      .select("id,title,description,status,vote_count,created_at,reviewed_at")
       .order(sort === "popular" ? "vote_count" : "created_at", { ascending: false });
     setItems((data as FeatureItem[]) ?? []);
     setBoardLoading(false);
@@ -146,6 +150,11 @@ export default function IdeasPage() {
     setShowSubmit(false);
   }
 
+  const recentlyShipped = items
+    .filter((item) => item.status === "shipped")
+    .sort((a, b) => (b.reviewed_at ?? b.created_at).localeCompare(a.reviewed_at ?? a.created_at))
+    .slice(0, 5);
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -186,6 +195,25 @@ export default function IdeasPage() {
 
         {tab === "board" ? (
           <>
+            {!boardLoading && recentlyShipped.length > 0 && (
+              <div className={styles.shippedSection}>
+                <span className={styles.shippedLabel}>Recently shipped</span>
+                <div className={styles.shippedList}>
+                  {recentlyShipped.map((item) => (
+                    <div key={item.id} className={styles.shippedItem}>
+                      <span className={styles.shippedTitle}>{item.title}</span>
+                      <span className={styles.shippedDate}>
+                        {new Date(item.reviewed_at ?? item.created_at).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className={styles.sortRow}>
               <button
                 type="button"
