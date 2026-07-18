@@ -116,59 +116,57 @@ export default function AdminIdeasPage() {
       {visible.length === 0 ? (
         <p className={styles.subtitle}>Nothing here.</p>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Details</th>
-                <th>Submitted</th>
-                <th>Votes</th>
-                <th>Status</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((item) => {
-                const statusOptions = item.type === "feature" ? FEATURE_STATUSES : BUG_STATUSES;
-                return (
-                  <tr key={item.id}>
-                    <td>
-                      <span className={`${styles.badge} ${item.type === "feature" ? styles.badgeReviewed : styles.badgeUnreviewed}`}>
-                        {item.type === "feature" ? "Idea" : "Bug"}
-                      </span>
-                      <div className={styles.cardTitle} style={{ fontSize: 14, marginTop: 4 }}>{item.title}</div>
-                      <div className={styles.subtitle} style={{ margin: "2px 0 0", maxWidth: 320 }}>{item.description}</div>
-                      {item.contact_email && (
-                        <div className={styles.subtitle} style={{ margin: "2px 0 0" }}>{item.contact_email}</div>
-                      )}
-                    </td>
-                    <td>{new Date(item.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</td>
-                    <td>{item.type === "feature" ? item.vote_count : "—"}</td>
-                    <td>
-                      <select
-                        className={styles.select}
-                        value={item.status}
-                        onChange={(e) => updateStatus(item, e.target.value as Status)}
-                      >
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>{STATUS_LABELS[status]}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        className={styles.input}
-                        style={{ minHeight: 34, width: 160 }}
-                        defaultValue={item.review_note ?? ""}
-                        onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                        placeholder="Internal note"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className={styles.feedbackList}>
+          {visible.map((item) => {
+            const statusOptions = item.type === "feature" ? FEATURE_STATUSES : BUG_STATUSES;
+            return (
+              <div key={item.id} className={styles.feedbackCard}>
+                <div className={styles.feedbackHeader}>
+                  <span className={`${styles.badge} ${item.type === "feature" ? styles.badgeReviewed : styles.badgeUnreviewed}`}>
+                    {item.type === "feature" ? "Idea" : "Bug"}
+                  </span>
+                  <span className={styles.subtitle} style={{ margin: 0 }}>
+                    {new Date(item.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                  </span>
+                </div>
+                <div className={styles.cardTitle} style={{ fontSize: 15 }}>{item.title}</div>
+                <div className={styles.subtitle} style={{ margin: 0 }}>{item.description}</div>
+                {item.contact_email && (
+                  <div className={styles.subtitle} style={{ margin: 0 }}>{item.contact_email}</div>
+                )}
+
+                <div className={styles.feedbackControls}>
+                  {item.type === "feature" && (
+                    <div className={styles.field}>
+                      <span className={styles.label}>Votes</span>
+                      <span className={styles.cardTitle} style={{ fontSize: 14 }}>{item.vote_count}</span>
+                    </div>
+                  )}
+                  <div className={styles.field}>
+                    <span className={styles.label}>Status</span>
+                    <select
+                      className={styles.select}
+                      value={item.status}
+                      onChange={(e) => updateStatus(item, e.target.value as Status)}
+                    >
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <span className={styles.label}>Internal note</span>
+                    <input
+                      className={styles.input}
+                      defaultValue={item.review_note ?? ""}
+                      onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                      placeholder="Internal note"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </>
