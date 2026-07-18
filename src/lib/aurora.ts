@@ -22,7 +22,8 @@ export type AuroraSuggestionKind =
   | "goal"
   | "journey"
   | "voice"
-  | "presentation";
+  | "presentation"
+  | "memory";
 
 export interface AuroraSuggestion {
   key: string;
@@ -55,6 +56,11 @@ export interface AuroraContext {
 type Candidate = AuroraSuggestion & { cooldownDays: number };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function truncate(text: string, max: number): string {
+  const singleLine = text.trim().replace(/\s+/g, " ");
+  return singleLine.length > max ? `${singleLine.slice(0, max - 1).trimEnd()}…` : singleLine;
+}
 
 function validTime(value: string | null | undefined): number | null {
   if (!value) return null;
@@ -298,6 +304,64 @@ function presentationWantToTry(context: AuroraContext): Candidate | null {
   };
 }
 
+// A quiet "on this day" callback, the same idea journaling apps use for
+// memories - but sourced entirely from local data and never framed as a
+// countdown or streak. Only ever looks at entries with an exact date, from a
+// strictly earlier calendar year, so it can't misfire on something from last
+// week.
+function onThisDayMemory(context: AuroraContext): Candidate | null {
+  type Memory = { id: string; date: Date; text: string; href: string };
+
+  const memories: Memory[] = [
+    ...context.journalEntries.map((entry) => ({
+      id: `journal:${entry.id}`,
+      date: new Date(entry.createdAt),
+      text: entry.bodyText,
+      href: "/track/journal",
+    })),
+    ...[...context.milestones, ...context.journeyEvents]
+      .filter((entry) => entry.datePrecision === "exact" && entry.eventDate)
+      .map((entry) => ({
+        id: `journey:${entry.id}`,
+        date: new Date(entry.eventDate as string),
+        text: entry.title,
+        href: "/journey",
+      })),
+    ...context.presentationEntries
+      .filter((entry): entry is typeof entry & { note: string } => !entry.wantToTry && Boolean(entry.note))
+      .map((entry) => ({
+        id: `presentation:${entry.id}`,
+        date: new Date(entry.date),
+        text: entry.note,
+        href: "/track/presentation",
+      })),
+  ];
+
+  const today = memories
+    .filter((memory) => Number.isFinite(memory.date.getTime()) && memory.date.getFullYear() < context.now.getFullYear())
+    .filter(
+      (memory) =>
+        memory.date.getMonth() === context.now.getMonth() && memory.date.getDate() === context.now.getDate()
+    )
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  const memory = today[0];
+  if (!memory) return null;
+
+  const yearsAgo = context.now.getFullYear() - memory.date.getFullYear();
+  return {
+    key: `on_this_day:${memory.id}`,
+    kind: "memory",
+    eyebrow: "On this day",
+    title: `${yearsAgo} year${yearsAgo === 1 ? "" : "s"} ago today`,
+    message: truncate(memory.text, 140),
+    actionLabel: "Revisit",
+    href: memory.href,
+    priority: 35,
+    cooldownDays: 1,
+  };
+}
+
 export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion | null {
   const mode = context.profile.auroraMode;
   if (mode === "disabled" || mode === "quiet") return null;
@@ -311,6 +375,7 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
     firstJourneyStep(context),
     voicePracticeWaiting(context),
     presentationWantToTry(context),
+    onThisDayMemory(context),
   ]
     .filter((candidate): candidate is Candidate => candidate !== null)
     .filter(
