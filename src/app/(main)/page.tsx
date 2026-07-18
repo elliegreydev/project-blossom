@@ -79,13 +79,23 @@ export default function HomePage() {
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
 
+  // A dose slot counts as overdue once it's more than 15 minutes past its
+  // time and still unlogged - matches the point reminders start re-nagging.
+  const OVERDUE_THRESHOLD_MS = 15 * 60 * 1000;
+
   // Today's medication doses not yet logged.
   const dueDoses = meds
     .filter((m) => m.active)
     .flatMap((med) =>
       dueDosesToday(med, now)
         .filter((slot) => !medLogs.some((l) => l.medicationId === med.id && l.scheduledTime === slot))
-        .map((slot) => ({ id: med.id + slot, label: med.name, meta: timeLabel(slot), href: "/track/medication" }))
+        .map((slot) => ({
+          id: med.id + slot,
+          label: med.name,
+          meta: timeLabel(slot),
+          href: "/track/medication",
+          overdue: now.getTime() - new Date(slot).getTime() > OVERDUE_THRESHOLD_MS,
+        }))
     );
 
   // Today's appointments.
@@ -94,9 +104,11 @@ export default function HomePage() {
       const t = new Date(a.appointmentAt);
       return t >= now && t <= todayEnd;
     })
-    .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar" }));
+    .map((a) => ({ id: a.id, label: a.title, meta: timeLabel(a.appointmentAt), href: "/calendar", overdue: false }));
 
-  const todayItems = [...dueDoses, ...todayAppts].slice(0, 3);
+  const todayItems = [...dueDoses, ...todayAppts]
+    .sort((a, b) => (a.overdue === b.overdue ? 0 : a.overdue ? -1 : 1))
+    .slice(0, 3);
 
   const medicationSupplyHeadsUps = meds
     .filter((medication) => medication.active)
@@ -190,9 +202,9 @@ export default function HomePage() {
             </div>
           ) : (
             todayItems.map((item) => (
-              <Link key={item.id} href={item.href} className={styles.card}>
+              <Link key={item.id} href={item.href} className={`${styles.card} ${item.overdue ? styles.cardOverdue : ""}`}>
                 <div className={styles.cardTitle}>{item.label}</div>
-                <div className={styles.cardMeta}>{item.meta}</div>
+                <div className={styles.cardMeta}>{item.overdue ? `Overdue · was due ${item.meta}` : item.meta}</div>
               </Link>
             ))
           )}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { dueAppointmentReminders, dueMedicationReminders } from "@/lib/reminders";
-import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog } from "@/lib/db";
+import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder } from "@/lib/db";
 
 // Triggered every few minutes by the VPS crontab (see docs/PROD_RELEASE.md-
 // style ops notes) with `Authorization: Bearer <CRON_SECRET>`. Only reaches
@@ -55,26 +55,34 @@ export async function GET(request: Request) {
       supabase.from("medications").select("id, user_id, name, route, unit, frequency, active").in("user_id", userIds),
       supabase.from("medication_logs").select("id, user_id, medication_id, scheduled_time, status").in("user_id", userIds),
       supabase.from("appointments").select("id, user_id, title, appointment_at, reminder_settings").in("user_id", userIds),
-      supabase.from("push_notified_reminders").select("user_id, reminder_key").in("user_id", userIds),
+      supabase.from("push_notified_reminders").select("user_id, reminder_key, sent_at, notify_count, snoozed_until").in("user_id", userIds),
     ]);
 
-  const notifiedByUser = new Map<string, Set<string>>();
+  const notifiedByUser = new Map<string, NotifiedReminder[]>();
+  const notifiedStateByCompositeKey = new Map<string, NotifiedReminder>();
   for (const row of alreadyNotified ?? []) {
-    const set = notifiedByUser.get(row.user_id) ?? new Set<string>();
-    set.add(row.reminder_key);
-    notifiedByUser.set(row.user_id, set);
+    const state: NotifiedReminder = {
+      key: row.reminder_key,
+      firedAt: row.sent_at,
+      count: row.notify_count ?? 1,
+      snoozedUntil: row.snoozed_until,
+    };
+    const list = notifiedByUser.get(row.user_id) ?? [];
+    list.push(state);
+    notifiedByUser.set(row.user_id, list);
+    notifiedStateByCompositeKey.set(`${row.user_id}:${row.reminder_key}`, state);
   }
 
   const now = new Date();
   let sent = 0;
-  const newlyNotified: { user_id: string; reminder_key: string }[] = [];
+  const newlyNotified: { user_id: string; reminder_key: string; sent_at: string; notify_count: number; snoozed_until: null }[] = [];
   const deadEndpoints = new Set<string>();
 
   for (const userId of userIds) {
     const profile = (profiles ?? []).find((p) => p.id === userId);
     const timeZone = profile?.timezone || "UTC";
     const detailed = profile?.reminder_privacy === "detailed";
-    const notified = notifiedByUser.get(userId) ?? new Set<string>();
+    const notified = notifiedByUser.get(userId) ?? [];
 
     const meds: Medication[] = (medications ?? [])
       .filter((m) => m.user_id === userId)
@@ -126,11 +134,20 @@ export async function GET(request: Request) {
 
     const userSubs = subscriptions.filter((s) => s.user_id === userId);
     for (const reminder of pending) {
+      const isMedication = reminder.key.startsWith("medication:");
       const payload = JSON.stringify({
         title: detailed ? reminder.detailedTitle : reminder.discreetTitle,
         body: detailed ? reminder.detailedBody : reminder.discreetBody,
         tag: reminder.key,
         url: "/",
+        // Action buttons only make sense for a loggable medication dose -
+        // an appointment reminder just opens the app like before.
+        actions: isMedication
+          ? [
+              { action: "taken", title: "Mark as taken" },
+              { action: "snooze", title: "Snooze 15 min" },
+            ]
+          : undefined,
       });
       for (const sub of userSubs) {
         try {
@@ -143,7 +160,8 @@ export async function GET(request: Request) {
           if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
         }
       }
-      newlyNotified.push({ user_id: userId, reminder_key: reminder.key });
+      const priorCount = notifiedStateByCompositeKey.get(`${userId}:${reminder.key}`)?.count ?? 0;
+      newlyNotified.push({ user_id: userId, reminder_key: reminder.key, sent_at: now.toISOString(), notify_count: priorCount + 1, snoozed_until: null });
     }
   }
 

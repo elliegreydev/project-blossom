@@ -19,11 +19,34 @@ self.addEventListener("push", (event) => {
       icon: "/icon-192.png",
       badge: "/icon-192.png",
       data: { url: payload.url || "/" },
+      actions: Array.isArray(payload.actions) ? payload.actions : undefined,
     })
   );
 });
 
+// "Mark as taken" / "Snooze" - see src/app/api/reminders/action. Both just
+// fire the request in the background and close the notification; neither
+// needs to open or focus a window.
+function sendReminderAction(key, action) {
+  return fetch("/api/reminders/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, action }),
+  }).catch(() => {
+    // Best-effort - if this fails (offline, session expired), the reminder
+    // just re-nags again later like normal instead of erroring visibly.
+  });
+}
+
 self.addEventListener("notificationclick", (event) => {
+  const key = event.notification.tag;
+
+  if (event.action === "taken" || event.action === "snooze") {
+    event.notification.close();
+    event.waitUntil(sendReminderAction(key, event.action));
+    return;
+  }
+
   event.notification.close();
   const url = event.notification.data?.url || "/";
   event.waitUntil(

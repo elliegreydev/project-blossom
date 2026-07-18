@@ -163,9 +163,15 @@ export type MedicationRoute =
   | "other";
 
 // days: null means every day; otherwise 0-6 (Sun-Sat). times: "HH:MM" strings.
+// intervalDays/anchorDate are an alternative to days, for schedules like
+// "every 5 days" that don't line up with the calendar week - when
+// intervalDays is set, days is ignored. anchorDate is a "YYYY-MM-DD" the
+// dose is due on, used to work out which days the cycle lands on.
 export interface MedicationFrequency {
   times: string[];
   days: number[] | null;
+  intervalDays: number | null;
+  anchorDate: string | null;
 }
 
 export interface Medication {
@@ -537,12 +543,16 @@ export interface PrivateLink {
 
 // Local reminders (see src/lib/reminders.ts) -----------------------------------
 // Tracks which reminder slots have already fired a local Notification, so a
-// re-render or app reopen doesn't fire the same reminder twice. Purely
-// operational state - never synced, not part of the data export.
+// re-render or app reopen doesn't fire the same reminder twice - and, since
+// missed reminders now re-fire a couple of times, how many times it's fired
+// and whether it's been snoozed. Purely operational state - never synced,
+// not part of the data export.
 
 export interface NotifiedReminder {
   key: string;
   firedAt: string;
+  count: number;
+  snoozedUntil: string | null;
 }
 
 // Sync (optional account sync; see src/lib/sync.ts) ----------------------------
@@ -1442,9 +1452,11 @@ export async function updateMedication(id: string, patch: Partial<Medication>): 
 
 export function estimatedMedicationSupplyDays(medication: Medication, supply: MedicationSupply): number | null {
   if (!medication.frequency || supply.amountPerDose <= 0 || supply.quantity < 0) return null;
-  const dosesPerWeek = medication.frequency.times.length * (medication.frequency.days?.length ?? 7);
-  if (dosesPerWeek <= 0) return null;
-  const averageUsePerDay = (dosesPerWeek / 7) * supply.amountPerDose;
+  const dosesPerDay = medication.frequency.intervalDays
+    ? medication.frequency.times.length / medication.frequency.intervalDays
+    : (medication.frequency.times.length * (medication.frequency.days?.length ?? 7)) / 7;
+  if (dosesPerDay <= 0) return null;
+  const averageUsePerDay = dosesPerDay * supply.amountPerDose;
   return averageUsePerDay > 0 ? Math.max(0, Math.floor(supply.quantity / averageUsePerDay)) : null;
 }
 
@@ -1811,10 +1823,33 @@ export async function completeGoal(id: string, asMilestone: boolean): Promise<vo
 
 // Given a medication's schedule, list the dose slots expected today as ISO
 // datetimes. Empty when the med has no schedule or isn't scheduled for today.
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function daysBetweenDateKeys(fromDateKey: string, toDateKey: string): number {
+  const [fy, fm, fd] = fromDateKey.split("-").map(Number);
+  const [ty, tm, td] = toDateKey.split("-").map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+// True if todayDateKey falls on the every-intervalDays cycle starting at
+// anchorDate (the anchor day itself counts as due).
+export function isDueByInterval(anchorDate: string, intervalDays: number, todayDateKey: string): boolean {
+  if (intervalDays <= 0) return false;
+  const diff = daysBetweenDateKeys(anchorDate, todayDateKey);
+  return diff >= 0 && diff % intervalDays === 0;
+}
+
 export function dueDosesToday(med: Medication, now: Date): string[] {
   if (!med.frequency || med.frequency.times.length === 0) return [];
-  const weekday = now.getDay();
-  if (med.frequency.days && !med.frequency.days.includes(weekday)) return [];
+  if (med.frequency.intervalDays) {
+    if (!med.frequency.anchorDate) return [];
+    if (!isDueByInterval(med.frequency.anchorDate, med.frequency.intervalDays, localDateKey(now))) return [];
+  } else {
+    const weekday = now.getDay();
+    if (med.frequency.days && !med.frequency.days.includes(weekday)) return [];
+  }
   return med.frequency.times.map((t) => {
     const [h, m] = t.split(":").map(Number);
     const d = new Date(now);
@@ -1825,13 +1860,30 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
 
 // Local reminders --------------------------------------------------------------
 
-export async function notifiedReminderKeys(): Promise<Set<string>> {
-  const rows = await db.notifiedReminders.toArray();
-  return new Set(rows.map((row) => row.key));
+export async function notifiedReminderState(): Promise<NotifiedReminder[]> {
+  return db.notifiedReminders.toArray();
 }
 
 export async function markReminderNotified(key: string): Promise<void> {
-  await db.notifiedReminders.put({ key, firedAt: new Date().toISOString() });
+  const existing = await db.notifiedReminders.get(key);
+  await db.notifiedReminders.put({
+    key,
+    firedAt: new Date().toISOString(),
+    count: (existing?.count ?? 0) + 1,
+    snoozedUntil: null,
+  });
+}
+
+// A snooze delays the next re-nag without counting as a fresh notification -
+// it's still the same one, just later.
+export async function snoozeReminder(key: string, minutes: number): Promise<void> {
+  const existing = await db.notifiedReminders.get(key);
+  await db.notifiedReminders.put({
+    key,
+    firedAt: existing?.firedAt ?? new Date().toISOString(),
+    count: existing?.count ?? 0,
+    snoozedUntil: new Date(Date.now() + minutes * 60 * 1000).toISOString(),
+  });
 }
 
 // Private links -----------------------------------------------------------------

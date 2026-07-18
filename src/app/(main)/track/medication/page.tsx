@@ -168,7 +168,13 @@ export default function MedicationPage() {
                 <span className={styles.itemMeta}>
                   {med.unit ? med.unit + " · " : ""}
                   {med.frequency
-                    ? `${med.frequency.times.join(", ")}${med.frequency.days ? " on set days" : " daily"}`
+                    ? `${med.frequency.times.join(", ")}${
+                        med.frequency.intervalDays
+                          ? ` every ${med.frequency.intervalDays} days`
+                          : med.frequency.days
+                          ? " on set days"
+                          : " daily"
+                      }`
                     : "No schedule"}
                 </span>
                 <button

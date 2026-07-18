@@ -19,6 +19,15 @@ const ROUTES: { key: MedicationRoute; label: string }[] = [
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Deliberately local, not toISOString().slice(0, 10) - that's UTC, which
+// reports "yesterday" for part of the day in any zone ahead of UTC. The
+// due-date check this anchor feeds into (db.ts's isDueByInterval) compares
+// against the local calendar date, so the default has to match.
+function todayLocalDateKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export default function AddMedicationSheet({ onClose }: { onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
   const [name, setName] = useState("");
@@ -26,8 +35,10 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
   const [unit, setUnit] = useState("");
   const [scheduled, setScheduled] = useState(false);
   const [times, setTimes] = useState<string[]>(["09:00"]);
-  const [everyDay, setEveryDay] = useState(true);
+  const [cadence, setCadence] = useState<"everyDay" | "specificDays" | "interval">("everyDay");
   const [days, setDays] = useState<number[]>([]);
+  const [intervalDays, setIntervalDays] = useState(5);
+  const [anchorDate, setAnchorDate] = useState(todayLocalDateKey);
   const [saving, setSaving] = useState(false);
 
   function toggleDay(d: number) {
@@ -46,7 +57,9 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
       route,
       unit: unit.trim() || null,
       frequency: scheduled
-        ? { times: times.filter(Boolean), days: everyDay ? null : days.sort() }
+        ? cadence === "interval"
+          ? { times: times.filter(Boolean), days: null, intervalDays, anchorDate }
+          : { times: times.filter(Boolean), days: cadence === "specificDays" ? days.sort() : null, intervalDays: null, anchorDate: null }
         : null,
     });
     setSaving(false);
@@ -146,20 +159,27 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
               <div className={styles.chipRow} role="group" aria-label="Schedule frequency">
                 <button
                   type="button"
-                  className={`${styles.chip} ${everyDay ? styles.selected : ""}`}
-                  onClick={() => setEveryDay(true)}
+                  className={`${styles.chip} ${cadence === "everyDay" ? styles.selected : ""}`}
+                  onClick={() => setCadence("everyDay")}
                 >
                   Every day
                 </button>
                 <button
                   type="button"
-                  className={`${styles.chip} ${!everyDay ? styles.selected : ""}`}
-                  onClick={() => setEveryDay(false)}
+                  className={`${styles.chip} ${cadence === "specificDays" ? styles.selected : ""}`}
+                  onClick={() => setCadence("specificDays")}
                 >
                   Specific days
                 </button>
+                <button
+                  type="button"
+                  className={`${styles.chip} ${cadence === "interval" ? styles.selected : ""}`}
+                  onClick={() => setCadence("interval")}
+                >
+                  Every X days
+                </button>
               </div>
-              {!everyDay && (
+              {cadence === "specificDays" && (
                 <div className={styles.chipRow} role="group" aria-label="Schedule days">
                   {WEEKDAYS.map((label, d) => (
                     <button
@@ -171,6 +191,37 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
                       {label}
                     </button>
                   ))}
+                </div>
+              )}
+              {cadence === "interval" && (
+                <div className={styles.field} style={{ marginTop: 8 }}>
+                  <label className={styles.label} htmlFor="interval-days-input">
+                    Every
+                    <input
+                      id="interval-days-input"
+                      type="number"
+                      min={2}
+                      max={90}
+                      className={styles.input}
+                      style={{ display: "inline-block", width: 64, margin: "0 6px" }}
+                      value={intervalDays}
+                      onChange={(e) => setIntervalDays(Math.max(2, Math.min(90, Number(e.target.value) || 2)))}
+                    />
+                    days
+                  </label>
+                  <label className={styles.label} htmlFor="anchor-date-input" style={{ marginTop: 10 }}>
+                    Starting from
+                  </label>
+                  <input
+                    id="anchor-date-input"
+                    type="date"
+                    className={styles.input}
+                    value={anchorDate}
+                    onChange={(e) => setAnchorDate(e.target.value)}
+                  />
+                  <span className={styles.fieldHint}>
+                    Your next dose after this one lines up will be exactly {intervalDays} days later.
+                  </span>
                 </div>
               )}
             </div>

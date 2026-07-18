@@ -119,6 +119,21 @@ a.card:hover {
   background: var(--bg-raised);
 }
 
+.cardOverdue {
+  border-left: 3px solid var(--status-attention);
+  padding-left: 9px;
+  background: color-mix(in srgb, var(--status-attention) 10%, transparent);
+}
+
+.cardOverdue:hover {
+  background: color-mix(in srgb, var(--status-attention) 16%, var(--bg-raised));
+}
+
+.cardOverdue .cardMeta {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .cardTitle {
   font-size: 15px;
   font-weight: 600;
