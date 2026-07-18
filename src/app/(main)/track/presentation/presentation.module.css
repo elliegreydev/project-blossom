@@ -44,3 +44,21 @@
   margin: 4px 0;
   max-width: 220px;
 }
+
+.byCategoryGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.byCategoryRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.byCategoryRow:first-child {
+  border-top: 0;
+}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addAppointment } from "@/lib/db";
+import { addAppointment, updateAppointment, type Appointment } from "@/lib/db";
 
 const REMINDER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "No reminder", minutes: null },
@@ -14,27 +14,45 @@ const REMINDER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "3 days before", minutes: 60 * 24 * 3 },
 ];
 
-export default function AddAppointmentSheet({ onClose }: { onClose: () => void }) {
+function toLocalDateTimeParts(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return { date, time };
+}
+
+export default function AddAppointmentSheet({
+  appointment,
+  onClose,
+}: {
+  appointment?: Appointment | null;
+  onClose: () => void;
+}) {
   const dialogRef = useSheetDialog(onClose);
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("09:00");
-  const [location, setLocation] = useState("");
-  const [prep, setPrep] = useState("");
-  const [reminderMinutesBefore, setReminderMinutesBefore] = useState<number | null>(60);
+  const initial = appointment ? toLocalDateTimeParts(appointment.appointmentAt) : null;
+  const [title, setTitle] = useState(appointment?.title ?? "");
+  const [date, setDate] = useState(initial?.date ?? "");
+  const [time, setTime] = useState(initial?.time ?? "09:00");
+  const [location, setLocation] = useState(appointment?.location ?? "");
+  const [prep, setPrep] = useState(appointment?.preparationNote ?? "");
+  const [reminderMinutesBefore, setReminderMinutesBefore] = useState<number | null>(
+    appointment ? appointment.reminderMinutesBefore : 60
+  );
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!title.trim() || !date) return;
     setSaving(true);
     const appointmentAt = new Date(`${date}T${time || "09:00"}`).toISOString();
-    await addAppointment({
+    const input = {
       title: title.trim(),
       appointmentAt,
       location: location.trim() || null,
       preparationNote: prep.trim() || null,
       reminderMinutesBefore,
-    });
+    };
+    if (appointment) await updateAppointment(appointment.id, input);
+    else await addAppointment(input);
     setSaving(false);
     onClose();
   }
@@ -43,7 +61,7 @@ export default function AddAppointmentSheet({ onClose }: { onClose: () => void }
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="appointment-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="appointment-sheet-title" className={styles.title}>Add an appointment</h2>
+        <h2 id="appointment-sheet-title" className={styles.title}>{appointment ? "Edit appointment" : "Add an appointment"}</h2>
 
         <div className={styles.field}>
           <span className={styles.label}>What&apos;s it for?</span>
@@ -115,7 +133,7 @@ export default function AddAppointmentSheet({ onClose }: { onClose: () => void }
             disabled={!title.trim() || !date || saving}
             onClick={save}
           >
-            Add appointment
+            {appointment ? "Save changes" : "Add appointment"}
           </button>
         </div>
       </div>

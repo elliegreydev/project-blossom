@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, LOCAL_PROFILE_ID, type JourneyCategory, type Milestone, type JourneyEvent } from "@/lib/db";
+import {
+  db,
+  LOCAL_PROFILE_ID,
+  deleteMilestone,
+  deleteJourneyEvent,
+  type JourneyCategory,
+  type Milestone,
+  type JourneyEvent,
+} from "@/lib/db";
 import styles from "./journey.module.css";
 
 const CATEGORY_LABELS: Record<JourneyCategory, string> = {
@@ -12,6 +20,10 @@ const CATEGORY_LABELS: Record<JourneyCategory, string> = {
   social: "Social",
   voice_presentation: "Voice & presentation",
 };
+
+function isMilestone(entry: Milestone | JourneyEvent): entry is Milestone {
+  return "templateKey" in entry;
+}
 
 function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
   if (entry.datePrecision === "none" || !entry.eventDate) return null;
@@ -95,6 +107,13 @@ export default function JourneyPage() {
               </div>
               {formatEntryDate(entry) && <time className={styles.entryMeta}>{formatEntryDate(entry)}</time>}
               {entry.note && <div className={styles.entryNote}>{entry.note}</div>}
+              <button
+                type="button"
+                className={styles.entryRemove}
+                onClick={() => (isMilestone(entry) ? deleteMilestone(entry.id) : deleteJourneyEvent(entry.id))}
+              >
+                Remove
+              </button>
             </article>
           ))}
         </div>

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addPresentationEntry, type PresentationCategory } from "@/lib/db";
+import PhotoThumbnail from "./PhotoThumbnail";
+import { addPresentationEntry, updatePresentationEntry, type PresentationCategory, type PresentationEntry } from "@/lib/db";
 
 const CATEGORIES: { key: PresentationCategory; label: string }[] = [
   { key: "outfit", label: "Outfit" },
@@ -15,30 +16,40 @@ const CATEGORIES: { key: PresentationCategory; label: string }[] = [
 ];
 
 export default function AddPresentationEntrySheet({
+  entry,
   defaultWantToTry = false,
   onClose,
 }: {
+  entry?: PresentationEntry | null;
   defaultWantToTry?: boolean;
   onClose: () => void;
 }) {
   const dialogRef = useSheetDialog(onClose);
-  const [category, setCategory] = useState<PresentationCategory>("outfit");
-  const [note, setNote] = useState("");
+  const [category, setCategory] = useState<PresentationCategory>(entry?.category ?? "outfit");
+  const [note, setNote] = useState(entry?.note ?? "");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [confidenceRating, setConfidenceRating] = useState<number | null>(null);
-  const [wantToTry, setWantToTry] = useState(defaultWantToTry);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [confidenceRating, setConfidenceRating] = useState<number | null>(entry?.confidenceRating ?? null);
+  const [wantToTry, setWantToTry] = useState(entry?.wantToTry ?? defaultWantToTry);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     setSaving(true);
-    await addPresentationEntry({
-      date: new Date().toISOString().slice(0, 10),
-      category,
-      note: note.trim() || null,
-      photo: photo,
-      confidenceRating,
-      wantToTry,
-    });
+    if (entry) {
+      const patch: Partial<PresentationEntry> = { category, note: note.trim() || null, confidenceRating, wantToTry };
+      if (photo) patch.photo = photo;
+      else if (removePhoto) patch.photo = null;
+      await updatePresentationEntry(entry.id, patch);
+    } else {
+      await addPresentationEntry({
+        date: new Date().toISOString().slice(0, 10),
+        category,
+        note: note.trim() || null,
+        photo,
+        confidenceRating,
+        wantToTry,
+      });
+    }
     setSaving(false);
     onClose();
   }
@@ -55,7 +66,7 @@ export default function AddPresentationEntrySheet({
       >
         <div className={styles.grabber} />
         <h2 id="presentation-sheet-title" className={styles.title}>
-          {wantToTry ? "Add something to try" : "Add an entry"}
+          {entry ? "Edit entry" : wantToTry ? "Add something to try" : "Add an entry"}
         </h2>
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginTop: -8 }}>
           Any photo you add stays only on this device. It&apos;s never uploaded,
@@ -100,11 +111,27 @@ export default function AddPresentationEntrySheet({
 
         <div className={styles.field}>
           <span className={styles.label}>Photo (optional)</span>
+          {entry?.photo && !removePhoto && !photo && (
+            <div style={{ maxWidth: 220 }}>
+              <PhotoThumbnail photo={entry.photo} alt={CATEGORIES.find((c) => c.key === category)?.label ?? "Photo"} />
+              <button
+                type="button"
+                className={styles.tertiaryButton}
+                style={{ padding: "6px 0" }}
+                onClick={() => setRemovePhoto(true)}
+              >
+                Remove photo
+              </button>
+            </div>
+          )}
           <input
             type="file"
             accept="image/*"
             className={styles.input}
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              setPhoto(e.target.files?.[0] ?? null);
+              setRemovePhoto(false);
+            }}
           />
         </div>
 
@@ -142,7 +169,7 @@ export default function AddPresentationEntrySheet({
             Cancel
           </button>
           <button type="button" className={styles.primaryButton} disabled={saving} onClick={save}>
-            Save
+            {entry ? "Save changes" : "Save"}
           </button>
         </div>
       </div>

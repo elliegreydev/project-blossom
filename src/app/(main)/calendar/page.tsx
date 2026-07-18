@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import AddAppointmentSheet from "@/components/AddAppointmentSheet";
-import { db, type Appointment } from "@/lib/db";
+import { db, deleteAppointment, type Appointment } from "@/lib/db";
 import { downloadIcs } from "@/lib/ics";
 import styles from "@/components/feature.module.css";
 
@@ -22,6 +22,7 @@ function timeLabel(iso: string): string {
 export default function CalendarPage() {
   const appts = useLiveQuery(() => db.appointments.orderBy("appointmentAt").toArray(), []);
   const [addOpen, setAddOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [now] = useState(() => Date.now());
 
   if (appts === undefined) return null;
@@ -36,20 +37,27 @@ export default function CalendarPage() {
   function renderAppt(a: Appointment) {
     return (
       <div key={a.id} className={styles.item}>
-        <div className={styles.itemRow}>
-          <span className={styles.itemTitle}>{a.title}</span>
-          <span className={styles.itemMeta}>{timeLabel(a.appointmentAt)}</span>
-        </div>
-        <span className={styles.itemMeta}>{dayLabel(a.appointmentAt)}</span>
-        {a.location && <span className={styles.itemMeta}>{a.location}</span>}
-        {a.preparationNote && <div className={styles.itemBody}>{a.preparationNote}</div>}
-        <button
-          type="button"
-          className={styles.linkButton}
-          onClick={() => downloadIcs(`${slugForFilename(a.title)}.ics`, [a])}
-        >
-          Add to calendar
+        <button type="button" className={styles.itemButton} onClick={() => setEditingAppointment(a)}>
+          <div className={styles.itemRow}>
+            <span className={styles.itemTitle}>{a.title}</span>
+            <span className={styles.itemMeta}>{timeLabel(a.appointmentAt)}</span>
+          </div>
+          <span className={styles.itemMeta}>{dayLabel(a.appointmentAt)}</span>
+          {a.location && <span className={styles.itemMeta}>{a.location}</span>}
+          {a.preparationNote && <div className={styles.itemBody}>{a.preparationNote}</div>}
         </button>
+        <div className={styles.doseActions}>
+          <button
+            type="button"
+            className={styles.linkButton}
+            onClick={() => downloadIcs(`${slugForFilename(a.title)}.ics`, [a])}
+          >
+            Add to calendar
+          </button>
+          <button type="button" className={styles.linkButton} onClick={() => deleteAppointment(a.id)}>
+            Remove
+          </button>
+        </div>
       </div>
     );
   }
@@ -95,7 +103,15 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {addOpen && <AddAppointmentSheet onClose={() => setAddOpen(false)} />}
+      {(addOpen || editingAppointment) && (
+        <AddAppointmentSheet
+          appointment={editingAppointment}
+          onClose={() => {
+            setAddOpen(false);
+            setEditingAppointment(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addMedication, type MedicationRoute } from "@/lib/db";
+import { addMedication, updateMedication, type Medication, type MedicationRoute } from "@/lib/db";
 
 const ROUTES: { key: MedicationRoute; label: string }[] = [
   { key: "tablet", label: "Tablet / pill" },
@@ -28,17 +28,25 @@ function todayLocalDateKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function AddMedicationSheet({ onClose }: { onClose: () => void }) {
+export default function AddMedicationSheet({
+  medication,
+  onClose,
+}: {
+  medication?: Medication | null;
+  onClose: () => void;
+}) {
   const dialogRef = useSheetDialog(onClose);
-  const [name, setName] = useState("");
-  const [route, setRoute] = useState<MedicationRoute | null>(null);
-  const [unit, setUnit] = useState("");
-  const [scheduled, setScheduled] = useState(false);
-  const [times, setTimes] = useState<string[]>(["09:00"]);
-  const [cadence, setCadence] = useState<"everyDay" | "specificDays" | "interval">("everyDay");
-  const [days, setDays] = useState<number[]>([]);
-  const [intervalDays, setIntervalDays] = useState(5);
-  const [anchorDate, setAnchorDate] = useState(todayLocalDateKey);
+  const [name, setName] = useState(medication?.name ?? "");
+  const [route, setRoute] = useState<MedicationRoute | null>(medication?.route ?? null);
+  const [unit, setUnit] = useState(medication?.unit ?? "");
+  const [scheduled, setScheduled] = useState(Boolean(medication?.frequency));
+  const [times, setTimes] = useState<string[]>(medication?.frequency?.times ?? ["09:00"]);
+  const [cadence, setCadence] = useState<"everyDay" | "specificDays" | "interval">(
+    medication?.frequency?.intervalDays ? "interval" : medication?.frequency?.days ? "specificDays" : "everyDay"
+  );
+  const [days, setDays] = useState<number[]>(medication?.frequency?.days ?? []);
+  const [intervalDays, setIntervalDays] = useState(medication?.frequency?.intervalDays ?? 5);
+  const [anchorDate, setAnchorDate] = useState(medication?.frequency?.anchorDate ?? todayLocalDateKey());
   const [saving, setSaving] = useState(false);
 
   function toggleDay(d: number) {
@@ -52,7 +60,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
   async function save() {
     if (!name.trim()) return;
     setSaving(true);
-    await addMedication({
+    const input = {
       name: name.trim(),
       route,
       unit: unit.trim() || null,
@@ -61,7 +69,9 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
           ? { times: times.filter(Boolean), days: null, intervalDays, anchorDate }
           : { times: times.filter(Boolean), days: cadence === "specificDays" ? days.sort() : null, intervalDays: null, anchorDate: null }
         : null,
-    });
+    };
+    if (medication) await updateMedication(medication.id, input);
+    else await addMedication(input);
     setSaving(false);
     onClose();
   }
@@ -70,7 +80,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="medication-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="medication-sheet-title" className={styles.title}>Add a medication</h2>
+        <h2 id="medication-sheet-title" className={styles.title}>{medication ? "Edit medication" : "Add a medication"}</h2>
 
         <div className={styles.field}>
           <span className={styles.label}>Name</span>
@@ -238,7 +248,7 @@ export default function AddMedicationSheet({ onClose }: { onClose: () => void })
             disabled={!name.trim() || saving}
             onClick={save}
           >
-            Add medication
+            {medication ? "Save changes" : "Add medication"}
           </button>
         </div>
       </div>

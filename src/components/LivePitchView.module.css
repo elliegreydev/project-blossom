@@ -1,0 +1,18 @@
+.canvas {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggleLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

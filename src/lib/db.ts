@@ -487,6 +487,11 @@ export interface VoiceSession {
   sessionDuration: string | null;
   comfortRating: number | null;
   note: string | null;
+  // A raw Blob, same treatment as presentation/body photos: private,
+  // local-only, never synced, never in the JSON/PDF export (which strips it
+  // to a hasRecording flag instead). Only ever used for private playback -
+  // nothing in Blossom analyses it.
+  recording: Blob | null;
   createdAt: string;
 }
 
@@ -1422,6 +1427,14 @@ export async function addJourneyEvent(
   return event;
 }
 
+export async function deleteJourneyEvent(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.journeyEvents, db.syncOutbox, async () => {
+    await db.journeyEvents.delete(id);
+    await recordSyncChange("journey_event", id, "delete", changedAt);
+  });
+}
+
 export async function dismissAuroraNudge(nudgeKey: string): Promise<void> {
   const existing = await db.auroraNudges.get(nudgeKey);
   const changedAt = new Date().toISOString();
@@ -1702,11 +1715,23 @@ export async function updateAppointment(id: string, patch: Partial<Appointment>)
   });
 }
 
+export async function deleteAppointment(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.appointments, db.syncOutbox, async () => {
+    await db.appointments.delete(id);
+    await recordSyncChange("appointment", id, "delete", changedAt);
+  });
+}
+
 // Wellbeing -------------------------------------------------------------------
 
 export async function addJournalEntry(bodyText: string): Promise<void> {
   const now = new Date().toISOString();
   await db.journalEntries.add({ id: newId(), bodyText, createdAt: now, updatedAt: now });
+}
+
+export async function deleteJournalEntry(id: string): Promise<void> {
+  await db.journalEntries.delete(id);
 }
 
 export async function addEuphoriaEntry(
@@ -1799,6 +1824,14 @@ export async function addCheckIn(
   await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
     await db.checkIns.add(checkIn);
     await recordSyncChange("check_in", checkIn.id, "upsert", changedAt);
+  });
+}
+
+export async function deleteCheckIn(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
+    await db.checkIns.delete(id);
+    await recordSyncChange("check_in", id, "delete", changedAt);
   });
 }
 
@@ -1965,6 +1998,10 @@ export async function addVoiceGoal(
   return goal;
 }
 
+export async function updateVoiceGoal(id: string, patch: Partial<VoiceGoal>): Promise<void> {
+  await db.voiceGoals.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
 export async function deleteVoiceGoal(id: string): Promise<void> {
   await db.transaction("rw", db.voiceGoals, db.voiceSessions, async () => {
     await db.voiceGoals.delete(id);
@@ -1974,11 +2011,15 @@ export async function deleteVoiceGoal(id: string): Promise<void> {
 }
 
 export async function addVoiceSession(
-  input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note">
+  input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note" | "recording">
 ): Promise<VoiceSession> {
   const session: VoiceSession = { id: newId(), createdAt: new Date().toISOString(), ...input };
   await db.voiceSessions.add(session);
   return session;
+}
+
+export async function deleteVoiceSession(id: string): Promise<void> {
+  await db.voiceSessions.delete(id);
 }
 
 // Presentation tracking ---------------------------------------------------------
@@ -2080,7 +2121,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     privateLinks,
     bloodTestEntries,
     voiceGoals,
-    voiceSessions,
+    voiceSessionsRaw,
     presentationEntriesRaw,
     bodyEntriesRaw,
   ] = await Promise.all([
@@ -2126,6 +2167,10 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
   const euphoriaEntries = euphoriaEntriesRaw.map((entry) => {
     const { photo, ...rest } = entry;
     return { ...rest, hasPhoto: photo !== null };
+  });
+  const voiceSessions = voiceSessionsRaw.map((session) => {
+    const { recording, ...rest } = session;
+    return { ...rest, hasRecording: recording !== null };
   });
   return {
     exportedAt: new Date().toISOString(),

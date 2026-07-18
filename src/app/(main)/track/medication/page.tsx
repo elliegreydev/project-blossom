@@ -14,11 +14,13 @@ import {
   logDose,
   medicationSupplyIsLow,
   careSupplyNeedsAttention,
+  updateMedication,
   type DoseStatus,
   type Medication,
   type CareSupply,
 } from "@/lib/db";
 import styles from "@/components/feature.module.css";
+import local from "./medication.module.css";
 
 const ROUTE_LABELS: Record<string, string> = {
   tablet: "Tablet",
@@ -32,8 +34,19 @@ const ROUTE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  taken: "Taken",
+  skipped: "Skipped",
+  delayed: "Delayed",
+  not_logged: "Not logged",
+};
+
 function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+function dateTimeLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " + timeLabel(iso);
 }
 
 export default function MedicationPage() {
@@ -44,13 +57,29 @@ export default function MedicationPage() {
   const careSupplies = useLiveQuery(() => db.careSupplies.toArray(), []);
   const careSupplyAdjustments = useLiveQuery(() => db.careSupplyAdjustments.toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const [supplyMedication, setSupplyMedication] = useState<Medication | null>(null);
   const [careSupply, setCareSupply] = useState<CareSupply | null | "new">(null);
+  const [doseTab, setDoseTab] = useState<"today" | "history">("today");
 
   if (allMeds === undefined || logs === undefined || supplies === undefined || supplyAdjustments === undefined || careSupplies === undefined || careSupplyAdjustments === undefined) return null;
 
   const meds = allMeds.filter((m) => m.active);
   const allSupplies = supplies;
+
+  const historyCutoff = new Date();
+  historyCutoff.setDate(historyCutoff.getDate() - 30);
+  const historyGroups = meds
+    .map((med) => {
+      const medLogs = logs
+        .filter((l) => l.medicationId === med.id)
+        .sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
+      const recentLogs = medLogs.filter((l) => new Date(l.loggedAt) >= historyCutoff);
+      const takenCount = recentLogs.filter((l) => l.status === "taken").length;
+      const adherence = recentLogs.length > 0 ? Math.round((takenCount / recentLogs.length) * 100) : null;
+      return { med, logs: medLogs, adherence };
+    })
+    .filter((group) => group.logs.length > 0);
 
   const now = new Date();
   const todayStart = new Date(now);
@@ -86,7 +115,55 @@ export default function MedicationPage() {
     <div className={styles.screen}>
       <ScreenHeader title="Medication" backHref="/track" />
 
-      {slots.length > 0 && (
+      {(slots.length > 0 || historyGroups.length > 0) && (
+        <div className={local.segmented}>
+          <button
+            className={`${local.segment} ${doseTab === "today" ? local.active : ""}`}
+            onClick={() => setDoseTab("today")}
+          >
+            Today
+          </button>
+          <button
+            className={`${local.segment} ${doseTab === "history" ? local.active : ""}`}
+            onClick={() => setDoseTab("history")}
+          >
+            History
+          </button>
+        </div>
+      )}
+
+      {doseTab === "history" ? (
+        <div className={styles.section}>
+          {historyGroups.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyTitle}>Nothing logged yet</div>
+              <div className={styles.emptySubtitle}>
+                Once you&apos;ve logged a few doses, they&apos;ll show up here so today
+                doesn&apos;t disappear once it&apos;s over.
+              </div>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {historyGroups.map((group) => (
+                <div key={group.med.id} className={styles.item}>
+                  <div className={styles.itemTitle}>{group.med.name}</div>
+                  {group.adherence !== null && (
+                    <div className={local.adherence}>{group.adherence}% taken on schedule (last 30 days)</div>
+                  )}
+                  <div className={local.historyGroup}>
+                    {group.logs.map((log) => (
+                      <div key={log.id} className={local.historyRow}>
+                        <span className={styles.itemMeta}>{dateTimeLabel(log.scheduledTime ?? log.loggedAt)}</span>
+                        <span>{STATUS_LABELS[log.status]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : slots.length > 0 ? (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Today</div>
           <div className={styles.list}>
@@ -144,7 +221,7 @@ export default function MedicationPage() {
               })}
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Your medications</div>
@@ -161,22 +238,24 @@ export default function MedicationPage() {
               const supply = allSupplies.find((item) => item.medicationId === med.id);
               const lowSupply = supply ? medicationSupplyIsLow(med, supply) : false;
               return <div key={med.id} className={styles.item}>
-                <div className={styles.itemRow}>
-                  <span className={styles.itemTitle}>{med.name}</span>
-                  {med.route && <span className={styles.itemMeta}>{ROUTE_LABELS[med.route]}</span>}
-                </div>
-                <span className={styles.itemMeta}>
-                  {med.unit ? med.unit + " · " : ""}
-                  {med.frequency
-                    ? `${med.frequency.times.join(", ")}${
-                        med.frequency.intervalDays
-                          ? ` every ${med.frequency.intervalDays} days`
-                          : med.frequency.days
-                          ? " on set days"
-                          : " daily"
-                      }`
-                    : "No schedule"}
-                </span>
+                <button type="button" className={styles.itemButton} onClick={() => setEditingMedication(med)}>
+                  <div className={styles.itemRow}>
+                    <span className={styles.itemTitle}>{med.name}</span>
+                    {med.route && <span className={styles.itemMeta}>{ROUTE_LABELS[med.route]}</span>}
+                  </div>
+                  <span className={styles.itemMeta}>
+                    {med.unit ? med.unit + " · " : ""}
+                    {med.frequency
+                      ? `${med.frequency.times.join(", ")}${
+                          med.frequency.intervalDays
+                            ? ` every ${med.frequency.intervalDays} days`
+                            : med.frequency.days
+                            ? " on set days"
+                            : " daily"
+                        }`
+                      : "No schedule"}
+                  </span>
+                </button>
                 <button
                   type="button"
                   className={styles.supplyButton}
@@ -184,6 +263,14 @@ export default function MedicationPage() {
                   onClick={() => setSupplyMedication(med)}
                 >
                   {supplyLabel(med)}
+                </button>
+                <button
+                  type="button"
+                  className={styles.linkButton}
+                  style={{ alignSelf: "flex-start" }}
+                  onClick={() => updateMedication(med.id, { active: false })}
+                >
+                  Archive
                 </button>
               </div>;
             })}
@@ -218,7 +305,15 @@ export default function MedicationPage() {
         <button className={styles.addButton} onClick={() => setCareSupply("new")}>+ Add a supply</button>
       </div>
 
-      {sheetOpen && <AddMedicationSheet onClose={() => setSheetOpen(false)} />}
+      {(sheetOpen || editingMedication) && (
+        <AddMedicationSheet
+          medication={editingMedication}
+          onClose={() => {
+            setSheetOpen(false);
+            setEditingMedication(null);
+          }}
+        />
+      )}
       {supplyMedication && (
         <MedicationSupplySheet
           medication={supplyMedication}

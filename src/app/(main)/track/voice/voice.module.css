@@ -29,6 +29,23 @@
   box-shadow: 0 1px 3px rgba(43, 31, 51, 0.08);
 }
 
+.pitchViewButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .categoryTag {
   display: inline-flex;
   align-self: flex-start;

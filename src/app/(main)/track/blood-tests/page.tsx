@@ -14,6 +14,7 @@ function dateLabel(iso: string): string {
 export default function BloodTestsPage() {
   const entries = useLiveQuery(() => db.bloodTestEntries.toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<BloodTestEntry | null>(null);
 
   if (entries === undefined) return null;
 
@@ -61,15 +62,17 @@ export default function BloodTestsPage() {
                         Remove
                       </button>
                     </div>
-                    <div className={styles.itemTitle} style={{ fontSize: 14 }}>
-                      {entry.value}
-                      {entry.unit ? ` ${entry.unit}` : ""}
-                    </div>
-                    {entry.labSource && <div className={styles.itemMeta}>{entry.labSource}</div>}
-                    {entry.referenceRangeRaw && (
-                      <div className={styles.itemMeta}>Reference on report: {entry.referenceRangeRaw}</div>
-                    )}
-                    {entry.note && <div className={styles.itemBody}>{entry.note}</div>}
+                    <button type="button" className={styles.itemButton} onClick={() => setEditingEntry(entry)}>
+                      <div className={styles.itemTitle} style={{ fontSize: 14 }}>
+                        {entry.value}
+                        {entry.unit ? ` ${entry.unit}` : ""}
+                      </div>
+                      {entry.labSource && <div className={styles.itemMeta}>{entry.labSource}</div>}
+                      {entry.referenceRangeRaw && (
+                        <div className={styles.itemMeta}>Reference on report: {entry.referenceRangeRaw}</div>
+                      )}
+                      {entry.note && <div className={styles.itemBody}>{entry.note}</div>}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -81,7 +84,15 @@ export default function BloodTestsPage() {
         </button>
       </div>
 
-      {sheetOpen && <AddBloodTestSheet onClose={() => setSheetOpen(false)} />}
+      {(sheetOpen || editingEntry) && (
+        <AddBloodTestSheet
+          entry={editingEntry}
+          onClose={() => {
+            setSheetOpen(false);
+            setEditingEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }

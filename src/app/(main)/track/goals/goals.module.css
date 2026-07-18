@@ -29,38 +29,13 @@
   box-shadow: 0 1px 3px rgba(43, 31, 51, 0.08);
 }
 
-.checkInScales {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.scaleTag {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.trendAverage {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin: 2px 0 4px;
-}
-
-.trendGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.trendRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-}
-
-.trendRow:first-child {
-  border-top: 0;
+.categoryTag {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lavender) 26%, var(--bg-raised));
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
 }

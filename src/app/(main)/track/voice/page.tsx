@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddVoiceGoalSheet from "@/components/AddVoiceGoalSheet";
 import LogVoiceSessionSheet from "@/components/LogVoiceSessionSheet";
-import { db, deleteVoiceGoal, type VoicePracticeCategory } from "@/lib/db";
+import LivePitchView from "@/components/LivePitchView";
+import { db, deleteVoiceGoal, deleteVoiceSession, type VoiceGoal, type VoicePracticeCategory } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./voice.module.css";
+
+function RecordingPlayback({ recording }: { recording: Blob }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(recording);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [recording]);
+
+  if (!url) return null;
+  // eslint-disable-next-line jsx-a11y/media-has-caption
+  return <audio controls src={url} style={{ width: "100%", marginTop: 6 }} />;
+}
 
 const CATEGORY_LABELS: Record<VoicePracticeCategory, string> = {
   pitch: "Pitch",
@@ -25,7 +40,9 @@ function dateLabel(iso: string): string {
 export default function VoicePracticePage() {
   const [tab, setTab] = useState<"goals" | "sessions">("goals");
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<VoiceGoal | null>(null);
   const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
+  const [pitchViewOpen, setPitchViewOpen] = useState(false);
 
   const goals = useLiveQuery(() => db.voiceGoals.toArray(), []);
   const sessions = useLiveQuery(() => db.voiceSessions.orderBy("createdAt").reverse().toArray(), []);
@@ -63,6 +80,10 @@ export default function VoicePracticePage() {
         </button>
       </div>
 
+      <button type="button" className={local.pitchViewButton} onClick={() => setPitchViewOpen(true)}>
+        🎤 Live pitch view
+      </button>
+
       {tab === "goals" ? (
         <div className={styles.section}>
           {goals.length === 0 ? (
@@ -77,13 +98,15 @@ export default function VoicePracticePage() {
             <div className={styles.list}>
               {goals.map((goal) => (
                 <div key={goal.id} className={styles.item}>
-                  <span className={local.categoryTag}>{CATEGORY_LABELS[goal.category]}</span>
-                  <span className={styles.itemTitle}>{goal.title}</span>
-                  {(goal.targetFrequency || goal.targetDuration) && (
-                    <span className={styles.itemMeta}>
-                      {[goal.targetFrequency, goal.targetDuration].filter(Boolean).join(" · ")}
-                    </span>
-                  )}
+                  <button type="button" className={styles.itemButton} onClick={() => setEditingGoal(goal)}>
+                    <span className={local.categoryTag}>{CATEGORY_LABELS[goal.category]}</span>
+                    <span className={styles.itemTitle}>{goal.title}</span>
+                    {(goal.targetFrequency || goal.targetDuration) && (
+                      <span className={styles.itemMeta}>
+                        {[goal.targetFrequency, goal.targetDuration].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </button>
                   <div className={styles.doseActions}>
                     <button
                       className={styles.doseButton}
@@ -124,6 +147,9 @@ export default function VoicePracticePage() {
                     <div key={session.id} style={{ marginTop: 8 }}>
                       <div className={styles.itemRow}>
                         <span className={styles.itemMeta}>{dateLabel(session.createdAt)}</span>
+                        <button className={styles.linkButton} onClick={() => deleteVoiceSession(session.id)}>
+                          Remove
+                        </button>
                       </div>
                       <span className={styles.itemMeta}>
                         {[
@@ -134,6 +160,7 @@ export default function VoicePracticePage() {
                           .join(" · ")}
                       </span>
                       {session.note && <div className={styles.itemBody}>{session.note}</div>}
+                      {session.recording && <RecordingPlayback recording={session.recording} />}
                     </div>
                   ))}
                 </div>
@@ -146,8 +173,17 @@ export default function VoicePracticePage() {
         </div>
       )}
 
-      {goalSheetOpen && <AddVoiceGoalSheet onClose={() => setGoalSheetOpen(false)} />}
+      {(goalSheetOpen || editingGoal) && (
+        <AddVoiceGoalSheet
+          goal={editingGoal}
+          onClose={() => {
+            setGoalSheetOpen(false);
+            setEditingGoal(null);
+          }}
+        />
+      )}
       {sessionSheetOpen && <LogVoiceSessionSheet onClose={() => setSessionSheetOpen(false)} />}
+      {pitchViewOpen && <LivePitchView onClose={() => setPitchViewOpen(false)} />}
     </div>
   );
 }

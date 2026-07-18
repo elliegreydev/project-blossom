@@ -149,6 +149,18 @@
   margin-top: 1px;
 }
 
+.entryRemove {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .empty {
   min-height: 320px;
   padding: 64px 18px;

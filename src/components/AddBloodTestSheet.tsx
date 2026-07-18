@@ -3,23 +3,29 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addBloodTestEntry } from "@/lib/db";
+import { addBloodTestEntry, updateBloodTestEntry, type BloodTestEntry } from "@/lib/db";
 
-export default function AddBloodTestSheet({ onClose }: { onClose: () => void }) {
+export default function AddBloodTestSheet({
+  entry,
+  onClose,
+}: {
+  entry?: BloodTestEntry | null;
+  onClose: () => void;
+}) {
   const dialogRef = useSheetDialog(onClose);
-  const [testName, setTestName] = useState("");
-  const [date, setDate] = useState("");
-  const [value, setValue] = useState("");
-  const [unit, setUnit] = useState("");
-  const [labSource, setLabSource] = useState("");
-  const [referenceRangeRaw, setReferenceRangeRaw] = useState("");
-  const [note, setNote] = useState("");
+  const [testName, setTestName] = useState(entry?.testName ?? "");
+  const [date, setDate] = useState(entry?.date ?? "");
+  const [value, setValue] = useState(entry?.value ?? "");
+  const [unit, setUnit] = useState(entry?.unit ?? "");
+  const [labSource, setLabSource] = useState(entry?.labSource ?? "");
+  const [referenceRangeRaw, setReferenceRangeRaw] = useState(entry?.referenceRangeRaw ?? "");
+  const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!testName.trim() || !date || !value.trim()) return;
     setSaving(true);
-    await addBloodTestEntry({
+    const input = {
       testName: testName.trim(),
       date,
       value: value.trim(),
@@ -27,7 +33,9 @@ export default function AddBloodTestSheet({ onClose }: { onClose: () => void }) 
       labSource: labSource.trim() || null,
       referenceRangeRaw: referenceRangeRaw.trim() || null,
       note: note.trim() || null,
-    });
+    };
+    if (entry) await updateBloodTestEntry(entry.id, input);
+    else await addBloodTestEntry(input);
     setSaving(false);
     onClose();
   }
@@ -44,7 +52,7 @@ export default function AddBloodTestSheet({ onClose }: { onClose: () => void }) 
       >
         <div className={styles.grabber} />
         <h2 id="blood-test-sheet-title" className={styles.title}>
-          Add a blood test result
+          {entry ? "Edit blood test result" : "Add a blood test result"}
         </h2>
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginTop: -8 }}>
           Blossom records what you enter. It never interprets values, flags them,
@@ -130,7 +138,7 @@ export default function AddBloodTestSheet({ onClose }: { onClose: () => void }) 
             disabled={!testName.trim() || !date || !value.trim() || saving}
             onClick={save}
           >
-            Save result
+            {entry ? "Save changes" : "Save result"}
           </button>
         </div>
       </div>

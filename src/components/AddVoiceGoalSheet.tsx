@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addVoiceGoal, type VoicePracticeCategory } from "@/lib/db";
+import { addVoiceGoal, updateVoiceGoal, type VoiceGoal, type VoicePracticeCategory } from "@/lib/db";
 
 const CATEGORIES: { key: VoicePracticeCategory; label: string }[] = [
   { key: "pitch", label: "Pitch" },
@@ -14,23 +14,31 @@ const CATEGORIES: { key: VoicePracticeCategory; label: string }[] = [
   { key: "confidence", label: "Confidence" },
 ];
 
-export default function AddVoiceGoalSheet({ onClose }: { onClose: () => void }) {
+export default function AddVoiceGoalSheet({
+  goal,
+  onClose,
+}: {
+  goal?: VoiceGoal | null;
+  onClose: () => void;
+}) {
   const dialogRef = useSheetDialog(onClose);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<VoicePracticeCategory>("pitch");
-  const [targetFrequency, setTargetFrequency] = useState("");
-  const [targetDuration, setTargetDuration] = useState("");
+  const [title, setTitle] = useState(goal?.title ?? "");
+  const [category, setCategory] = useState<VoicePracticeCategory>(goal?.category ?? "pitch");
+  const [targetFrequency, setTargetFrequency] = useState(goal?.targetFrequency ?? "");
+  const [targetDuration, setTargetDuration] = useState(goal?.targetDuration ?? "");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!title.trim()) return;
     setSaving(true);
-    await addVoiceGoal({
+    const input = {
       title: title.trim(),
       category,
       targetFrequency: targetFrequency.trim() || null,
       targetDuration: targetDuration.trim() || null,
-    });
+    };
+    if (goal) await updateVoiceGoal(goal.id, input);
+    else await addVoiceGoal(input);
     setSaving(false);
     onClose();
   }
@@ -47,7 +55,7 @@ export default function AddVoiceGoalSheet({ onClose }: { onClose: () => void }) 
       >
         <div className={styles.grabber} />
         <h2 id="voice-goal-sheet-title" className={styles.title}>
-          Add a practice goal
+          {goal ? "Edit practice goal" : "Add a practice goal"}
         </h2>
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginTop: -8 }}>
           This is just for your own practice. There&apos;s no score and no
@@ -111,7 +119,7 @@ export default function AddVoiceGoalSheet({ onClose }: { onClose: () => void }) 
             disabled={!title.trim() || saving}
             onClick={save}
           >
-            Add goal
+            {goal ? "Save changes" : "Add goal"}
           </button>
         </div>
       </div>

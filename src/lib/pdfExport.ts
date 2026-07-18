@@ -40,7 +40,7 @@ interface ExportShape {
   privateLinks: PrivateLink[];
   bloodTestEntries: BloodTestEntry[];
   voiceGoals: VoiceGoal[];
-  voiceSessions: VoiceSession[];
+  voiceSessions: Array<Omit<VoiceSession, "recording"> & { hasRecording: boolean }>;
   presentationEntries: Array<Omit<PresentationEntry, "photo"> & { hasPhoto: boolean }>;
   bodyEntries: Array<Omit<BodyEntry, "photo"> & { hasPhoto: boolean }>;
 }
@@ -382,7 +382,7 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.emptyNote("None added.");
   } else {
     const voiceGoalById = new Map(data.voiceGoals.map((g) => [g.id, g.title]));
-    const sessionsByGoal = new Map<string, VoiceSession[]>();
+    const sessionsByGoal = new Map<string, ExportShape["voiceSessions"]>();
     for (const session of data.voiceSessions) {
       const list = sessionsByGoal.get(session.goalId) ?? [];
       list.push(session);
@@ -393,7 +393,9 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
       const goalSessions = (sessionsByGoal.get(goal.id) ?? []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (goalSessions.length === 0) d.meta("No sessions logged.");
       for (const session of goalSessions) {
-        d.meta(`${fmtDate(session.createdAt)}${session.sessionDuration ? ` · ${session.sessionDuration}` : ""}${session.comfortRating ? ` · Comfort ${session.comfortRating}/5` : ""}`);
+        d.meta(
+          `${fmtDate(session.createdAt)}${session.sessionDuration ? ` · ${session.sessionDuration}` : ""}${session.comfortRating ? ` · Comfort ${session.comfortRating}/5` : ""}${session.hasRecording ? " · (recording attached, listen in app)" : ""}`
+        );
       }
       d.spacer(6);
     }

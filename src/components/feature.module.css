@@ -67,6 +67,20 @@
   gap: 12px;
 }
 
+.itemButton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .itemTitle {
   font-size: 15px;
   font-weight: 600;
