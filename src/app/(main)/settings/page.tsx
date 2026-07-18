@@ -35,6 +35,7 @@ const AURORA_LABELS: Record<string, string> = {
 export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [isStaff, setIsStaff] = useState(false);
+  const [isBetaTester, setIsBetaTester] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +45,13 @@ export default function SettingsPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return;
 
-      const { data, error } = await supabase.rpc("is_staff");
-      if (!cancelled && !error) setIsStaff(data === true);
+      const [{ data: staffData, error: staffError }, { data: betaData }] = await Promise.all([
+        supabase.rpc("is_staff"),
+        supabase.rpc("is_beta_tester"),
+      ]);
+      if (cancelled) return;
+      if (!staffError) setIsStaff(staffData === true);
+      setIsBetaTester(betaData === true);
     }
 
     void checkStaffAccess();
@@ -89,6 +95,12 @@ export default function SettingsPage() {
         <Row href="/legal/privacy" title="Privacy Policy" />
         <Row href="/legal/terms" title="Terms of Service" />
       </div>
+
+      {(isBetaTester || isStaff) && (
+        <div className={styles.group}>
+          <Row href="/beta-chat" title="Beta chat" meta="Talk with other testers and the team" />
+        </div>
+      )}
 
       {isStaff && (
         <div className={styles.adminSection}>

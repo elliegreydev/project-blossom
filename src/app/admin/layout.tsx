@@ -23,6 +23,7 @@ const NAV = [
 const ADMIN_ONLY_NAV = [
   { href: "/admin/team", label: "Team" },
   { href: "/admin/applications", label: "Applications" },
+  { href: "/admin/beta", label: "Beta" },
 ];
 const ADMINISTRATOR_RANK = 80;
 

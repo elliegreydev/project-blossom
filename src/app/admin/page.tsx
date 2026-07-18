@@ -79,6 +79,12 @@ export default function AdminOverviewPage() {
                 Review people who&apos;ve applied to join the team and accept or decline them.
               </span>
             </Link>
+            <Link href="/admin/beta" className={styles.card}>
+              <span className={styles.cardTitle}>Beta</span>
+              <span className={styles.cardDesc}>
+                Generate single-use invite codes for beta testers and manage who&apos;s redeemed one.
+              </span>
+            </Link>
           </>
         )}
       </div>

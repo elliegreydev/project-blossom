@@ -1,0 +1,136 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: max(20px, var(--safe-top)) 20px 12px;
+}
+
+.title {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lavender) 22%, var(--bg-raised));
+  color: var(--text-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 20px;
+}
+
+.messageRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 88%;
+}
+
+.messageMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.staffTag {
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--plum) 20%, var(--bg-raised));
+  color: var(--plum);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.bubble {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.deleteBtn {
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 0;
+  margin-top: 2px;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px max(12px, var(--safe-bottom));
+  border-top: 1px solid var(--border);
+}
+
+.input {
+  flex: 1;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  outline: none;
+  resize: none;
+  max-height: 90px;
+}
+
+.input:focus {
+  border-color: var(--lavender);
+}
+
+.sendButton {
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sendButton {
+    background: var(--lavender);
+    color: var(--plum);
+  }
+}
