@@ -17,10 +17,19 @@ const NAV = [
   { href: "/admin/roadmap", label: "Roadmap" },
 ];
 
+// Administrator and above only - managing the team and reviewing
+// applications are more sensitive than anything else in the admin panel.
+const ADMIN_ONLY_NAV = [
+  { href: "/admin/team", label: "Team" },
+  { href: "/admin/applications", label: "Applications" },
+];
+const ADMINISTRATOR_RANK = 80;
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [status, setStatus] = useState<"checking" | "denied" | "ok">("checking");
+  const [rank, setRank] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +44,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data, error } = await supabase.rpc("is_staff");
       if (cancelled) return;
       setStatus(!error && data === true ? "ok" : "denied");
+      if (!error && data === true) {
+        const { data: rankData } = await supabase.rpc("my_staff_rank");
+        if (!cancelled && typeof rankData === "number") setRank(rankData);
+      }
     }
 
     void check();
@@ -77,6 +90,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {item.label}
             </Link>
           ))}
+          {rank >= ADMINISTRATOR_RANK &&
+            ADMIN_ONLY_NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.navLink} ${pathname === item.href ? styles.active : ""}`}
+              >
+                {item.label}
+              </Link>
+            ))}
           <button
             type="button"
             className={styles.navLink}

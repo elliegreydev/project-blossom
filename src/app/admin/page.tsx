@@ -1,7 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./admin.module.css";
 
+const ADMINISTRATOR_RANK = 80;
+
 export default function AdminOverviewPage() {
+  const [rank, setRank] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.rpc("my_staff_rank").then(({ data }) => {
+      if (!cancelled && typeof data === "number") setRank(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <>
       <h1 className={styles.title}>Staff</h1>
@@ -40,6 +59,22 @@ export default function AdminOverviewPage() {
             Keep Blossom&apos;s in-app roadmap clear, honest and free from made-up dates.
           </span>
         </Link>
+        {rank >= ADMINISTRATOR_RANK && (
+          <>
+            <Link href="/admin/team" className={styles.card}>
+              <span className={styles.cardTitle}>Team</span>
+              <span className={styles.cardDesc}>
+                See who&apos;s on staff, add or remove people, and change roles.
+              </span>
+            </Link>
+            <Link href="/admin/applications" className={styles.card}>
+              <span className={styles.cardTitle}>Applications</span>
+              <span className={styles.cardDesc}>
+                Review people who&apos;ve applied to join the team and accept or decline them.
+              </span>
+            </Link>
+          </>
+        )}
       </div>
     </>
   );
