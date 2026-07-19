@@ -112,6 +112,7 @@ export default function SettingsPage() {
       </div>
 
       <div className={styles.group}>
+        <Row href="/beta" title="Beta" />
         <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
         <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
         <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />
