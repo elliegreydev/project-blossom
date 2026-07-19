@@ -12,6 +12,14 @@ interface CodeRow {
   redeemed_at: string | null;
 }
 
+interface KnownIssue {
+  id: string;
+  title: string;
+  note: string | null;
+  resolved: boolean;
+  created_at: string;
+}
+
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
   let out = "";
@@ -29,15 +37,54 @@ function formatDate(value: string | null): string {
 
 export default function AdminBetaPage() {
   const [codes, setCodes] = useState<CodeRow[]>([]);
+  const [issues, setIssues] = useState<KnownIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [newIssueTitle, setNewIssueTitle] = useState("");
+  const [newIssueNote, setNewIssueNote] = useState("");
+  const [addingIssue, setAddingIssue] = useState(false);
 
   async function load() {
     const supabase = createClient();
-    const { data, error } = await supabase.rpc("list_beta_codes");
+    const [{ data, error }, { data: issueRows }] = await Promise.all([
+      supabase.rpc("list_beta_codes"),
+      supabase.from("beta_known_issues").select("id,title,note,resolved,created_at").order("created_at", { ascending: false }),
+    ]);
     if (!error) setCodes((data as CodeRow[]) ?? []);
+    setIssues((issueRows as KnownIssue[]) ?? []);
     setLoading(false);
+  }
+
+  async function addIssue() {
+    if (!newIssueTitle.trim()) return;
+    setAddingIssue(true);
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase.from("beta_known_issues").insert({
+      title: newIssueTitle.trim(),
+      note: newIssueNote.trim() || null,
+      created_by: userData.user?.id,
+    });
+    setAddingIssue(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setNewIssueTitle("");
+    setNewIssueNote("");
+    void load();
+  }
+
+  async function toggleResolved(id: string, resolved: boolean) {
+    await createClient().from("beta_known_issues").update({ resolved }).eq("id", id);
+    void load();
+  }
+
+  async function deleteIssue(id: string) {
+    if (!window.confirm("Delete this known issue?")) return;
+    await createClient().from("beta_known_issues").delete().eq("id", id);
+    void load();
   }
 
   useEffect(() => {
@@ -165,6 +212,77 @@ export default function AdminBetaPage() {
             ))}
             {redeemed.length === 0 && (
               <tr><td colSpan={4} className={styles.mutedCell}>No codes redeemed yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h1 className={styles.title} style={{ marginTop: 20 }}>Known issues</h1>
+      <p className={styles.subtitle}>
+        Shown to testers on the beta hub, so they can check before filing a duplicate report.
+      </p>
+
+      <div className={styles.card}>
+        <div className={styles.formGrid}>
+          <div className={styles.field}>
+            <span className={styles.label}>Title</span>
+            <input
+              className={styles.input}
+              value={newIssueTitle}
+              onChange={(e) => setNewIssueTitle(e.target.value)}
+              placeholder="e.g. Voice recording playback stutters on iOS"
+            />
+          </div>
+          <div className={styles.field}>
+            <span className={styles.label}>Note (optional)</span>
+            <input
+              className={styles.input}
+              value={newIssueNote}
+              onChange={(e) => setNewIssueNote(e.target.value)}
+              placeholder="Anything worth adding"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          style={{ width: "fit-content" }}
+          disabled={addingIssue || !newIssueTitle.trim()}
+          onClick={addIssue}
+        >
+          {addingIssue ? "Adding…" : "+ Add known issue"}
+        </button>
+      </div>
+
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr><th>Title</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            {issues.map((issue) => (
+              <tr key={issue.id}>
+                <td>
+                  {issue.title}
+                  {issue.note && <div className={styles.mutedCell}>{issue.note}</div>}
+                </td>
+                <td>
+                  <span className={issue.resolved ? styles.badgeClosed : styles.badgeOpen}>
+                    {issue.resolved ? "Resolved" : "Open"}
+                  </span>
+                </td>
+                <td className={styles.actionCell}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => toggleResolved(issue.id, !issue.resolved)}>
+                    {issue.resolved ? "Reopen" : "Mark resolved"}
+                  </button>
+                  <button type="button" className={styles.dangerButton} onClick={() => deleteIssue(issue.id)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {issues.length === 0 && (
+              <tr><td colSpan={3} className={styles.mutedCell}>No known issues logged.</td></tr>
             )}
           </tbody>
         </table>

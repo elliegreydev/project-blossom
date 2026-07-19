@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useUnreadBetaChat } from "./useUnreadBetaChat";
 import styles from "./SyncNudge.module.css";
 
 const DISMISSED_KEY = "blossom-beta-nudge-dismissed-until";
@@ -43,6 +44,8 @@ export default function BetaNudge() {
     }
   }
 
+  const hasUnread = useUnreadBetaChat(visible);
+
   if (!visible || dismissed) return null;
 
   return (
@@ -53,7 +56,9 @@ export default function BetaNudge() {
       <div className={styles.content}>
         <span className={styles.label}>Beta tester</span>
         <strong className={styles.title}>You&apos;re helping test Blossom</strong>
-        <p className={styles.copy}>See what&apos;s new, chat with the team, or report something.</p>
+        <p className={styles.copy}>
+          {hasUnread ? "New message in beta chat." : "See what's new, chat with the team, or report something."}
+        </p>
         <Link href="/beta" className={styles.action}>
           Open beta hub
         </Link>

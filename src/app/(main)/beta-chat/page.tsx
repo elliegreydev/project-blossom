@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
+import { markBetaChatRead } from "@/components/useUnreadBetaChat";
 import styles from "./betaChat.module.css";
 
 interface ChatMessage {
@@ -57,6 +58,7 @@ export default function BetaChatPage() {
     if (access !== "ok") return;
     let cancelled = false;
     const supabase = createClient();
+    markBetaChatRead();
 
     async function load() {
       const { data } = await supabase
@@ -75,6 +77,7 @@ export default function BetaChatPage() {
         { event: "INSERT", schema: "public", table: "beta_chat_messages" },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as ChatMessage]);
+          markBetaChatRead();
         }
       )
       .on(

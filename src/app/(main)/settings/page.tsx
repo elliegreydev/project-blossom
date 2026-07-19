@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
+import { useUnreadBetaChat } from "@/components/useUnreadBetaChat";
 import styles from "./settings.module.css";
 
 const CHEVRON = (
@@ -60,6 +61,8 @@ export default function SettingsPage() {
     };
   }, []);
 
+  const hasUnreadBetaChat = useUnreadBetaChat(isBetaTester || isStaff);
+
   if (!profile) return null;
 
   return (
@@ -70,7 +73,11 @@ export default function SettingsPage() {
         <div className={styles.adminSection}>
           <p className={styles.sectionLabel}>Beta</p>
           <div className={styles.group}>
-            <Row href="/beta" title="🧪 You're a beta tester" meta="What's new, beta chat, report a bug" />
+            <Row
+              href="/beta"
+              title="🧪 You're a beta tester"
+              meta={hasUnreadBetaChat ? "New message · What's new, beta chat, report a bug" : "What's new, beta chat, report a bug"}
+            />
           </div>
         </div>
       )}

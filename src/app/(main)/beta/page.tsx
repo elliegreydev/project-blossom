@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ScreenHeader from "@/components/ScreenHeader";
 import formStyles from "@/components/settingsForm.module.css";
@@ -12,11 +13,25 @@ interface RoadmapItem {
   description: string;
 }
 
+interface KnownIssue {
+  id: string;
+  title: string;
+  note: string | null;
+}
+
 type Access = "checking" | "denied" | "ok";
 
+// Vercel injects this automatically at build time - no version-bump
+// discipline to maintain, just a short commit hash so testers and staff can
+// compare "are you on the same build" during triage.
+const BUILD_ID = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
+
 export default function BetaHubPage() {
+  const router = useRouter();
   const [access, setAccess] = useState<Access>("checking");
   const [recent, setRecent] = useState<RoadmapItem[]>([]);
+  const [issues, setIssues] = useState<KnownIssue[]>([]);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,14 +52,23 @@ export default function BetaHubPage() {
       setAccess(ok ? "ok" : "denied");
       if (!ok) return;
 
-      const { data: roadmap } = await supabase
-        .from("product_roadmap")
-        .select("slug,title,description")
-        .eq("stage", "available")
-        .eq("is_recent", true)
-        .order("updated_at", { ascending: false })
-        .limit(6);
-      if (!cancelled) setRecent((roadmap as RoadmapItem[]) ?? []);
+      const [{ data: roadmap }, { data: issueRows }] = await Promise.all([
+        supabase
+          .from("product_roadmap")
+          .select("slug,title,description")
+          .eq("stage", "available")
+          .eq("is_recent", true)
+          .order("updated_at", { ascending: false })
+          .limit(6),
+        supabase
+          .from("beta_known_issues")
+          .select("id,title,note")
+          .eq("resolved", false)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (cancelled) return;
+      setRecent((roadmap as RoadmapItem[]) ?? []);
+      setIssues((issueRows as KnownIssue[]) ?? []);
     }
 
     void load();
@@ -52,6 +76,13 @@ export default function BetaHubPage() {
       cancelled = true;
     };
   }, []);
+
+  async function leaveBeta() {
+    if (!window.confirm("Leave the beta? You'll lose access to beta chat, but you can rejoin later with a new invite code.")) return;
+    setLeaving(true);
+    await createClient().rpc("leave_beta_program");
+    router.replace("/settings");
+  }
 
   if (access === "checking") return null;
 
@@ -76,6 +107,7 @@ export default function BetaHubPage() {
           Thanks for helping test Blossom. Features may change and data may reset while we&apos;re
           in beta.
         </p>
+        <p className={formStyles.hint}>Build {BUILD_ID}</p>
       </div>
 
       <div className={formStyles.field}>
@@ -100,6 +132,31 @@ export default function BetaHubPage() {
           ))}
         </div>
       )}
+
+      {issues.length > 0 && (
+        <div className={formStyles.field}>
+          <span className={formStyles.label}>Known issues</span>
+          <p className={formStyles.hint}>Already on our list - no need to report these again.</p>
+          {issues.map((issue) => (
+            <div key={issue.id} className={formStyles.toggleRow} style={{ alignItems: "flex-start" }}>
+              <div className={formStyles.toggleText}>
+                <span className={formStyles.toggleTitle}>{issue.title}</span>
+                {issue.note && <span className={formStyles.toggleDesc}>{issue.note}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={formStyles.field}>
+        <span className={formStyles.label}>Leave the beta</span>
+        <p className={formStyles.hint}>
+          You can stop testing at any time - this doesn&apos;t affect anything else in your account.
+        </p>
+        <button type="button" className={formStyles.dangerButton} style={{ width: "fit-content" }} disabled={leaving} onClick={leaveBeta}>
+          {leaving ? "Leaving…" : "Leave the beta"}
+        </button>
+      </div>
     </div>
   );
 }

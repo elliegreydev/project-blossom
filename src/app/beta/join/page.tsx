@@ -85,6 +85,7 @@ export default function BetaJoinPage() {
       return;
     }
     setRedeemed(true);
+    void fetch("/api/beta/notify-join", { method: "POST" });
   }
 
   if (checkingSession) return null;
