@@ -85,6 +85,7 @@ export default function SettingsPage() {
           title="Safety check-ins"
           meta={profile.safetyCheckInsEnabled ? "On" : "Off - optional"}
         />
+        <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
       </div>
 
       <div className={styles.group}>

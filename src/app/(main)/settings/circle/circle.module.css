@@ -1,0 +1,128 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lavender) 20%, var(--bg));
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusPending {
+  color: var(--text-secondary);
+}
+
+.statusRevoked,
+.statusDeclined {
+  color: var(--text-muted);
+}
+
+.checkboxGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+
+.checkboxRow input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--plum);
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.linkButton {
+  color: var(--lavender-dark, var(--plum));
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tabRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.tab {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tabActive {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.viewerRow {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viewerRowTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.viewerRowMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
