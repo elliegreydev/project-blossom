@@ -1,7 +1,52 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import styles from "../blog/blog.module.css";
 
 export default function AboutPage() {
+  const [body, setBody] = useState<string | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    const supabase = createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    let staff = false;
+    if (sessionData.session) {
+      const { data } = await supabase.rpc("is_staff");
+      staff = data === true;
+    }
+    setIsStaff(staff);
+
+    const { data: row } = await supabase.from("about_page").select("body").eq("id", "current").maybeSingle();
+    setBody(row?.body ?? "");
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    await supabase.from("about_page").upsert({
+      id: "current",
+      body: draft,
+      updated_at: new Date().toISOString(),
+      updated_by: userData.user?.id,
+    });
+    setSaving(false);
+    setEditing(false);
+    void load();
+  }
+
+  if (body === null) return null;
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -12,34 +57,44 @@ export default function AboutPage() {
           <h1>Hi, I&apos;m Ellie.</h1>
         </header>
 
-        <div className={styles.body}>
-          I&apos;m trans (male to female), and I&apos;m still learning how to code, Blossom&apos;s
-          one of the biggest things I&apos;ve built so far. This isn&apos;t some polished corporate
-          project. It&apos;s made by someone who&apos;s actually lived through a lot of what this
-          app is trying to help with.
-          {"\n\n"}
-          I built Blossom because I wanted something that actually felt like it was on your side.
-          A lot of apps in this space either treat your data like something to sell, or they&apos;re
-          built by people who&apos;ve never really had to think about what it means to track
-          something this personal.
-          {"\n\n"}
-          Blossom is local-first by default. Most of what you enter never leaves your device
-          unless you choose to turn sync on yourself. Nothing here scores you, ranks you, or tells
-          you if you&apos;re doing it &quot;right.&quot; No streaks, no pass or fail, no comparing
-          yourself to anyone else. You move at your own pace, and the app just quietly holds what
-          you give it.
-          {"\n\n"}
-          Right now Blossom&apos;s in beta, so things might change, break, or get rebuilt if
-          they&apos;re not working. If you&apos;re testing it with me, thank you, genuinely. Every
-          bit of feedback shapes what this actually becomes.
-          {"\n\n"}
-          Want to reach me directly? I&apos;m around on{" "}
-          <a href="https://discord.gg/jD3yS2HN7s" target="_blank" rel="noopener noreferrer">
-            Discord
-          </a>
-          , or you can leave feedback right in the app.
-          {"\n\n"}— Ellie
-        </div>
+        {isStaff && (
+          <div className={styles.staffBar}>
+            {!editing ? (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setDraft(body);
+                  setEditing(true);
+                }}
+              >
+                Edit
+              </button>
+            ) : (
+              <div className={styles.form} style={{ width: "100%" }}>
+                <div className={styles.field}>
+                  <span className={styles.label}>About page text</span>
+                  <textarea
+                    className={styles.textarea}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    style={{ minHeight: 320 }}
+                  />
+                </div>
+                <div className={styles.actionRow}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setEditing(false)} disabled={saving}>
+                    Cancel
+                  </button>
+                  <button type="button" className={styles.primaryButton} disabled={saving || !draft.trim()} onClick={save}>
+                    {saving ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={styles.body}>{body}</div>
       </div>
     </main>
   );
