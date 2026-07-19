@@ -31,6 +31,7 @@ export default function BetaHubPage() {
   const [access, setAccess] = useState<Access>("checking");
   const [recent, setRecent] = useState<RoadmapItem[]>([]);
   const [issues, setIssues] = useState<KnownIssue[]>([]);
+  const [focusNote, setFocusNote] = useState("");
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function BetaHubPage() {
       setAccess(ok ? "ok" : "denied");
       if (!ok) return;
 
-      const [{ data: roadmap }, { data: issueRows }] = await Promise.all([
+      const [{ data: roadmap }, { data: issueRows }, { data: focusRow }] = await Promise.all([
         supabase
           .from("product_roadmap")
           .select("slug,title,description")
@@ -65,10 +66,12 @@ export default function BetaHubPage() {
           .select("id,title,note")
           .eq("resolved", false)
           .order("created_at", { ascending: false }),
+        supabase.from("beta_focus_note").select("note").eq("id", "current").maybeSingle(),
       ]);
       if (cancelled) return;
       setRecent((roadmap as RoadmapItem[]) ?? []);
       setIssues((issueRows as KnownIssue[]) ?? []);
+      setFocusNote(focusRow?.note?.trim() ?? "");
     }
 
     void load();
@@ -109,6 +112,13 @@ export default function BetaHubPage() {
         </p>
         <p className={formStyles.hint}>Build {BUILD_ID}</p>
       </div>
+
+      {focusNote && (
+        <div className={formStyles.field}>
+          <span className={formStyles.label}>Currently focused on</span>
+          <p className={formStyles.hint}>{focusNote}</p>
+        </div>
+      )}
 
       <div className={formStyles.field}>
         <Link href="/beta-chat" className={formStyles.primaryButton} style={{ textAlign: "center" }}>

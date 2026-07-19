@@ -40,20 +40,42 @@ export default function AdminBetaPage() {
   const [issues, setIssues] = useState<KnownIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [batchSize, setBatchSize] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [newIssueTitle, setNewIssueTitle] = useState("");
   const [newIssueNote, setNewIssueNote] = useState("");
   const [addingIssue, setAddingIssue] = useState(false);
+  const [snapshot, setSnapshot] = useState<{ active_testers: number; messages_last_7_days: number } | null>(null);
+  const [focusNote, setFocusNote] = useState("");
+  const [savingFocus, setSavingFocus] = useState(false);
 
   async function load() {
     const supabase = createClient();
-    const [{ data, error }, { data: issueRows }] = await Promise.all([
+    const [{ data, error }, { data: issueRows }, { data: snapshotRows }, { data: focusRow }] = await Promise.all([
       supabase.rpc("list_beta_codes"),
       supabase.from("beta_known_issues").select("id,title,note,resolved,created_at").order("created_at", { ascending: false }),
+      supabase.rpc("beta_engagement_snapshot"),
+      supabase.from("beta_focus_note").select("note").eq("id", "current").maybeSingle(),
     ]);
     if (!error) setCodes((data as CodeRow[]) ?? []);
     setIssues((issueRows as KnownIssue[]) ?? []);
+    const snap = (snapshotRows as { active_testers: number; messages_last_7_days: number }[] | null)?.[0];
+    setSnapshot(snap ?? null);
+    setFocusNote(focusRow?.note ?? "");
     setLoading(false);
+  }
+
+  async function saveFocusNote() {
+    setSavingFocus(true);
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    await supabase.from("beta_focus_note").upsert({
+      id: "current",
+      note: focusNote.trim(),
+      updated_at: new Date().toISOString(),
+      updated_by: userData.user?.id,
+    });
+    setSavingFocus(false);
   }
 
   async function addIssue() {
@@ -96,10 +118,9 @@ export default function AdminBetaPage() {
     setMessage(null);
     const supabase = createClient();
     const { data: userData } = await supabase.auth.getUser();
-    const code = generateCode();
-    const { error } = await supabase
-      .from("beta_invite_codes")
-      .insert({ code, created_by: userData.user?.id });
+    const count = Math.min(Math.max(batchSize, 1), 50);
+    const rows = Array.from({ length: count }, () => ({ code: generateCode(), created_by: userData.user?.id }));
+    const { error } = await supabase.from("beta_invite_codes").insert(rows);
     setGenerating(false);
     if (error) {
       setMessage(error.message);
@@ -146,8 +167,48 @@ export default function AdminBetaPage() {
 
       {message && <p className={styles.subtitle}>{message}</p>}
 
+      {snapshot && (
+        <div className={styles.grid}>
+          <div className={styles.card}>
+            <span className={styles.cardTitle}>{snapshot.active_testers}</span>
+            <span className={styles.cardDesc}>Active testers</span>
+          </div>
+          <div className={styles.card}>
+            <span className={styles.cardTitle}>{snapshot.messages_last_7_days}</span>
+            <span className={styles.cardDesc}>Beta chat messages, last 7 days</span>
+          </div>
+        </div>
+      )}
+
+      <div className={styles.card}>
+        <span className={styles.cardTitle}>Currently focused on</span>
+        <p className={styles.cardDesc}>Shown on the beta hub, so testers have direction instead of just waiting for something to break.</p>
+        <textarea
+          className={styles.textarea}
+          value={focusNote}
+          onChange={(e) => setFocusNote(e.target.value)}
+          placeholder="e.g. This week we're especially looking for feedback on Trusted Circle"
+        />
+        <button type="button" className={styles.secondaryButton} style={{ width: "fit-content" }} disabled={savingFocus} onClick={saveFocusNote}>
+          {savingFocus ? "Saving…" : "Save"}
+        </button>
+      </div>
+
       <div className={styles.card}>
         <span className={styles.cardTitle}>{unredeemed.length} unused code{unredeemed.length === 1 ? "" : "s"}</span>
+        <div className={styles.formGrid} style={{ maxWidth: 200 }}>
+          <div className={styles.field}>
+            <span className={styles.label}>How many</span>
+            <input
+              className={styles.input}
+              type="number"
+              min={1}
+              max={50}
+              value={batchSize}
+              onChange={(e) => setBatchSize(Number(e.target.value) || 1)}
+            />
+          </div>
+        </div>
         <button
           type="button"
           className={styles.primaryButton}
@@ -155,7 +216,7 @@ export default function AdminBetaPage() {
           disabled={generating}
           onClick={addCode}
         >
-          {generating ? "Generating…" : "+ Generate a code"}
+          {generating ? "Generating…" : batchSize > 1 ? `+ Generate ${batchSize} codes` : "+ Generate a code"}
         </button>
         {unredeemed.length > 0 && (
           <div className={styles.tableWrap} style={{ marginTop: 8 }}>
