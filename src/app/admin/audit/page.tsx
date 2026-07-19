@@ -26,6 +26,11 @@ const TABLE_LABELS: Record<string, string> = {
   product_roadmap: "Roadmap",
   app_notices: "Notices",
   staff_emails: "Team roster",
+  beta_invite_codes: "Beta invite codes",
+  beta_known_issues: "Beta known issues",
+  beta_focus_note: "Beta focus note",
+  beta_chat_messages: "Beta chat (moderation)",
+  profiles: "Beta tester access",
 };
 
 const ACTION_LABELS: Record<string, string> = {
