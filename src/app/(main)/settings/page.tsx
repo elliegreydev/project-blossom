@@ -66,6 +66,15 @@ export default function SettingsPage() {
     <div className={styles.screen}>
       <div className={styles.title}>Settings</div>
 
+      {(isBetaTester || isStaff) && (
+        <div className={styles.adminSection}>
+          <p className={styles.sectionLabel}>Beta</p>
+          <div className={styles.group}>
+            <Row href="/beta" title="🧪 You're a beta tester" meta="What's new, beta chat, report a bug" />
+          </div>
+        </div>
+      )}
+
       <div className={styles.group}>
         <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
@@ -102,12 +111,6 @@ export default function SettingsPage() {
         <Row href="/legal/privacy" title="Privacy Policy" />
         <Row href="/legal/terms" title="Terms of Service" />
       </div>
-
-      {(isBetaTester || isStaff) && (
-        <div className={styles.group}>
-          <Row href="/beta-chat" title="Beta chat" meta="Talk with other testers and the team" />
-        </div>
-      )}
 
       {isStaff && (
         <div className={styles.adminSection}>

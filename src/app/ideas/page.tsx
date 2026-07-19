@@ -58,6 +58,7 @@ function saveVotedIds(ids: Set<string>) {
 
 export default function IdeasPage() {
   const [tab, setTab] = useState<"board" | "bug">("board");
+  const [isBetaTester, setIsBetaTester] = useState(false);
   const [items, setItems] = useState<FeatureItem[]>([]);
   const [boardLoading, setBoardLoading] = useState(true);
   const [sort, setSort] = useState<"popular" | "newest">("popular");
@@ -87,6 +88,12 @@ export default function IdeasPage() {
 
   useEffect(() => {
     setVotedIds(getVotedIds());
+    const supabase = createClient();
+    void supabase.auth.getSession().then(async ({ data: sessionData }) => {
+      if (!sessionData.session) return;
+      const { data } = await supabase.rpc("is_beta_tester");
+      if (data === true) setIsBetaTester(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -168,6 +175,11 @@ export default function IdeasPage() {
             Feature ideas are public - please don&apos;t include anything personal or medical in one. Bug
             reports go straight to the team and are never shown publicly.
           </p>
+          {isBetaTester && (
+            <p className={styles.intro}>
+              Beta tester? You can also just <Link href="/beta-chat">ask in beta chat</Link>.
+            </p>
+          )}
         </header>
 
         <div className={styles.segmented}>

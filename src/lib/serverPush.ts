@@ -62,6 +62,18 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload): 
   return { sent };
 }
 
+// Every account currently flagged beta_tester = true. Revoked/never-tester
+// accounts are naturally excluded since this reads the live column, not a
+// cached list.
+export async function activeBetaTesterUserIds(): Promise<string[]> {
+  const supabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data } = await supabase.from("profiles").select("id").eq("beta_tester", true);
+  return (data ?? []).map((row) => row.id as string);
+}
+
 // Fetches the user ids of every staff member at or above a rank threshold.
 // Staff are matched by email against auth.users, same join as is_staff().
 export async function staffUserIdsAtRank(minRank: number): Promise<string[]> {

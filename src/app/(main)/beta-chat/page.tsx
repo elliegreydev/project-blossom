@@ -102,11 +102,22 @@ export default function BetaChatPage() {
     if (!body) return;
     setSending(true);
     const supabase = createClient();
-    const { error } = await supabase.from("beta_chat_messages").insert({
-      body,
-      sender_name: localProfile?.displayName?.trim() || "A beta tester",
-    });
+    const { data: inserted, error } = await supabase
+      .from("beta_chat_messages")
+      .insert({
+        body,
+        sender_name: localProfile?.displayName?.trim() || "A beta tester",
+      })
+      .select("id")
+      .single();
     setSending(false);
+    if (inserted?.id) {
+      void fetch("/api/beta-chat/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId: inserted.id }),
+      });
+    }
     if (!error) setDraft("");
   }
 
