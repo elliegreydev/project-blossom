@@ -1,4 +1,4 @@
-import type { Appointment, Medication, MedicationLog, NotifiedReminder } from "./db";
+import type { Appointment, Medication, MedicationLog, NotifiedReminder, SafetyCheckIn } from "./db";
 
 export interface PendingReminder {
   key: string;
@@ -161,5 +161,31 @@ export function dueAppointmentReminders(
       discreetBody: "You have something scheduled soon.",
       detailedTitle: "Appointment reminder",
       detailedBody: `${appt.title} coming up.`,
+    }));
+}
+
+// Copy here is deliberate: it suggests, never claims to alert anyone on the
+// user's behalf - Blossom never contacts a trusted contact itself.
+export function dueSafetyCheckInReminders(
+  checkIns: SafetyCheckIn[],
+  notified: NotifiedReminder[],
+  now: Date
+): PendingReminder[] {
+  const notifiedByKey = new Map(notified.map((n) => [n.key, n]));
+  const nowTime = now.getTime();
+
+  return checkIns
+    .filter((c) => c.status === "pending")
+    .filter((c) => {
+      const age = nowTime - new Date(c.dueAt).getTime();
+      const key = `safety-checkin:${c.id}`;
+      return age >= 0 && age <= STILL_RELEVANT_MS && shouldFire(notifiedByKey.get(key), nowTime);
+    })
+    .map((c) => ({
+      key: `safety-checkin:${c.id}`,
+      discreetTitle: "A gentle check-in",
+      discreetBody: "You have something to check on when you get a moment.",
+      detailedTitle: "Safety check-in",
+      detailedBody: "You missed your check-in - want to reach out to your trusted contact?",
     }));
 }

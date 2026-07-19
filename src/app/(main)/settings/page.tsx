@@ -80,6 +80,11 @@ export default function SettingsPage() {
           meta={profile.appLockEnabled ? "App lock on" : undefined}
         />
         <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
+        <Row
+          href="/settings/safety-checkins"
+          title="Safety check-ins"
+          meta={profile.safetyCheckInsEnabled ? "On" : "Off - optional"}
+        />
       </div>
 
       <div className={styles.group}>

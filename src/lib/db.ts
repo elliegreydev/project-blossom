@@ -114,6 +114,14 @@ export interface Profile {
   // device should keep reflecting its own current zone, not whichever device
   // last synced.
   timezone: string | null;
+  // Safety check-ins (see the SafetyCheckIn table below). Off by default -
+  // this is opt-in, never something a user finds already running. The
+  // trusted contact's name and how to reach them are device-local, same
+  // treatment as journal entries: Blossom's server never sees who someone's
+  // trusted contact is or whether a check-in was ever missed.
+  safetyCheckInsEnabled: boolean;
+  trustedContactName: string | null;
+  trustedContactMethod: string | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -557,6 +565,23 @@ export interface PrivateLink {
   createdAt: string;
 }
 
+// Safety check-ins ---------------------------------------------------------------
+// A user-started "check in with me by X" window. Deliberately not synced (see
+// SyncEntity below) and deliberately not a monitoring system: Blossom never
+// contacts anyone itself. If a check-in passes its dueAt without being
+// resolved, the UI treats it as missed and suggests - never claims to
+// guarantee - reaching out to the trusted contact configured in Profile.
+
+export type SafetyCheckInStatus = "pending" | "completed";
+
+export interface SafetyCheckIn {
+  id: string;
+  startedAt: string;
+  dueAt: string;
+  status: SafetyCheckInStatus;
+  snoozedOnce: boolean;
+}
+
 // Local reminders (see src/lib/reminders.ts) -----------------------------------
 // Tracks which reminder slots have already fired a local Notification, so a
 // re-render or app reopen doesn't fire the same reminder twice - and, since
@@ -653,6 +678,7 @@ type BlossomDb = Dexie & {
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
+  safetyCheckIns: EntityTable<SafetyCheckIn, "id">;
   bloodTestEntries: EntityTable<BloodTestEntry, "id">;
   voiceGoals: EntityTable<VoiceGoal, "id">;
   voiceSessions: EntityTable<VoiceSession, "id">;
@@ -1230,6 +1256,44 @@ function createDb(): BlossomDb {
       profile.reduceVisualNoise = false;
     });
   });
+  instance.version(23).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    safetyCheckIns: "id, dueAt, status",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.safetyCheckInsEnabled = false;
+      profile.trustedContactName = null;
+      profile.trustedContactMethod = null;
+    });
+  });
   return instance;
 }
 
@@ -1281,6 +1345,9 @@ export const DEFAULT_PROFILE: Profile = {
   accessibilityProfile: "custom",
   notificationsEnabled: false,
   timezone: null,
+  safetyCheckInsEnabled: false,
+  trustedContactName: null,
+  trustedContactMethod: null,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
@@ -1313,6 +1380,9 @@ export async function getOrCreateProfile(): Promise<Profile> {
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
   if (existing.region === "UK") backfill.region = "United Kingdom";
   if (existing.updatedAt === undefined) backfill.updatedAt = existing.createdAt;
+  if (existing.safetyCheckInsEnabled === undefined) backfill.safetyCheckInsEnabled = false;
+  if (existing.trustedContactName === undefined) backfill.trustedContactName = null;
+  if (existing.trustedContactMethod === undefined) backfill.trustedContactMethod = null;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
     return { ...existing, ...backfill };
@@ -1968,6 +2038,52 @@ export async function deletePrivateLink(id: string): Promise<void> {
   await db.privateLinks.delete(id);
 }
 
+// Safety check-ins -----------------------------------------------------------
+// Deliberately not synced (see SafetyCheckIn's own comment) - writes go
+// straight to Dexie, never through recordSyncChange/the sync outbox, the
+// same device-local treatment as updateDeviceProfile below.
+
+export async function updateSafetyCheckInSettings(
+  patch: Partial<Pick<Profile, "safetyCheckInsEnabled" | "trustedContactName" | "trustedContactMethod">>
+): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, patch);
+}
+
+export async function activeSafetyCheckIn(): Promise<SafetyCheckIn | undefined> {
+  return db.safetyCheckIns.where("status").equals("pending").first();
+}
+
+// Only one check-in is ever active at a time - starting a new one only makes
+// sense once the last one is resolved, so the UI is expected to only offer
+// this when activeSafetyCheckIn() is empty.
+export async function startSafetyCheckIn(hours: number): Promise<SafetyCheckIn> {
+  const startedAt = new Date();
+  const checkIn: SafetyCheckIn = {
+    id: newId(),
+    startedAt: startedAt.toISOString(),
+    dueAt: new Date(startedAt.getTime() + hours * 60 * 60 * 1000).toISOString(),
+    status: "pending",
+    snoozedOnce: false,
+  };
+  await db.safetyCheckIns.add(checkIn);
+  return checkIn;
+}
+
+export async function resolveSafetyCheckIn(id: string): Promise<void> {
+  await db.safetyCheckIns.update(id, { status: "completed" });
+}
+
+// Allowed once per check-in, so a missed one can't be pushed back
+// indefinitely - it's a brief grace period, not a way to silence the nudge.
+export async function snoozeSafetyCheckIn(id: string, hours: number): Promise<void> {
+  const existing = await db.safetyCheckIns.get(id);
+  if (!existing || existing.snoozedOnce) return;
+  await db.safetyCheckIns.update(id, {
+    dueAt: new Date(Date.now() + hours * 60 * 60 * 1000).toISOString(),
+    snoozedOnce: true,
+  });
+}
+
 // Blood tests -----------------------------------------------------------------
 
 export async function addBloodTestEntry(
@@ -2119,6 +2235,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     checkIns,
     goals,
     privateLinks,
+    safetyCheckIns,
     bloodTestEntries,
     voiceGoals,
     voiceSessionsRaw,
@@ -2143,6 +2260,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.checkIns.toArray(),
     db.goals.toArray(),
     db.privateLinks.toArray(),
+    db.safetyCheckIns.toArray(),
     db.bloodTestEntries.toArray(),
     db.voiceGoals.toArray(),
     db.voiceSessions.toArray(),
@@ -2192,6 +2310,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     checkIns,
     goals,
     privateLinks,
+    safetyCheckIns,
     bloodTestEntries,
     voiceGoals,
     voiceSessions,
@@ -2223,6 +2342,7 @@ export async function deleteAllData(): Promise<void> {
       db.checkIns,
       db.goals,
       db.privateLinks,
+      db.safetyCheckIns,
       db.bloodTestEntries,
       db.voiceGoals,
       db.voiceSessions,
@@ -2253,6 +2373,7 @@ export async function deleteAllData(): Promise<void> {
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
+        db.safetyCheckIns.clear(),
         db.bloodTestEntries.clear(),
         db.voiceGoals.clear(),
         db.voiceSessions.clear(),

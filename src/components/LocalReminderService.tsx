@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, markReminderNotified, notifiedReminderState } from "@/lib/db";
-import { dueAppointmentReminders, dueMedicationReminders } from "@/lib/reminders";
+import { dueAppointmentReminders, dueMedicationReminders, dueSafetyCheckInReminders } from "@/lib/reminders";
 
 const CHECK_INTERVAL_MS = 30 * 1000;
 
@@ -17,17 +17,18 @@ export default function LocalReminderService() {
   const medications = useLiveQuery(() => db.medications.toArray(), []);
   const medicationLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const appointments = useLiveQuery(() => db.appointments.toArray(), []);
+  const safetyCheckIns = useLiveQuery(() => db.safetyCheckIns.toArray(), []);
 
-  const latest = useRef({ profile, medications, medicationLogs, appointments });
+  const latest = useRef({ profile, medications, medicationLogs, appointments, safetyCheckIns });
   useEffect(() => {
-    latest.current = { profile, medications, medicationLogs, appointments };
-  }, [profile, medications, medicationLogs, appointments]);
+    latest.current = { profile, medications, medicationLogs, appointments, safetyCheckIns };
+  }, [profile, medications, medicationLogs, appointments, safetyCheckIns]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     async function check() {
-      const { profile, medications, medicationLogs, appointments } = latest.current;
+      const { profile, medications, medicationLogs, appointments, safetyCheckIns } = latest.current;
       if (!profile?.notificationsEnabled || Notification.permission !== "granted") return;
       if (!medications || !medicationLogs || !appointments) return;
 
@@ -36,6 +37,9 @@ export default function LocalReminderService() {
       const pending = [
         ...dueMedicationReminders(medications, medicationLogs, notified, now),
         ...dueAppointmentReminders(appointments, notified, now),
+        ...(profile.safetyCheckInsEnabled && safetyCheckIns
+          ? dueSafetyCheckInReminders(safetyCheckIns, notified, now)
+          : []),
       ];
 
       const detailed = profile.reminderPrivacy === "detailed";
