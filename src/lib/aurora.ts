@@ -3,6 +3,7 @@ import type {
   AuroraMode,
   AuroraNudgeState,
   CheckIn,
+  EuphoriaEntry,
   Goal,
   JournalEntry,
   JourneyEvent,
@@ -50,6 +51,7 @@ export interface AuroraContext {
   voiceGoals: VoiceGoal[];
   voiceSessions: VoiceSession[];
   presentationEntries: PresentationEntry[];
+  euphoriaEntries: EuphoriaEntry[];
   nudgeStates: AuroraNudgeState[];
 }
 
@@ -304,6 +306,30 @@ function presentationWantToTry(context: AuroraContext): Candidate | null {
   };
 }
 
+// A Time Capsule that's reached its reopen date. Cooldown is deliberately
+// huge (not a recurring nudge) - once it's been shown and dismissed or
+// opened, it shouldn't keep resurfacing the same capsule.
+function readyTimeCapsule(context: AuroraContext): Candidate | null {
+  if (!context.profile.enabledModules.includes("journal")) return null;
+  const today = context.now.toISOString().slice(0, 10);
+  const ready = context.euphoriaEntries
+    .filter((entry) => entry.reopenAt && entry.reopenAt <= today)
+    .sort((a, b) => (a.reopenAt as string).localeCompare(b.reopenAt as string))[0];
+
+  if (!ready) return null;
+  return {
+    key: `time_capsule_ready:${ready.id}`,
+    kind: "memory",
+    eyebrow: "A Time Capsule is ready",
+    title: "You left yourself something for today",
+    message: "A moment you sealed for later is ready to open, whenever you feel like it.",
+    actionLabel: "Open it",
+    href: "/track/journal",
+    priority: 65,
+    cooldownDays: 3650,
+  };
+}
+
 // A quiet "on this day" callback, the same idea journaling apps use for
 // memories - but sourced entirely from local data and never framed as a
 // countdown or streak. Only ever looks at entries with an exact date, from a
@@ -375,6 +401,7 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
     firstJourneyStep(context),
     voicePracticeWaiting(context),
     presentationWantToTry(context),
+    readyTimeCapsule(context),
     onThisDayMemory(context),
   ]
     .filter((candidate): candidate is Candidate => candidate !== null)

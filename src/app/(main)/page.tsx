@@ -55,6 +55,7 @@ export default function HomePage() {
   const voiceGoals = useLiveQuery(() => db.voiceGoals.toArray(), []);
   const voiceSessions = useLiveQuery(() => db.voiceSessions.toArray(), []);
   const presentationEntries = useLiveQuery(() => db.presentationEntries.toArray(), []);
+  const euphoriaEntries = useLiveQuery(() => db.euphoriaEntries.toArray(), []);
   const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
 
@@ -73,6 +74,7 @@ export default function HomePage() {
     voiceGoals === undefined ||
     voiceSessions === undefined ||
     presentationEntries === undefined ||
+    euphoriaEntries === undefined ||
     auroraNudgeStates === undefined
   )
     return null;
@@ -158,6 +160,7 @@ export default function HomePage() {
         voiceGoals,
         voiceSessions,
         presentationEntries,
+        euphoriaEntries,
         nudgeStates: auroraNudgeStates,
       });
 
