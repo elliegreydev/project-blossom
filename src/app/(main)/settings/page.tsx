@@ -97,6 +97,7 @@ export default function SettingsPage() {
       )}
 
       <div className={styles.group}>
+        <Row href="/reminders" title="Reminders" meta="Everything coming up, in one place" />
         <Row href="/search" title="Search" meta="Find anything you've added" />
         <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
