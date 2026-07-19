@@ -26,6 +26,20 @@ function Row({ href, title, meta }: { href: string; title: string; meta?: string
   );
 }
 
+const DISCORD_INVITE_URL = "https://discord.gg/jD3yS2HN7s";
+
+function ExternalRow({ href, title, meta }: { href: string; title: string; meta?: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={styles.row}>
+      <div className={styles.rowText}>
+        <span className={styles.rowTitle}>{title}</span>
+        {meta && <span className={styles.rowMeta}>{meta}</span>}
+      </div>
+      {CHEVRON}
+    </a>
+  );
+}
+
 const AURORA_LABELS: Record<string, string> = {
   quiet: "Quiet",
   gentle: "Gentle",
@@ -112,6 +126,7 @@ export default function SettingsPage() {
       </div>
 
       <div className={styles.group}>
+        <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
         <Row href="/beta" title="Beta" />
         <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
         <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />

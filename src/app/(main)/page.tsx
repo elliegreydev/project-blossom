@@ -18,6 +18,7 @@ import { selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
 import BetaNudge from "@/components/BetaNudge";
+import DiscordNudge from "@/components/DiscordNudge";
 import AppNotice from "@/components/AppNotice";
 import styles from "./home.module.css";
 
@@ -257,6 +258,7 @@ export default function HomePage() {
       <InstallAppNudge />
       <SyncNudge />
       <BetaNudge />
+      <DiscordNudge />
 
       {auroraSuggestion && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
