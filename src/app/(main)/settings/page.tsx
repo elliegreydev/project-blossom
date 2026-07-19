@@ -127,6 +127,8 @@ export default function SettingsPage() {
 
       <div className={styles.group}>
         <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
+        <Row href="/about" title="About" meta="Who's building Blossom" />
+        <Row href="/blog" title="Blog" meta="Updates from the team" />
         <Row href="/beta" title="Beta" />
         <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
         <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
