@@ -53,7 +53,8 @@ export type ModuleKey =
   | "bloodTests"
   | "voicePractice"
   | "presentation"
-  | "bodyProgress";
+  | "bodyProgress"
+  | "budget";
 
 export interface Profile {
   id: string;
@@ -559,6 +560,34 @@ export interface BodyEntry {
   updatedAt: string;
 }
 
+// Transition cost & budget tracker (v2) -------------------------------------------
+// Deliberately local-only, same treatment as journal entries - financial
+// records are sensitive, and there's no real need for this to sync even
+// though it technically could. No comparison anywhere in the UI: a goal's
+// progress is only ever measured against itself, never anyone else's pace
+// or amount.
+
+export type BudgetCategory = "hrt" | "surgery" | "legal" | "other";
+
+export interface BudgetEntry {
+  id: string;
+  category: BudgetCategory;
+  description: string | null;
+  amount: number;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BudgetGoal {
+  id: string;
+  label: string;
+  targetAmount: number;
+  savedAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Private links (the user's own saved resources, separate from the curated
 // region resources list) ------------------------------------------------------
 
@@ -684,6 +713,8 @@ type BlossomDb = Dexie & {
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
   safetyCheckIns: EntityTable<SafetyCheckIn, "id">;
+  budgetEntries: EntityTable<BudgetEntry, "id">;
+  budgetGoals: EntityTable<BudgetGoal, "id">;
   bloodTestEntries: EntityTable<BloodTestEntry, "id">;
   voiceGoals: EntityTable<VoiceGoal, "id">;
   voiceSessions: EntityTable<VoiceSession, "id">;
@@ -1298,6 +1329,40 @@ function createDb(): BlossomDb {
       profile.trustedContactName = null;
       profile.trustedContactMethod = null;
     });
+  });
+  instance.version(24).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
   });
   return instance;
 }
@@ -2043,6 +2108,42 @@ export async function deletePrivateLink(id: string): Promise<void> {
   await db.privateLinks.delete(id);
 }
 
+// Transition cost & budget tracker (v2) -------------------------------------------
+
+export async function addBudgetEntry(
+  input: Pick<BudgetEntry, "category" | "description" | "amount" | "date">
+): Promise<BudgetEntry> {
+  const now = new Date().toISOString();
+  const entry: BudgetEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.budgetEntries.add(entry);
+  return entry;
+}
+
+export async function updateBudgetEntry(id: string, patch: Partial<BudgetEntry>): Promise<void> {
+  await db.budgetEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteBudgetEntry(id: string): Promise<void> {
+  await db.budgetEntries.delete(id);
+}
+
+export async function addBudgetGoal(input: Pick<BudgetGoal, "label" | "targetAmount">): Promise<BudgetGoal> {
+  const now = new Date().toISOString();
+  const goal: BudgetGoal = { id: newId(), savedAmount: 0, createdAt: now, updatedAt: now, ...input };
+  await db.budgetGoals.add(goal);
+  return goal;
+}
+
+export async function addToBudgetGoalSaved(id: string, amount: number): Promise<void> {
+  const goal = await db.budgetGoals.get(id);
+  if (!goal) return;
+  await db.budgetGoals.update(id, { savedAmount: Math.max(0, goal.savedAmount + amount), updatedAt: new Date().toISOString() });
+}
+
+export async function deleteBudgetGoal(id: string): Promise<void> {
+  await db.budgetGoals.delete(id);
+}
+
 // Safety check-ins -----------------------------------------------------------
 // Deliberately not synced (see SafetyCheckIn's own comment) - writes go
 // straight to Dexie, never through recordSyncChange/the sync outbox, the
@@ -2241,6 +2342,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     goals,
     privateLinks,
     safetyCheckIns,
+    budgetEntries,
+    budgetGoals,
     bloodTestEntries,
     voiceGoals,
     voiceSessionsRaw,
@@ -2266,6 +2369,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.goals.toArray(),
     db.privateLinks.toArray(),
     db.safetyCheckIns.toArray(),
+    db.budgetEntries.toArray(),
+    db.budgetGoals.toArray(),
     db.bloodTestEntries.toArray(),
     db.voiceGoals.toArray(),
     db.voiceSessions.toArray(),
@@ -2316,6 +2421,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     goals,
     privateLinks,
     safetyCheckIns,
+    budgetEntries,
+    budgetGoals,
     bloodTestEntries,
     voiceGoals,
     voiceSessions,
@@ -2348,6 +2455,8 @@ export async function deleteAllData(): Promise<void> {
       db.goals,
       db.privateLinks,
       db.safetyCheckIns,
+      db.budgetEntries,
+      db.budgetGoals,
       db.bloodTestEntries,
       db.voiceGoals,
       db.voiceSessions,
@@ -2379,6 +2488,8 @@ export async function deleteAllData(): Promise<void> {
         db.goals.clear(),
         db.privateLinks.clear(),
         db.safetyCheckIns.clear(),
+        db.budgetEntries.clear(),
+        db.budgetGoals.clear(),
         db.bloodTestEntries.clear(),
         db.voiceGoals.clear(),
         db.voiceSessions.clear(),

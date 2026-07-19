@@ -114,6 +114,19 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "budget",
+    href: "/track/budget",
+    title: "Budget",
+    desc: "Transition costs and savings goals, kept private",
+    tint: "var(--mint)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.2c0 2.8-6 1.3-6 4.1 0 1.2 1.3 2.2 3 2.2s3-1.1 3-2.5" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {
