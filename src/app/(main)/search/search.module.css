@@ -1,0 +1,42 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 820px;
+  padding: max(30px, var(--safe-top)) 20px 36px;
+}
+
+.searchBox {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-inter);
+}
+
+.searchBox::placeholder {
+  color: var(--text-muted);
+}
+
+.hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.groupLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

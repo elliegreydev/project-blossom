@@ -180,6 +180,13 @@ export default function HomePage() {
           <h1 className={styles.greeting}>Hi {name} 🌸</h1>
         </div>
         <div className={styles.heroActions}>
+          <Link href="/search" className={styles.accountLink} aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <span>Search</span>
+          </Link>
           <Link href="/account" className={styles.accountLink}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <path d="M7.5 18.5A5.5 5.5 0 0 1 8 7.52 6.5 6.5 0 0 1 20 11a4 4 0 0 1-1 7.87" />

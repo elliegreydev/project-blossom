@@ -97,6 +97,7 @@ export default function SettingsPage() {
       )}
 
       <div className={styles.group}>
+        <Row href="/search" title="Search" meta="Find anything you've added" />
         <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
         <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
