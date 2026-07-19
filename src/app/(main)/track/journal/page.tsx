@@ -7,6 +7,7 @@ import SensitiveModuleGate from "@/components/SensitiveModuleGate";
 import JournalSheet from "@/components/JournalSheet";
 import CheckInSheet from "@/components/CheckInSheet";
 import { db, deleteJournalEntry, deleteCheckIn, type CheckIn } from "@/lib/db";
+import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 import local from "./journal.module.css";
 
@@ -87,6 +88,7 @@ export default function JournalPage() {
                 <div key={group.key} className={styles.item}>
                   <div className={styles.itemTitle}>{group.label}</div>
                   <div className={local.trendAverage}>Average {group.average.toFixed(1)}/5</div>
+                  <TrendChart points={group.values} min={1} max={5} />
                   <div className={local.trendGroup}>
                     {group.values.map((v, i) => (
                       <div key={i} className={local.trendRow}>

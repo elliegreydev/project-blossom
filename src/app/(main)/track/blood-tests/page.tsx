@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddBloodTestSheet from "@/components/AddBloodTestSheet";
 import { db, deleteBloodTestEntry, type BloodTestEntry } from "@/lib/db";
+import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 
 function dateLabel(iso: string): string {
@@ -47,9 +48,14 @@ export default function BloodTestsPage() {
           </div>
         ) : (
           <div className={styles.list}>
-            {groupList.map((group) => (
+            {groupList.map((group) => {
+              const numericPoints = group.items
+                .map((e) => ({ date: e.date, value: parseFloat(e.value) }))
+                .filter((p): p is { date: string; value: number } => Number.isFinite(p.value));
+              return (
               <div key={group.testName} className={styles.item}>
                 <div className={styles.itemTitle}>{group.testName}</div>
+                {numericPoints.length >= 2 && <TrendChart points={numericPoints} />}
                 {group.items.map((entry) => (
                   <div key={entry.id} style={{ marginTop: 8 }}>
                     <div className={styles.itemRow}>
@@ -76,7 +82,8 @@ export default function BloodTestsPage() {
                   </div>
                 ))}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <button className={styles.addButton} onClick={() => setSheetOpen(true)}>

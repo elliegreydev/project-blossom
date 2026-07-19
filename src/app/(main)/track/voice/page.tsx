@@ -7,6 +7,7 @@ import AddVoiceGoalSheet from "@/components/AddVoiceGoalSheet";
 import LogVoiceSessionSheet from "@/components/LogVoiceSessionSheet";
 import LivePitchView from "@/components/LivePitchView";
 import { db, deleteVoiceGoal, deleteVoiceSession, type VoiceGoal, type VoicePracticeCategory } from "@/lib/db";
+import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 import local from "./voice.module.css";
 
@@ -108,11 +109,22 @@ export default function VoicePracticePage() {
                   withComfort.length > 0
                     ? withComfort.reduce((sum, s) => sum + (s.comfortRating ?? 0), 0) / withComfort.length
                     : null;
+                const comfortPoints = withComfort.map((s) => ({ date: s.createdAt, value: s.comfortRating as number }));
+                const pitchBand = group.items
+                  .filter((s) => s.pitchLowHz !== null && s.pitchHighHz !== null)
+                  .map((s) => ({ date: s.createdAt, low: s.pitchLowHz as number, high: s.pitchHighHz as number }));
                 return (
                   <div key={group.goalId} className={styles.item}>
                     <div className={styles.itemTitle}>{goalTitle(group.goalId)}</div>
                     {avgComfort !== null && (
                       <div className={local.trendAverage}>Average comfort {avgComfort.toFixed(1)}/5</div>
+                    )}
+                    <TrendChart points={comfortPoints} min={1} max={5} />
+                    {pitchBand.length >= 2 && (
+                      <>
+                        <div className={local.trendAverage} style={{ marginTop: 8 }}>Pitch range</div>
+                        <TrendChart band={pitchBand} color="var(--sky)" />
+                      </>
                     )}
                     <div className={local.trendGroup}>
                       {group.items.map((s) => (
