@@ -38,7 +38,7 @@ function dateLabel(iso: string): string {
 }
 
 export default function VoicePracticePage() {
-  const [tab, setTab] = useState<"goals" | "sessions">("goals");
+  const [tab, setTab] = useState<"goals" | "sessions" | "progress">("goals");
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<VoiceGoal | null>(null);
   const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
@@ -78,13 +78,64 @@ export default function VoicePracticePage() {
         >
           Practice log
         </button>
+        <button
+          className={`${local.segment} ${tab === "progress" ? local.active : ""}`}
+          onClick={() => setTab("progress")}
+        >
+          Progress
+        </button>
       </div>
 
       <button type="button" className={local.pitchViewButton} onClick={() => setPitchViewOpen(true)}>
         🎤 Live pitch view
       </button>
 
-      {tab === "goals" ? (
+      {tab === "progress" ? (
+        <div className={styles.section}>
+          {sessionGroups.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyTitle}>Nothing to show yet</div>
+              <div className={styles.emptySubtitle}>
+                Once you&apos;ve logged a few sessions, they&apos;ll show up here per goal so you
+                can look back over time.
+              </div>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {sessionGroups.map((group) => {
+                const withComfort = group.items.filter((s) => s.comfortRating !== null);
+                const avgComfort =
+                  withComfort.length > 0
+                    ? withComfort.reduce((sum, s) => sum + (s.comfortRating ?? 0), 0) / withComfort.length
+                    : null;
+                return (
+                  <div key={group.goalId} className={styles.item}>
+                    <div className={styles.itemTitle}>{goalTitle(group.goalId)}</div>
+                    {avgComfort !== null && (
+                      <div className={local.trendAverage}>Average comfort {avgComfort.toFixed(1)}/5</div>
+                    )}
+                    <div className={local.trendGroup}>
+                      {group.items.map((s) => (
+                        <div key={s.id} className={local.trendRow}>
+                          <span className={styles.itemMeta}>{dateLabel(s.createdAt)}</span>
+                          <span>
+                            {[
+                              s.comfortRating ? `Comfort ${s.comfortRating}/5` : null,
+                              s.pitchLowHz !== null && s.pitchHighHz !== null ? `≈${s.pitchLowHz}–${s.pitchHighHz} Hz` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : tab === "goals" ? (
         <div className={styles.section}>
           {goals.length === 0 ? (
             <div className={styles.empty}>

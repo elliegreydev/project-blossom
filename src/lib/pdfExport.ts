@@ -399,8 +399,9 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
       const goalSessions = (sessionsByGoal.get(goal.id) ?? []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (goalSessions.length === 0) d.meta("No sessions logged.");
       for (const session of goalSessions) {
+        const pitchText = session.pitchLowHz !== null && session.pitchHighHz !== null ? ` · ≈${session.pitchLowHz}–${session.pitchHighHz} Hz` : "";
         d.meta(
-          `${fmtDate(session.createdAt)}${session.sessionDuration ? ` · ${session.sessionDuration}` : ""}${session.comfortRating ? ` · Comfort ${session.comfortRating}/5` : ""}${session.hasRecording ? " · (recording attached, listen in app)" : ""}`
+          `${fmtDate(session.createdAt)}${session.sessionDuration ? ` · ${session.sessionDuration}` : ""}${session.comfortRating ? ` · Comfort ${session.comfortRating}/5` : ""}${pitchText}${session.hasRecording ? " · (recording attached, listen in app)" : ""}`
         );
       }
       d.spacer(6);

@@ -500,6 +500,11 @@ export interface VoiceSession {
   // to a hasRecording flag instead). Only ever used for private playback -
   // nothing in Blossom analyses it.
   recording: Blob | null;
+  // Optional, opt-in only (see capturePitchRange in lib/pitchDetection.ts) -
+  // a range, not a single score, and never compared against any target or
+  // labelled male/female anywhere it's shown.
+  pitchLowHz: number | null;
+  pitchHighHz: number | null;
   createdAt: string;
 }
 
@@ -2127,7 +2132,7 @@ export async function deleteVoiceGoal(id: string): Promise<void> {
 }
 
 export async function addVoiceSession(
-  input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note" | "recording">
+  input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note" | "recording" | "pitchLowHz" | "pitchHighHz">
 ): Promise<VoiceSession> {
   const session: VoiceSession = { id: newId(), createdAt: new Date().toISOString(), ...input };
   await db.voiceSessions.add(session);

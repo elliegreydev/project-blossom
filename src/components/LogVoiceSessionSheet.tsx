@@ -6,6 +6,7 @@ import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { db, addVoiceSession } from "@/lib/db";
 import { isRecordingSupported, requestMicStream, stopStream } from "@/lib/audioRecorder";
+import { capturePitchRange } from "@/lib/pitchDetection";
 
 const MAX_RECORDING_SECONDS = 180;
 
@@ -40,6 +41,9 @@ export default function LogVoiceSessionSheet({
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+
+  const [pitchState, setPitchState] = useState<"idle" | "listening" | "unavailable">("idle");
+  const [pitchRange, setPitchRange] = useState<{ low: number; high: number } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -110,6 +114,21 @@ export default function LogVoiceSessionSheet({
     setElapsedSeconds(0);
   }
 
+  async function measurePitch() {
+    setPitchState("listening");
+    try {
+      const range = await capturePitchRange();
+      if (range) {
+        setPitchRange(range);
+        setPitchState("idle");
+      } else {
+        setPitchState("unavailable");
+      }
+    } catch {
+      setPitchState("unavailable");
+    }
+  }
+
   if (goals === undefined) return null;
 
   const activeGoalId = selectedGoalId ?? goals[0]?.id ?? null;
@@ -123,6 +142,8 @@ export default function LogVoiceSessionSheet({
       comfortRating,
       note: note.trim() || null,
       recording: recordingBlob,
+      pitchLowHz: pitchRange?.low ?? null,
+      pitchHighHz: pitchRange?.high ?? null,
     });
     setSaving(false);
     onClose();
@@ -234,6 +255,37 @@ export default function LogVoiceSessionSheet({
               {recordingState === "unavailable" && (
                 <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                   Couldn&apos;t access your microphone - you can still save this session without a recording.
+                </p>
+              )}
+            </div>
+
+            <div className={styles.field}>
+              <span className={styles.label}>Pitch range (optional)</span>
+              <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
+                A rough sense of where your voice sat during this session, not a score or a
+                target - pitch is only one part of how a voice comes across.
+              </p>
+              {pitchState === "idle" && !pitchRange && (
+                <button type="button" className={styles.tertiaryButton} style={{ alignSelf: "flex-start" }} onClick={() => void measurePitch()}>
+                  🎤 Measure for a few seconds
+                </button>
+              )}
+              {pitchState === "listening" && (
+                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>Listening…</p>
+              )}
+              {pitchState === "idle" && pitchRange && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 14, color: "var(--text-primary)" }}>
+                    ≈{pitchRange.low}–{pitchRange.high} Hz
+                  </span>
+                  <button type="button" className={styles.tertiaryButton} onClick={() => setPitchRange(null)}>
+                    Clear
+                  </button>
+                </div>
+              )}
+              {pitchState === "unavailable" && (
+                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Couldn&apos;t get a clear reading - you can still save this session without one.
                 </p>
               )}
             </div>
