@@ -89,6 +89,7 @@ export default function SettingsPage() {
 
       <div className={styles.group}>
         <Row href="/settings/accessibility" title="Accessibility" />
+        <Row href="/settings/passport" title="Blossom Passport" meta="Build a document to share" />
         <Row href="/settings/data" title="Data controls" />
         <Row href="/settings/support" title="Help & support" />
       </div>

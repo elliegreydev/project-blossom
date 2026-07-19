@@ -19,6 +19,12 @@ import type {
   VoiceSession,
 } from "./db";
 
+const HRT_STATUS_LABEL: Record<string, string> = {
+  on: "Currently on HRT",
+  considering: "Considering HRT",
+  not_tracking: "Not tracked",
+};
+
 // Photos are deliberately left out here, same as exportAllData()'s JSON
 // export - they're private, local-only, and a PDF full of embedded images
 // is a very different (and much riskier) thing to build than a readable
@@ -90,7 +96,7 @@ function drawPetals(doc: jsPDF, cx: number, cy: number, scale = 1) {
   doc.restoreGraphicsState();
 }
 
-class DocBuilder {
+export class DocBuilder {
   doc: jsPDF;
   margin = 48;
   y: number;
@@ -433,6 +439,89 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.meta(link.url);
     d.body(link.note ?? "");
     d.spacer(4);
+  }
+
+  return d.finish();
+}
+
+// Blossom Passport ------------------------------------------------------------
+// Unlike buildDataExportPdf above (a complete backup of everything), a
+// Passport is a short, user-curated document meant to leave the house - to
+// hand to a doctor, an HR contact, or bring to a legal appointment. Every
+// section is opt-in per export; journal entries, blood tests, photos, and
+// check-in mood data are never available here at all, regardless of purpose,
+// since this document is designed to be read by someone else.
+
+export type PassportPurpose = "doctor" | "legal" | "work" | "personal";
+
+export interface PassportSections {
+  identity: boolean;
+  hrtStatus: boolean;
+  journey: boolean;
+  medications: boolean;
+  note: string;
+}
+
+export interface PassportData {
+  purpose: PassportPurpose;
+  sections: PassportSections;
+  profile: Pick<Profile, "displayName" | "pronouns" | "hrtStatus">;
+  journeyItems: Array<Pick<Milestone, "title" | "category" | "eventDate" | "note">>;
+  medications: Medication[];
+}
+
+export const PASSPORT_PURPOSE_SUBTITLE: Record<PassportPurpose, string> = {
+  doctor: "Prepared for a medical appointment",
+  legal: "Prepared for a legal or documentation purpose",
+  work: "Prepared for work or HR",
+  personal: "A personal record",
+};
+
+export function buildPassportPdf(data: PassportData): jsPDF {
+  const d = new DocBuilder();
+  d.coverHeader(`${PASSPORT_PURPOSE_SUBTITLE[data.purpose]} · ${fmtDate(new Date().toISOString())}`);
+
+  if (data.sections.identity || data.sections.hrtStatus) {
+    d.heading("About");
+    if (data.sections.identity && data.profile.displayName) d.meta(`Name: ${data.profile.displayName}`);
+    if (data.sections.identity && data.profile.pronouns) d.meta(`Pronouns: ${data.profile.pronouns}`);
+    if (data.sections.hrtStatus && data.profile.hrtStatus) {
+      d.meta(`HRT: ${HRT_STATUS_LABEL[data.profile.hrtStatus] ?? data.profile.hrtStatus}`);
+    }
+    d.spacer(6);
+  }
+
+  if (data.sections.journey) {
+    d.heading("Journey timeline");
+    const sorted = [...data.journeyItems].sort((a, b) => (b.eventDate ?? "").localeCompare(a.eventDate ?? ""));
+    if (sorted.length === 0) d.emptyNote("Nothing recorded.");
+    for (const item of sorted) {
+      d.subheading(item.title);
+      d.meta([item.category ?? "", item.eventDate ?? ""].filter(Boolean).join(" · "));
+      if (item.note) d.body(item.note);
+      d.spacer(6);
+    }
+  }
+
+  if (data.sections.medications) {
+    d.heading("Current medications");
+    const active = data.medications.filter((m) => m.active);
+    if (active.length === 0) d.emptyNote("None currently active.");
+    for (const med of active) {
+      d.subheading(med.name);
+      const scheduleText = med.frequency
+        ? `${med.frequency.times.join(", ")}${
+            med.frequency.intervalDays ? ` every ${med.frequency.intervalDays} days` : med.frequency.days ? " on set days" : " daily"
+          }`
+        : "No schedule set";
+      d.meta([med.route ?? "", med.unit ?? "", scheduleText].filter(Boolean).join(" · "));
+      d.spacer(4);
+    }
+  }
+
+  if (data.sections.note.trim()) {
+    d.heading("Note");
+    d.body(data.sections.note.trim());
   }
 
   return d.finish();
