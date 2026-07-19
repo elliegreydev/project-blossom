@@ -105,90 +105,108 @@ export default function BridgeViewerPage({ params }: { params: Promise<{ token: 
         </header>
 
         {profile && (
-          <div className={styles.item}>
-            <div className={styles.itemBody}>
-              {profile.display_name && <div className={styles.itemTitle}>{profile.display_name}</div>}
-              {profile.pronouns && <div className={styles.itemDescription}>Pronouns: {profile.pronouns}</div>}
-              {profile.hrt_status && <div className={styles.itemDescription}>HRT: {profile.hrt_status}</div>}
-              {profile.region && <div className={styles.itemDescription}>Region: {profile.region}</div>}
+          <>
+            <span className={styles.eyebrow}>Profile &amp; preferences</span>
+            <div className={styles.item}>
+              <div className={styles.itemBody}>
+                {profile.display_name && <div className={styles.itemTitle}>{profile.display_name}</div>}
+                {profile.pronouns && <div className={styles.itemDescription}>Pronouns: {profile.pronouns}</div>}
+                {profile.hrt_status && <div className={styles.itemDescription}>HRT: {profile.hrt_status}</div>}
+                {profile.region && <div className={styles.itemDescription}>Region: {profile.region}</div>}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {journey.length > 0 && (
-          <div className={styles.list}>
-            {journey.map((entry, i) => (
-              <div key={i} className={styles.item}>
-                <div className={styles.itemBody}>
-                  <div className={styles.itemTitle}>{entry.title}</div>
-                  <div className={styles.itemDescription}>{[entry.category, fmtDate(entry.event_date)].filter(Boolean).join(" · ")}</div>
-                  {entry.note && <div className={styles.itemDescription}>{entry.note}</div>}
+          <>
+            <span className={styles.eyebrow}>Journey timeline</span>
+            <div className={styles.list}>
+              {journey.map((entry, i) => (
+                <div key={i} className={styles.item}>
+                  <div className={styles.itemBody}>
+                    <div className={styles.itemTitle}>{entry.title}</div>
+                    <div className={styles.itemDescription}>{[entry.category, fmtDate(entry.event_date)].filter(Boolean).join(" · ")}</div>
+                    {entry.note && <div className={styles.itemDescription}>{entry.note}</div>}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {medications.length > 0 && (
-          <div className={styles.list}>
-            {medications.map((med, i) => (
-              <div key={i} className={styles.item}>
-                <div className={styles.itemBody}>
-                  <div className={styles.itemTitle}>{med.name}{med.active ? "" : " (inactive)"}</div>
-                  <div className={styles.itemDescription}>{[med.route, med.unit].filter(Boolean).join(" · ")}</div>
+          <>
+            <span className={styles.eyebrow}>Medications</span>
+            <div className={styles.list}>
+              {medications.map((med, i) => (
+                <div key={i} className={styles.item}>
+                  <div className={styles.itemBody}>
+                    <div className={styles.itemTitle}>{med.name}{med.active ? "" : " (inactive)"}</div>
+                    <div className={styles.itemDescription}>{[med.route, med.unit].filter(Boolean).join(" · ")}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {appointments.length > 0 && (
-          <div className={styles.list}>
-            {appointments.map((appt, i) => (
-              <div key={i} className={styles.item}>
-                <div className={styles.itemBody}>
-                  <div className={styles.itemTitle}>{appt.title}</div>
-                  <div className={styles.itemDescription}>{[fmtDate(appt.appointment_at), appt.location].filter(Boolean).join(" · ")}</div>
+          <>
+            <span className={styles.eyebrow}>Appointments</span>
+            <div className={styles.list}>
+              {appointments.map((appt, i) => (
+                <div key={i} className={styles.item}>
+                  <div className={styles.itemBody}>
+                    <div className={styles.itemTitle}>{appt.title}</div>
+                    <div className={styles.itemDescription}>{[fmtDate(appt.appointment_at), appt.location].filter(Boolean).join(" · ")}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {checkins.length > 0 && (
-          <div className={styles.list}>
-            {checkins.map((ci, i) => (
-              <div key={i} className={styles.item}>
-                <div className={styles.itemBody}>
-                  <div className={styles.itemDescription}>{fmtDate(ci.created_at)}</div>
-                  <div className={styles.itemTitle}>
-                    {[
-                      ci.mood !== null ? `Mood ${ci.mood}/5` : "",
-                      ci.energy !== null ? `Energy ${ci.energy}/5` : "",
-                      ci.confidence !== null ? `Confidence ${ci.confidence}/5` : "",
-                      ci.stress !== null ? `Stress ${ci.stress}/5` : "",
-                      ci.comfort !== null ? `Comfort ${ci.comfort}/5` : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+          <>
+            <span className={styles.eyebrow}>Check-ins</span>
+            <div className={styles.list}>
+              {checkins.map((ci, i) => (
+                <div key={i} className={styles.item}>
+                  <div className={styles.itemBody}>
+                    <div className={styles.itemDescription}>{fmtDate(ci.created_at)}</div>
+                    <div className={styles.itemTitle}>
+                      {[
+                        ci.mood !== null ? `Mood ${ci.mood}/5` : "",
+                        ci.energy !== null ? `Energy ${ci.energy}/5` : "",
+                        ci.confidence !== null ? `Confidence ${ci.confidence}/5` : "",
+                        ci.stress !== null ? `Stress ${ci.stress}/5` : "",
+                        ci.comfort !== null ? `Comfort ${ci.comfort}/5` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {goals.length > 0 && (
-          <div className={styles.list}>
-            {goals.map((goal, i) => (
-              <div key={i} className={styles.item}>
-                <div className={styles.itemBody}>
-                  <div className={styles.itemTitle}>{goal.title}</div>
-                  <div className={styles.itemDescription}>{[goal.status, goal.category].filter(Boolean).join(" · ")}</div>
+          <>
+            <span className={styles.eyebrow}>Goals</span>
+            <div className={styles.list}>
+              {goals.map((goal, i) => (
+                <div key={i} className={styles.item}>
+                  <div className={styles.itemBody}>
+                    <div className={styles.itemTitle}>{goal.title}</div>
+                    <div className={styles.itemDescription}>{[goal.status, goal.category].filter(Boolean).join(" · ")}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </main>
