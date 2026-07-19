@@ -13,6 +13,11 @@ export default function AboutPage() {
         </header>
 
         <div className={styles.body}>
+          I&apos;m trans (male to female), and I&apos;m still learning how to code, Blossom&apos;s
+          one of the biggest things I&apos;ve built so far. This isn&apos;t some polished corporate
+          project. It&apos;s made by someone who&apos;s actually lived through a lot of what this
+          app is trying to help with.
+          {"\n\n"}
           I built Blossom because I wanted something that actually felt like it was on your side.
           A lot of apps in this space either treat your data like something to sell, or they&apos;re
           built by people who&apos;ve never really had to think about what it means to track
