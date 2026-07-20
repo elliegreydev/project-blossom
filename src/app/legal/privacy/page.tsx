@@ -12,179 +12,222 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Draft - last updated 17 July 2026</p>
+          <p className={styles.updated}>Beta draft - last updated 20 July 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
-          This is a draft, written to accurately describe how Blossom actually
-          works today. It hasn&apos;t been reviewed by a lawyer yet, and
-          shouldn&apos;t be treated as final until it has.
+          This is Blossom&apos;s current beta privacy policy. It describes the app as it works today,
+          but it is still being reviewed before any wider public release. We&apos;ll clearly publish a
+          final version, with our legal contact details and retention periods, before that happens.
         </div>
 
         <div className={styles.body}>
           <section>
             <h2>The short version</h2>
             <p>
-              Blossom is built local-first: everything works fully without an
-              account, and your data lives on your own device unless you
-              choose to sign in. We never sell your data. We don&apos;t show
-              ads or use tracking analytics. You can export or delete
-              everything at any time from Settings.
+              Blossom is local-first. You can use it without an account, and most of the more
+              sensitive things you write stay on your own device. Signing in and sync are optional.
+              We do not sell your data, show ads, or use third-party behavioural tracking.
             </p>
           </section>
 
           <section>
             <h2>Who this applies to</h2>
             <p>
-              Blossom is for transgender, nonbinary, and questioning adults
-              aged 18 and over. We ask you to confirm your age when you set
-              up the app; we don&apos;t verify it with ID, and we don&apos;t
-              ask for your legal name, sex assigned at birth, or any
-              diagnosis.
+              Blossom is for transgender, nonbinary, and questioning adults aged 18 and over. We ask
+              you to confirm your age during setup. We do not ask for ID, a legal name, sex assigned
+              at birth, or a diagnosis.
             </p>
           </section>
 
           <section>
-            <h2>What stays on your device only</h2>
+            <h2>Who is responsible for your data</h2>
             <p>
-              Some things never leave your device, whether or not you sign
-              in: journal entries and check-in notes, any photos you add to
-              presentation or body &amp; progress tracking, your app lock
-              PIN, and accessibility preferences. We can&apos;t see this data
-              and it isn&apos;t included if you turn on sync.
+              Project Blossom is responsible for the personal data handled through the app. Our legal
+              contact details are being finalised for beta and will be added here before wider public
+              release. Until then, use the support route in the app for privacy questions or requests.
             </p>
           </section>
 
           <section>
-            <h2>What can sync, if you choose to sign in</h2>
+            <h2>What stays on your device</h2>
             <p>
-              Signing in is entirely optional. If you turn on sync, the
-              following can be stored on our server (hosted on Supabase) so
-              it follows you between devices: your profile (display name,
-              pronouns, region, preferences), medication schedules and
-              logs, appointments, goals, milestones, and check-in ratings
-              (not the written notes). If you enable background reminders,
-              we also store a push notification subscription for your
-              device - just the technical address needed to deliver a
-              notification, not any message content beyond what&apos;s sent
-              at the moment of delivery.
+              The following stays on the device where you create it and is not included in sync:
+              journal entries and written check-in notes; gender-euphoria entries and Time Capsule
+              entries; photos; blood-test records; voice recordings and practice notes; body and
+              presentation tracking; social-transition plans and private contact notes; budget entries;
+              safety check-ins and trusted-contact details; saved private links; your app lock, PIN,
+              biometric credential reference, accessibility choices, and Home layout choices.
+            </p>
+            <p>
+              Blossom does not receive your biometric data. Your device handles that itself; Blossom
+              only keeps a local reference that lets it ask the device to unlock the app.
             </p>
           </section>
 
           <section>
-            <h2>Your account</h2>
+            <h2>What can sync when you choose it</h2>
             <p>
-              We use email sign-in codes (no passwords) via Supabase Auth.
-              Your email only proves you own that address - it doesn&apos;t
-              need to match your real name, and we don&apos;t require any
-              other identity information to create an account.
+              If you sign in and turn on sync, we store selected data in Supabase so it can follow you
+              between your signed-in devices. This can include your profile and preferences; journey
+              milestones and timeline; medications, schedules, dose logs, medication supplies and care
+              supplies; appointments, including appointment-builder details and private appointment
+              notes; numeric check-in ratings; goals; and the minimal Aurora state needed to avoid
+              repeating the same nudge.
+            </p>
+            <p>
+              Written journal and check-in notes, photos, blood tests, voice recordings, social plans,
+              budget data, safety contacts, and the other device-only categories above do not sync.
             </p>
           </section>
 
           <section>
-            <h2>How your data is protected</h2>
+            <h2>Your account and device storage</h2>
             <p>
-              Synced data is protected by row-level security, meaning the
-              database itself enforces that your own signed-in account can
-              read and write your rows - with one exception, described
-              below for support requests. Data is encrypted at rest by our
-              hosting provider. Being fully honest about where we are today:
-              this is not yet full end-to-end encryption, so it&apos;s
-              theoretically possible for someone with direct database
-              administrator access to see synced records, in the same way
-              that&apos;s true of most apps at this stage. We consider this a
-              real limitation, not a footnote, and stronger encryption for
-              synced data is something we want to build toward.
+              We use Supabase Auth for passwordless email sign-in. Your email address is used to create
+              and secure your account. Blossom also uses essential browser storage, such as IndexedDB,
+              local storage and authentication cookies, to keep your local data, session and settings
+              working. We do not use advertising cookies.
             </p>
           </section>
 
           <section>
-            <h2>If you contact us for support</h2>
+            <h2>Notifications and reminders</h2>
             <p>
-              If you reach out to us for help with your account, a staff
-              member can open a support case to see your synced account data
-              - your profile, medications and schedules, appointments,
-              goals, and milestones - so they can actually help you.
-            </p>
-            <p>
-              This access is deliberately narrow: it only exists while a
-              case is open for your account, every access is logged
-              (who, when, which case), and it&apos;s switched off the moment
-              the case is closed. It never reaches journal entries,
-              check-in notes, or anything from body/progress, blood test,
-              voice practice, or presentation tracking - those never sync to
-              our servers at all, regardless of support access, so they
-              simply aren&apos;t there to be seen.
+              If you enable notifications, we store a technical push subscription for that device and
+              process the synced reminder schedule needed to send a reminder. By default notifications
+              are discreet. If you choose detailed notifications, a medication name or appointment title
+              may be included in the notification sent through your browser or operating system&apos;s push
+              service. You can turn notifications off in Blossom or in your device settings.
             </p>
           </section>
 
           <section>
-            <h2>Notifications</h2>
+            <h2>Sharing you choose</h2>
             <p>
-              By default, reminders are discreet and never mention
-              medication names, appointment types, or journal content - they
-              just say something like &ldquo;you have something
-              scheduled.&rdquo; You can opt into more detailed reminder text
-              if you&apos;d prefer that instead.
+              Blossom never shares your information automatically. Trusted Circle lets you grant a
+              signed-in person read-only access to only the categories you choose. Blossom Bridge lets
+              you create a temporary, read-only link for someone without an account. Both are optional,
+              category-by-category, and revocable. We keep an in-app access history for these shares.
+            </p>
+            <p>
+              A Bridge recipient needs the link itself, so treat it like sensitive information. Revoking
+              a link or Trusted Circle grant stops future Blossom access, but cannot remove something a
+              recipient has already read, copied, saved or screenshotted.
+            </p>
+          </section>
+
+          <section>
+            <h2>Exports</h2>
+            <p>
+              You can create exports, including selected Blossom Passport PDFs and structured data
+              files. These are created for you to download and share. Once an export has left Blossom,
+              you control where it goes and who receives it.
+            </p>
+          </section>
+
+          <section>
+            <h2>Support access</h2>
+            <p>
+              If you ask for help with a synced account, a staff member may open a time-limited support
+              case. While that case is open, authorised staff can see the synced profile, medication,
+              appointment, goal and journey information needed to help. Each normal in-app access is
+              logged. Journal text, written check-in notes and device-only categories cannot be reached
+              through support access because they never sync.
+            </p>
+          </section>
+
+          <section>
+            <h2>Beta chat, feedback and applications</h2>
+            <p>
+              Beta chat is a shared space, not a private journal. Messages and the display name you use
+              there are visible to other beta testers and Blossom staff. Feature requests submitted to
+              the public ideas board are visible publicly. Bug reports, contact emails and staff
+              applications are visible only to authorised Blossom staff. Please do not put medical or
+              other highly sensitive information into public ideas or beta chat.
+            </p>
+          </section>
+
+          <section>
+            <h2>How we use information</h2>
+            <p>
+              We use information to provide the features you choose, keep your account and data secure,
+              deliver reminders you enable, respond to support requests, run beta features, and improve
+              the service. Staff can view aggregate operational statistics for synced accounts, such as
+              total account numbers, broad regions and module uptake. These statistics are not used for
+              advertising, and local-only use leaves no server-side analytics trail.
+            </p>
+          </section>
+
+          <section>
+            <h2>How we protect synced data</h2>
+            <p>
+              Synced data is protected by row-level security so a signed-in account can access its own
+              records, with the limited sharing and support exceptions described above. Our providers
+              encrypt stored data. Synced data is not currently end-to-end encrypted, so authorised
+              service administrators could theoretically access it where necessary to operate or secure
+              the service. We treat that as a real limitation, not a hidden footnote.
+            </p>
+          </section>
+
+          <section>
+            <h2>Providers and external links</h2>
+            <p>
+              We currently use Supabase for authentication and synced data, Vercel to host Blossom, and
+              your browser or operating system&apos;s push service if you enable notifications. Those
+              services process data only to provide their services to us. Their infrastructure may
+              involve processing outside the UK; the final public policy will list the current locations
+              and safeguards after legal review.
+            </p>
+            <p>
+              Regional resources are curated by Blossom&apos;s team. Opening a resource may take you to an
+              external organisation&apos;s website, which has its own privacy policy. Blossom is not
+              affiliated with every organisation listed.
+            </p>
+          </section>
+
+          <section>
+            <h2>Retention and deletion</h2>
+            <p>
+              You can delete local Blossom data from your device and request deletion of a synced account
+              from Settings. Deleting an account removes the associated live synced data, subject to
+              short technical backup retention where needed for security and recovery. We are still
+              setting the precise retention periods for support cases, access logs, beta chat, feedback,
+              applications and backups. Those periods will be published before wider public release.
+            </p>
+          </section>
+
+          <section>
+            <h2>Your rights and choices</h2>
+            <p>
+              Depending on the law that applies to you, you may have rights to access, correct, erase,
+              restrict, object to, or receive a copy of your personal data, and to complain to the UK
+              Information Commissioner&apos;s Office. You can already export, pause sync, sign out, manage
+              sharing and delete data through Blossom&apos;s settings. A final reviewed policy will state the
+              legal bases and special-category health-data condition used for each processing purpose.
             </p>
           </section>
 
           <section>
             <h2>Aurora</h2>
             <p>
-              Aurora, Blossom&apos;s in-app guide, is rule-based rather than
-              a conversational AI. It doesn&apos;t hold conversations, and we
-              don&apos;t store any chat-style content from it - only minimal
-              state needed to avoid repeating the same suggestion (which
-              nudge was shown, and when).
+              Aurora is currently rule-based rather than a conversational AI. It does not hold
+              conversations or make decisions with legal or similarly significant effects. Blossom only
+              keeps the minimal synced state needed to avoid showing the same guidance repeatedly.
             </p>
-          </section>
-
-          <section>
-            <h2>Support resources</h2>
-            <p>
-              The regional support resources shown in the app are a
-              human-curated list maintained by our team, not pulled from an
-              external directory. Viewing them doesn&apos;t share any data
-              with those organisations, and Blossom isn&apos;t affiliated
-              with them.
-            </p>
-          </section>
-
-          <section>
-            <h2>Who we share data with</h2>
-            <p>
-              We do not sell your data, to anyone, ever. We don&apos;t share
-              it with advertisers. We use a small number of infrastructure
-              providers to run the service - currently Supabase (database and
-              authentication) and Vercel (hosting) - who process data only to
-              provide those services to us, under their own security
-              commitments, and are not permitted to use your data for their
-              own purposes.
-            </p>
-          </section>
-
-          <section>
-            <h2>Your controls</h2>
-            <ul>
-              <li>Export all of your data at any time (Settings &gt; Data controls).</li>
-              <li>Delete all of your data at any time, whether or not you&apos;ve signed in.</li>
-              <li>Pause sync without losing anything stored locally.</li>
-              <li>Sign out while keeping your data on that device.</li>
-            </ul>
           </section>
 
           <section>
             <h2>Changes to this policy</h2>
             <p>
-              If this policy changes in a meaningful way, we&apos;ll update
-              the date at the top of this page.
+              If we make a meaningful change, we will update the date on this page and, where
+              appropriate, tell signed-in users in the app.
             </p>
           </section>
 
           <section>
             <h2>Contact</h2>
-            <p>[contact email to be added]</p>
+            <p>Legal contact details will be added before Blossom&apos;s wider public release.</p>
           </section>
         </div>
 
