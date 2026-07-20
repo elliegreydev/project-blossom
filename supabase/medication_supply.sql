@@ -5,7 +5,8 @@
 create table if not exists public.medication_supplies (
   id                uuid primary key default gen_random_uuid(),
   user_id           uuid not null references auth.users(id) on delete cascade,
-  medication_id     uuid not null unique references public.medications(id) on delete cascade,
+  medication_id     uuid not null references public.medications(id) on delete cascade,
+  label             text,
   quantity          numeric not null check (quantity >= 0),
   supply_unit       text not null check (char_length(trim(supply_unit)) > 0),
   amount_per_dose   numeric not null check (amount_per_dose > 0),
@@ -66,3 +67,9 @@ create trigger medication_supply_adjustments_set_updated_at before update on pub
 drop trigger if exists medication_supply_adjustments_sync_guard on public.medication_supply_adjustments;
 create trigger medication_supply_adjustments_sync_guard before update on public.medication_supply_adjustments
   for each row execute function public.keep_newest_blossom_change();
+
+-- The current supply is chosen on the medication itself. This lets someone
+-- keep separate current and backup supplies without Blossom guessing which
+-- one should be reduced when they log a dose.
+alter table public.medications
+  add column if not exists active_supply_id uuid references public.medication_supplies(id) on delete set null;

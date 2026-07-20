@@ -52,3 +52,73 @@
 .historyRow:first-child {
   border-top: 0;
 }
+
+.nextDose {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nextDoseCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 16px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 42%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
+}
+
+.countdown {
+  flex: 0 0 auto;
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: 14px;
+}
+
+.supplyList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 3px 0 2px;
+}
+
+.supplyRow {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: var(--bg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.supplyRow[data-current="true"] {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--lavender) 54%, var(--border));
+}
+
+.supplyRow span:last-child {
+  color: var(--text-muted);
+  text-align: right;
+}
+
+@media (max-width: 460px) {
+  .nextDoseCard,
+  .supplyRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .supplyRow span:last-child {
+    text-align: left;
+  }
+}

@@ -92,6 +92,7 @@ export async function GET(request: Request) {
         route: m.route,
         unit: m.unit,
         frequency: m.frequency,
+        activeSupplyId: null,
         active: m.active,
         createdAt: "",
         updatedAt: "",

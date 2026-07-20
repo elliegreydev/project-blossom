@@ -194,6 +194,9 @@ export interface Medication {
   route: MedicationRoute | null;
   unit: string | null;
   frequency: MedicationFrequency | null;
+  // The supply Blossom should reduce when this medication is logged as taken.
+  // Other supplies are kept as separate, user-managed backups.
+  activeSupplyId: string | null;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -220,6 +223,7 @@ export type MedicationSupplyAdjustmentKind = "initial" | "dose" | "restock" | "c
 export interface MedicationSupply {
   id: string;
   medicationId: string;
+  label: string | null;
   quantity: number;
   supplyUnit: string;
   amountPerDose: number;
@@ -1363,6 +1367,15 @@ function createDb(): BlossomDb {
     cachedLegalContextNotes: "id, country, subregion",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
+  }).upgrade(async (tx) => {
+    const supplies = await tx.table("medicationSupplies").toArray() as MedicationSupply[];
+    const firstSupplyByMedication = new Map<string, MedicationSupply>();
+    for (const supply of [...supplies].sort((first, second) => first.createdAt.localeCompare(second.createdAt))) {
+      if (!firstSupplyByMedication.has(supply.medicationId)) firstSupplyByMedication.set(supply.medicationId, supply);
+    }
+    await tx.table("medications").toCollection().modify((medication: Medication) => {
+      medication.activeSupplyId ??= firstSupplyByMedication.get(medication.id)?.id ?? null;
+    });
   });
   return instance;
 }
@@ -1597,6 +1610,7 @@ export async function addMedication(
   const medication: Medication = {
     id: newId(),
     active: true,
+    activeSupplyId: null,
     createdAt: now,
     updatedAt: now,
     ...input,
@@ -1633,7 +1647,7 @@ export function medicationSupplyIsLow(medication: Medication, supply: Medication
 }
 
 export async function createMedicationSupply(
-  input: Pick<MedicationSupply, "medicationId" | "quantity" | "supplyUnit" | "amountPerDose" | "lowSupplyDays" | "renewalDate" | "expiryDate" | "pharmacy" | "note">
+  input: Pick<MedicationSupply, "medicationId" | "label" | "quantity" | "supplyUnit" | "amountPerDose" | "lowSupplyDays" | "renewalDate" | "expiryDate" | "pharmacy" | "note">
 ): Promise<MedicationSupply> {
   const now = new Date().toISOString();
   const supply: MedicationSupply = {
@@ -1655,13 +1669,36 @@ export async function createMedicationSupply(
     createdAt: now,
     updatedAt: now,
   };
-  await db.transaction("rw", db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+  await db.transaction("rw", db.medications, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationSupplies.add(supply);
     await db.medicationSupplyAdjustments.add(adjustment);
+    const medication = await db.medications.get(supply.medicationId);
+    const suppliesForMedication = await db.medicationSupplies.where("medicationId").equals(supply.medicationId).toArray();
+    if (medication && !medication.activeSupplyId && suppliesForMedication.length === 1) {
+      await db.medications.update(medication.id, { activeSupplyId: supply.id, updatedAt: now });
+      await recordSyncChange("medication", medication.id, "upsert", now);
+    }
     await recordSyncChange("medication_supply", supply.id, "upsert", now);
     await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", now);
   });
   return supply;
+}
+
+export function currentMedicationSupply(
+  medication: Medication,
+  supplies: MedicationSupply[]
+): MedicationSupply | null {
+  const related = supplies.filter((supply) => supply.medicationId === medication.id);
+  if (related.length === 0) return null;
+  return related.find((supply) => supply.id === medication.activeSupplyId)
+    ?? [...related].sort((first, second) => first.createdAt.localeCompare(second.createdAt))[0]
+    ?? null;
+}
+
+export async function setCurrentMedicationSupply(medicationId: string, supplyId: string): Promise<void> {
+  const supply = await db.medicationSupplies.get(supplyId);
+  if (!supply || supply.medicationId !== medicationId) return;
+  await updateMedication(medicationId, { activeSupplyId: supplyId });
 }
 
 export async function updateMedicationSupply(
@@ -1789,7 +1826,7 @@ export async function logDose(
 ): Promise<void> {
   const changedAt = new Date().toISOString();
   const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, ...input };
-  await db.transaction("rw", db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+  await db.transaction("rw", db.medications, db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationLogs.add(log);
     await recordSyncChange("medication_log", log.id, "upsert", changedAt);
 
@@ -1801,7 +1838,9 @@ export async function logDose(
           .and((entry) => entry.id !== log.id && entry.scheduledTime === input.scheduledTime && entry.status === "taken")
           .first()
       : null;
-    const supply = await db.medicationSupplies.where("medicationId").equals(input.medicationId).first();
+    const medication = await db.medications.get(input.medicationId);
+    const relatedSupplies = await db.medicationSupplies.where("medicationId").equals(input.medicationId).toArray();
+    const supply = medication ? currentMedicationSupply(medication, relatedSupplies) : null;
     if (!supply || alreadyTaken) return;
 
     const quantityAfter = Math.max(0, supply.quantity - supply.amountPerDose);
@@ -2064,6 +2103,31 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
     d.setHours(h, m, 0, 0);
     return d.toISOString();
   });
+}
+
+export function nextMedicationDose(
+  medications: Medication[],
+  logs: MedicationLog[],
+  now: Date
+): { medication: Medication; scheduledTime: string } | null {
+  // Look far enough ahead to cover weekly and long interval schedules without
+  // pretending that an unscheduled medication has a next dose.
+  const candidates: Array<{ medication: Medication; scheduledTime: string }> = [];
+  for (const medication of medications) {
+    if (!medication.active || !medication.frequency) continue;
+    for (let dayOffset = 0; dayOffset <= 366; dayOffset += 1) {
+      const day = new Date(now);
+      day.setDate(day.getDate() + dayOffset);
+      const scheduled = dueDosesToday(medication, day);
+      for (const scheduledTime of scheduled) {
+        const logged = logs.some((log) => log.medicationId === medication.id && log.scheduledTime === scheduledTime);
+        if (!logged) candidates.push({ medication, scheduledTime });
+      }
+      // Once this medication has an unlogged slot, later days cannot be its next one.
+      if (candidates.some((candidate) => candidate.medication.id === medication.id)) break;
+    }
+  }
+  return candidates.sort((first, second) => first.scheduledTime.localeCompare(second.scheduledTime))[0] ?? null;
 }
 
 // Local reminders --------------------------------------------------------------
