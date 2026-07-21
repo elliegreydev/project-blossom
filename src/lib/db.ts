@@ -2618,6 +2618,37 @@ export async function clearBiometricUnlockCredential(): Promise<void> {
 
 // Data export / deletion -----------------------------------------------------------
 
+export type DataExportSection =
+  | "profile"
+  | "journey"
+  | "medications"
+  | "appointments"
+  | "journal"
+  | "goals"
+  | "health"
+  | "voiceAndPresentation"
+  | "euphoriaAndSocial"
+  | "budget"
+  | "savedLinks"
+  | "supportMap";
+
+export type DataExportSelection = Record<DataExportSection, boolean>;
+
+export const DEFAULT_DATA_EXPORT_SELECTION: DataExportSelection = {
+  profile: true,
+  journey: true,
+  medications: true,
+  appointments: true,
+  journal: true,
+  goals: true,
+  health: true,
+  voiceAndPresentation: true,
+  euphoriaAndSocial: true,
+  budget: true,
+  savedLinks: true,
+  supportMap: false,
+};
+
 export async function exportAllData(): Promise<Record<string, unknown>> {
   const [
     profile,
@@ -2732,6 +2763,150 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     weightEntries,
     calorieEntries,
   };
+}
+
+// A deliberate export builder. The normal full export remains available for
+// backwards compatibility, while this creates a versioned portable backup
+// with only the sections a person picked. Support Map is deliberately opt-in.
+export async function exportSelectedData(selection: DataExportSelection): Promise<Record<string, unknown>> {
+  const all = await exportAllData();
+  const supportMapEntries = selection.supportMap ? await db.supportMapEntries.toArray() : [];
+  return {
+    format: "blossom-backup",
+    version: 1,
+    exportedAt: all.exportedAt,
+    includedSections: Object.entries(selection).filter(([, included]) => included).map(([section]) => section),
+    profile: selection.profile ? all.profile : {},
+    milestones: selection.journey ? all.milestones : [],
+    journeyEvents: selection.journey ? all.journeyEvents : [],
+    medications: selection.medications ? all.medications : [],
+    medicationLogs: selection.medications ? all.medicationLogs : [],
+    medicationSupplies: selection.medications ? all.medicationSupplies : [],
+    medicationSupplyAdjustments: selection.medications ? all.medicationSupplyAdjustments : [],
+    careSupplies: selection.medications ? all.careSupplies : [],
+    careSupplyAdjustments: selection.medications ? all.careSupplyAdjustments : [],
+    appointments: selection.appointments ? all.appointments : [],
+    journalEntries: selection.journal ? all.journalEntries : [],
+    checkIns: selection.journal ? all.checkIns : [],
+    goals: selection.goals ? all.goals : [],
+    bloodTestEntries: selection.health ? all.bloodTestEntries : [],
+    bodyEntries: selection.health ? all.bodyEntries : [],
+    weightEntries: selection.health ? all.weightEntries : [],
+    calorieEntries: selection.health ? all.calorieEntries : [],
+    voiceGoals: selection.voiceAndPresentation ? all.voiceGoals : [],
+    voiceSessions: selection.voiceAndPresentation ? all.voiceSessions : [],
+    presentationEntries: selection.voiceAndPresentation ? all.presentationEntries : [],
+    euphoriaEntries: selection.euphoriaAndSocial ? all.euphoriaEntries : [],
+    socialTransitionPeople: selection.euphoriaAndSocial ? all.socialTransitionPeople : [],
+    socialTransitionPlans: selection.euphoriaAndSocial ? all.socialTransitionPlans : [],
+    socialTransitionTasks: selection.euphoriaAndSocial ? all.socialTransitionTasks : [],
+    budgetEntries: selection.budget ? all.budgetEntries : [],
+    budgetGoals: selection.budget ? all.budgetGoals : [],
+    privateLinks: selection.savedLinks ? all.privateLinks : [],
+    supportMapEntries,
+  };
+}
+
+export type BlossomImportSection = Exclude<DataExportSection, "profile">;
+export interface BlossomImportPreview {
+  sections: Array<{ section: BlossomImportSection; label: string; incoming: number; likelyDuplicates: number }>;
+  invalidRows: number;
+}
+
+const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys: string[]; tables: string[] }> = [
+  { section: "journey", label: "Journey", keys: ["milestones", "journeyEvents"], tables: ["milestones", "journeyEvents"] },
+  { section: "medications", label: "Medications & supplies", keys: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"], tables: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"] },
+  { section: "appointments", label: "Appointments", keys: ["appointments"], tables: ["appointments"] },
+  { section: "journal", label: "Journal & check-ins", keys: ["journalEntries", "checkIns"], tables: ["journalEntries", "checkIns"] },
+  { section: "goals", label: "Goals", keys: ["goals"], tables: ["goals"] },
+  { section: "health", label: "Health & body records", keys: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"], tables: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"] },
+  { section: "voiceAndPresentation", label: "Voice & presentation", keys: ["voiceGoals", "voiceSessions", "presentationEntries"], tables: ["voiceGoals", "voiceSessions", "presentationEntries"] },
+  { section: "euphoriaAndSocial", label: "Euphoria & social transition", keys: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"], tables: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"] },
+  { section: "budget", label: "Budget", keys: ["budgetEntries", "budgetGoals"], tables: ["budgetEntries", "budgetGoals"] },
+  { section: "savedLinks", label: "Saved links", keys: ["privateLinks"], tables: ["privateLinks"] },
+  { section: "supportMap", label: "Personal Support Map", keys: ["supportMapEntries"], tables: ["supportMapEntries"] },
+];
+
+function importRows(payload: Record<string, unknown>, key: string): Array<Record<string, unknown>> {
+  const value = payload[key];
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
+}
+
+// A conservative match only used to flag a likely duplicate in the preview.
+// Import itself never overwrites an existing row: exact ID collisions are skipped.
+function importFingerprint(table: string, row: Record<string, unknown>): string {
+  const fields: Record<string, string[]> = {
+    medications: ["name", "route"],
+    appointments: ["title", "appointmentAt"],
+    journalEntries: ["bodyText", "createdAt"],
+    weightEntries: ["date", "weightGrams"],
+    goals: ["title"],
+    supportMapEntries: ["name", "type"],
+  };
+  const keys = fields[table] ?? ["id"];
+  return keys.map((key) => String(row[key] ?? "")).join("\u0000").toLocaleLowerCase();
+}
+
+export async function previewBlossomImport(payload: Record<string, unknown>): Promise<BlossomImportPreview> {
+  let invalidRows = 0;
+  const sections = await Promise.all(IMPORT_TABLES.map(async (definition) => {
+    let incoming = 0;
+    let likelyDuplicates = 0;
+    for (let index = 0; index < definition.keys.length; index += 1) {
+      const rows = importRows(payload, definition.keys[index]);
+      incoming += rows.length;
+      invalidRows += (Array.isArray(payload[definition.keys[index]]) ? (payload[definition.keys[index]] as unknown[]).length : 0) - rows.length;
+      const existing = await db.table(definition.tables[index]).toArray() as Record<string, unknown>[];
+      const existingFingerprints = new Set(existing.map((row) => importFingerprint(definition.tables[index], row)));
+      likelyDuplicates += rows.filter((row) => existing.some((current) => current.id === row.id) || existingFingerprints.has(importFingerprint(definition.tables[index], row))).length;
+    }
+    return { section: definition.section, label: definition.label, incoming, likelyDuplicates };
+  }));
+  return { sections: sections.filter((section) => section.incoming > 0), invalidRows };
+}
+
+export async function mergeBlossomImport(payload: Record<string, unknown>, sections: BlossomImportSection[]): Promise<{ imported: number; skipped: number }> {
+  let imported = 0;
+  let skipped = 0;
+  for (const definition of IMPORT_TABLES) {
+    if (!sections.includes(definition.section)) continue;
+    for (let index = 0; index < definition.keys.length; index += 1) {
+      const table = db.table(definition.tables[index]);
+      const existingIds = new Set((await table.toCollection().primaryKeys()).map(String));
+      const rows = importRows(payload, definition.keys[index])
+        .filter((row) => typeof row.id === "string")
+        .map((row) => hydrateImportedRow(definition.tables[index], row));
+      const fresh = rows.filter((row) => !existingIds.has(String(row.id)));
+      skipped += rows.length - fresh.length;
+      if (fresh.length > 0) {
+        await table.bulkAdd(fresh);
+        imported += fresh.length;
+      }
+    }
+  }
+  return { imported, skipped };
+}
+
+// Binary media is never in a JSON export. Restore the expected local-only
+// fields as null rather than leaving malformed records for a screen to trip on.
+function hydrateImportedRow(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  const hydrated = { ...row };
+  if (table === "presentationEntries" || table === "bodyEntries" || table === "euphoriaEntries") {
+    delete hydrated.hasPhoto;
+    hydrated.photo ??= null;
+  }
+  if (table === "voiceSessions") {
+    delete hydrated.hasRecording;
+    hydrated.recording ??= null;
+  }
+  if (table === "appointments") {
+    hydrated.builderData ??= emptyAppointmentBuilderData();
+    hydrated.reminderMinutesBefore ??= null;
+    hydrated.outcomeNote ??= null;
+    hydrated.rescheduledFrom ??= null;
+  }
+  if (table === "medications") hydrated.activeSupplyId ??= null;
+  return hydrated;
 }
 
 export async function deleteAllData(): Promise<void> {
