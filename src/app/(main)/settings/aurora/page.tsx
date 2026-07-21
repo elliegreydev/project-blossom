@@ -6,7 +6,7 @@ import { db, LOCAL_PROFILE_ID, updateProfile, type AuroraMode } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 
 const AURORA_MODES: { key: AuroraMode; title: string; desc: string }[] = [
-  { key: "quiet", title: "Quiet", desc: "Only appears when you open it" },
+  { key: "quiet", title: "Quiet", desc: "No proactive Home suggestions" },
   { key: "gentle", title: "Gentle", desc: "Occasional reminders and soft suggestions" },
   { key: "supportive", title: "Supportive", desc: "More frequent check-ins and encouragement" },
   { key: "disabled", title: "Disabled", desc: "No prompts beyond essential messages" },

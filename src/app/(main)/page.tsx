@@ -14,7 +14,7 @@ import {
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
-import { selectAuroraSuggestion } from "@/lib/aurora";
+import { auroraQuietStatus, selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
 import BetaNudge from "@/components/BetaNudge";
@@ -153,6 +153,8 @@ export default function HomePage() {
         journeyEvents,
         medications: meds,
         medicationLogs: medLogs,
+        medicationSupplies,
+        careSupplies,
         appointments: appts,
         journalEntries,
         checkIns,
@@ -164,11 +166,13 @@ export default function HomePage() {
         nudgeStates: auroraNudgeStates,
       });
 
-  function acknowledgeAuroraSuggestion() {
+  function dismissAuroraSuggestion() {
     if (!auroraSuggestion) return;
     setAuroraHiddenForSession(true);
     void dismissAuroraNudge(auroraSuggestion.key);
   }
+
+  const auroraStatus = auroraQuietStatus(profile);
 
   const name = profile.displayName || "there";
 
@@ -277,28 +281,28 @@ export default function HomePage() {
       <BetaNudge />
       <DiscordNudge />
 
-      {auroraSuggestion && (
+      {profile.auroraMode !== "disabled" && (
         <aside className={styles.auroraCard} aria-label="Aurora suggestion">
           <div className={styles.auroraText}>
-            <span className={styles.auroraLabel}>{auroraSuggestion.eyebrow}</span>
-            <strong className={styles.auroraTitle}>{auroraSuggestion.title}</strong>
-            <span>{auroraSuggestion.message}</span>
+            <span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span>
+            <strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong>
+            <span>{auroraSuggestion?.message ?? auroraStatus.message}</span>
           </div>
           <div className={styles.auroraActions}>
-            <Link
-              href={auroraSuggestion.href}
-              className={styles.auroraAction}
-              onClick={acknowledgeAuroraSuggestion}
-            >
-              {auroraSuggestion.actionLabel}
-            </Link>
-            <button
-              type="button"
-              className={styles.auroraDismiss}
-              onClick={acknowledgeAuroraSuggestion}
-            >
-              Not now
-            </button>
+            {auroraSuggestion ? (
+              <>
+                <Link href={auroraSuggestion.href} className={styles.auroraAction}>
+                  {auroraSuggestion.actionLabel}
+                </Link>
+                <button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>
+                  Not now
+                </button>
+              </>
+            ) : (
+              <Link href="/settings/aurora" className={styles.auroraDismiss}>
+                Aurora settings
+              </Link>
+            )}
           </div>
         </aside>
       )}

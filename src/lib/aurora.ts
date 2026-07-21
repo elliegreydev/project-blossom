@@ -2,6 +2,7 @@ import type {
   Appointment,
   AuroraMode,
   AuroraNudgeState,
+  CareSupply,
   CheckIn,
   EuphoriaEntry,
   Goal,
@@ -9,6 +10,7 @@ import type {
   JourneyEvent,
   Medication,
   MedicationLog,
+  MedicationSupply,
   Milestone,
   PresentationEntry,
   Profile,
@@ -44,6 +46,8 @@ export interface AuroraContext {
   journeyEvents: JourneyEvent[];
   medications: Medication[];
   medicationLogs: MedicationLog[];
+  medicationSupplies: MedicationSupply[];
+  careSupplies: CareSupply[];
   appointments: Appointment[];
   journalEntries: JournalEntry[];
   checkIns: CheckIn[];
@@ -130,10 +134,77 @@ function upcomingAppointment(context: AuroraContext): Candidate | null {
   };
 }
 
+function estimatedSupplyDays(medication: Medication, supply: MedicationSupply): number | null {
+  if (!medication.frequency || supply.amountPerDose <= 0 || supply.quantity < 0) return null;
+  const dosesPerDay = medication.frequency.intervalDays
+    ? medication.frequency.times.length / medication.frequency.intervalDays
+    : (medication.frequency.times.length * (medication.frequency.days?.length ?? 7)) / 7;
+  const averageUsePerDay = dosesPerDay * supply.amountPerDose;
+  return averageUsePerDay > 0 ? Math.max(0, Math.floor(supply.quantity / averageUsePerDay)) : null;
+}
+
+function medicationSupplyNeedsAttention(
+  medication: Medication,
+  supply: MedicationSupply,
+  now: Date
+): boolean {
+  if (supply.snoozedUntil && new Date(supply.snoozedUntil).getTime() > now.getTime()) return false;
+  const days = estimatedSupplyDays(medication, supply);
+  return days !== null && supply.lowSupplyDays !== null && days <= supply.lowSupplyDays;
+}
+
+function careSupplyNeedsReview(supply: CareSupply, now: Date): boolean {
+  if (supply.snoozedUntil && new Date(supply.snoozedUntil).getTime() > now.getTime()) return false;
+  if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
+  const warningDate = new Date(now);
+  warningDate.setDate(warningDate.getDate() + 7);
+  const warningDateKey = warningDate.toISOString().slice(0, 10);
+  return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some(
+    (date) => date !== null && date <= warningDateKey
+  );
+}
+
+function supplyNeedsAttention(context: AuroraContext): Candidate | null {
+  const hasMedicationSupplyHeadsUp = context.medicationSupplies.some((supply) => {
+    const medication = context.medications.find((item) => item.id === supply.medicationId);
+    return medication ? medicationSupplyNeedsAttention(medication, supply, context.now) : false;
+  });
+  const hasCareSupplyHeadsUp = context.careSupplies.some((supply) => careSupplyNeedsReview(supply, context.now));
+
+  if (!hasMedicationSupplyHeadsUp && !hasCareSupplyHeadsUp) return null;
+
+  return {
+    key: "supply_attention",
+    kind: "medication",
+    eyebrow: "A practical heads-up",
+    title: "One of your supplies could use a look",
+    message: "There is a supply record that may be running low or coming up for review. You can check it whenever you are ready.",
+    actionLabel: "Review supplies",
+    href: "/track/medication",
+    priority: 95,
+    cooldownDays: 3,
+  };
+}
+
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function daysBetweenDateKeys(fromDateKey: string, toDateKey: string): number {
+  const [fromYear, fromMonth, fromDay] = fromDateKey.split("-").map(Number);
+  const [toYear, toMonth, toDay] = toDateKey.split("-").map(Number);
+  return Math.round((Date.UTC(toYear, toMonth - 1, toDay) - Date.UTC(fromYear, fromMonth - 1, fromDay)) / DAY_MS);
+}
+
 function scheduledSlotsToday(medication: Medication, now: Date): Date[] {
   if (!medication.active || !medication.frequency?.times.length) return [];
-  const days = medication.frequency.days;
-  if (days && !days.includes(now.getDay())) return [];
+  if (medication.frequency.intervalDays) {
+    if (!medication.frequency.anchorDate) return [];
+    const daysSinceAnchor = daysBetweenDateKeys(medication.frequency.anchorDate, localDateKey(now));
+    if (daysSinceAnchor < 0 || daysSinceAnchor % medication.frequency.intervalDays !== 0) return [];
+  } else if (medication.frequency.days && !medication.frequency.days.includes(now.getDay())) {
+    return [];
+  }
 
   return medication.frequency.times.flatMap((time) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -178,6 +249,40 @@ function openMedicationLog(context: AuroraContext): Candidate | null {
     actionLabel: "Open medication",
     href: "/track/medication",
     priority: 90,
+    cooldownDays: 1,
+  };
+}
+
+function upcomingMedication(context: AuroraContext): Candidate | null {
+  if (!context.profile.enabledModules.includes("medication")) return null;
+
+  const nextDose = context.medications
+    .filter((medication) => medication.active && medication.frequency)
+    .flatMap((medication) =>
+      scheduledSlotsToday(medication, context.now).map((slot) => ({ medication, slot }))
+    )
+    .filter(({ medication, slot }) => {
+      const scheduledTime = slot.toISOString();
+      return !context.medicationLogs.some(
+        (log) => log.medicationId === medication.id && log.scheduledTime === scheduledTime
+      );
+    })
+    .sort((a, b) => a.slot.getTime() - b.slot.getTime())[0];
+
+  if (!nextDose) return null;
+  const minutesUntil = Math.round((nextDose.slot.getTime() - context.now.getTime()) / (60 * 1000));
+  if (minutesUntil < 0 || minutesUntil > 90) return null;
+
+  const timing = minutesUntil <= 5 ? "in a few minutes" : `in around ${minutesUntil} minutes`;
+  return {
+    key: `medication_upcoming:${nextDose.medication.id}:${nextDose.slot.toISOString()}`,
+    kind: "medication",
+    eyebrow: "Coming up",
+    title: "A medication reminder is close",
+    message: `Your next scheduled medication time is ${timing}. You can open it whenever you need to.`,
+    actionLabel: "Open medication",
+    href: "/track/medication",
+    priority: 85,
     cooldownDays: 1,
   };
 }
@@ -395,7 +500,9 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
   const states = new Map(context.nudgeStates.map((state) => [state.nudgeKey, state]));
   const candidates = [
     upcomingAppointment(context),
+    supplyNeedsAttention(context),
     openMedicationLog(context),
+    upcomingMedication(context),
     wellbeingCheckIn(context),
     waitingGoal(context),
     firstJourneyStep(context),
@@ -422,5 +529,41 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
     actionLabel: suggestion.actionLabel,
     href: suggestion.href,
     priority: suggestion.priority,
+  };
+}
+
+export function auroraQuietStatus(profile: Pick<Profile, "auroraMode" | "gentleMode" | "lowEnergyMode">): {
+  eyebrow: string;
+  title: string;
+  message: string;
+} {
+  if (profile.auroraMode === "quiet") {
+    return {
+      eyebrow: "Aurora is keeping quiet",
+      title: "No suggestions will interrupt you",
+      message: "Quiet mode is on. You can change this any time in Aurora settings.",
+    };
+  }
+
+  if (profile.lowEnergyMode) {
+    return {
+      eyebrow: "A low-energy day",
+      title: "Only the essentials are taking up space",
+      message: "Aurora will keep things simple while Low-Energy Mode is on.",
+    };
+  }
+
+  if (profile.gentleMode) {
+    return {
+      eyebrow: "Gentle Mode is on",
+      title: "Nothing needs to be measured right now",
+      message: "Aurora will stay focused on practical, optional reminders rather than progress or pressure.",
+    };
+  }
+
+  return {
+    eyebrow: "Aurora is here",
+    title: "Nothing needs a nudge right now",
+    message: "She will quietly notice practical things like appointments, supplies, and scheduled medication when they are useful.",
   };
 }
