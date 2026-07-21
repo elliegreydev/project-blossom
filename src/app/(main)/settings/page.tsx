@@ -121,6 +121,7 @@ export default function SettingsPage() {
         />
         <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
         <Row href="/settings/bridge" title="Blossom Bridge" meta="Temporary links for people without an account" />
+        <Row href="/settings/support-map" title="Personal Support Map" meta="Private people, places and organisations" />
       </div>
 
       <div className={styles.group}>

@@ -647,6 +647,37 @@ export interface PrivateLink {
   createdAt: string;
 }
 
+// Personal support map ----------------------------------------------------------
+// This is a private directory rather than a literal map: precise coordinates,
+// public reviews and third-party map services would make a sensitive feature
+// needlessly exposing. Entries live only in this device's IndexedDB and are
+// intentionally absent from the sync queue and standard account export.
+
+export type SupportMapEntryType = "person" | "clinic" | "organisation" | "community" | "place" | "other";
+export type SupportMapLabel =
+  | "affirming"
+  | "unknown"
+  | "avoid"
+  | "emergency"
+  | "practical"
+  | "emotional"
+  | "medical"
+  | "legal";
+
+export interface SupportMapEntry {
+  id: string;
+  name: string;
+  type: SupportMapEntryType;
+  labels: SupportMapLabel[];
+  contact: string | null;
+  area: string | null;
+  note: string | null;
+  reviewOn: string | null;
+  isFavourite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Safety check-ins ---------------------------------------------------------------
 // A user-started "check in with me by X" window. Deliberately not synced (see
 // SyncEntity below) and deliberately not a monitoring system: Blossom never
@@ -760,6 +791,7 @@ type BlossomDb = Dexie & {
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
+  supportMapEntries: EntityTable<SupportMapEntry, "id">;
   safetyCheckIns: EntityTable<SafetyCheckIn, "id">;
   budgetEntries: EntityTable<BudgetEntry, "id">;
   budgetGoals: EntityTable<BudgetGoal, "id">;
@@ -1469,6 +1501,43 @@ function createDb(): BlossomDb {
       profile.calorieTrackingEnabled = false;
       profile.calorieTarget = null;
     });
+  });
+  instance.version(26).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
   });
   return instance;
 }
@@ -2285,6 +2354,31 @@ export async function deletePrivateLink(id: string): Promise<void> {
   await db.privateLinks.delete(id);
 }
 
+// Personal support map ----------------------------------------------------------
+// These entries stay on this device. Do not add them to SyncEntity or use
+// recordSyncChange: private contacts and approximate locations should not
+// travel to another device simply because account sync is enabled.
+
+export async function addSupportMapEntry(
+  input: Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">
+): Promise<SupportMapEntry> {
+  const now = new Date().toISOString();
+  const entry: SupportMapEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
+  await db.supportMapEntries.add(entry);
+  return entry;
+}
+
+export async function updateSupportMapEntry(
+  id: string,
+  patch: Partial<Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  await db.supportMapEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSupportMapEntry(id: string): Promise<void> {
+  await db.supportMapEntries.delete(id);
+}
+
 // Transition cost & budget tracker (v2) -------------------------------------------
 
 export async function addBudgetEntry(
@@ -2663,6 +2757,7 @@ export async function deleteAllData(): Promise<void> {
       db.checkIns,
       db.goals,
       db.privateLinks,
+      db.supportMapEntries,
       db.safetyCheckIns,
       db.budgetEntries,
       db.budgetGoals,
@@ -2698,6 +2793,7 @@ export async function deleteAllData(): Promise<void> {
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
+        db.supportMapEntries.clear(),
         db.safetyCheckIns.clear(),
         db.budgetEntries.clear(),
         db.budgetGoals.clear(),
