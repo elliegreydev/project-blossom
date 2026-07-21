@@ -1,4 +1,4 @@
-import type { Appointment, Medication, MedicationLog, NotifiedReminder, SafetyCheckIn } from "./db";
+import type { Appointment, Medication, MedicationLog, NotifiedReminder, Profile, SafetyCheckIn } from "./db";
 
 export interface PendingReminder {
   key: string;
@@ -188,4 +188,33 @@ export function dueSafetyCheckInReminders(
       detailedTitle: "Safety check-in",
       detailedBody: "You missed your check-in - want to reach out to your trusted contact?",
     }));
+}
+
+// Weight reminders are intentionally local-only and deliberately light-touch:
+// one optional weekly prompt, no re-nagging, and disabled entirely in Gentle
+// Mode. They do not imply that a person should weigh themselves.
+export function dueWeightReminders(
+  profile: Profile,
+  notified: NotifiedReminder[],
+  now: Date
+): PendingReminder[] {
+  if (!profile.weightTrackingEnabled || !profile.weightReminderEnabled || profile.gentleMode) return [];
+
+  const [hours, minutes] = profile.weightReminderTime.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || now.getDay() !== profile.weightReminderDay) return [];
+
+  const dueAt = new Date(now);
+  dueAt.setHours(hours, minutes, 0, 0);
+  const age = now.getTime() - dueAt.getTime();
+  const dateKey = localDateKey(now);
+  const key = `weight:${dateKey}|${profile.weightReminderTime}`;
+  if (age < 0 || age > STILL_RELEVANT_MS || notified.some((entry) => entry.key === key)) return [];
+
+  return [{
+    key,
+    discreetTitle: "A gentle reminder",
+    discreetBody: "There is something optional to check in with, if it feels useful.",
+    detailedTitle: "Optional weight check-in",
+    detailedBody: "If it feels useful today, you can log a weight in Blossom.",
+  }];
 }

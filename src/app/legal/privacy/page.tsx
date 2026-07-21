@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Beta draft - last updated 20 July 2026</p>
+          <p className={styles.updated}>Beta draft - last updated 21 July 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -55,7 +55,8 @@ export default function PrivacyPolicyPage() {
               The following stays on the device where you create it and is not included in sync:
               journal entries and written check-in notes; gender-euphoria entries and Time Capsule
               entries; photos; blood-test records; voice recordings and practice notes; body and
-              presentation tracking; social-transition plans and private contact notes; budget entries;
+              presentation tracking; weight entries, weight preferences and food/calorie logs;
+              social-transition plans and private contact notes; budget entries;
               safety check-ins and trusted-contact details; saved private links; your app lock, PIN,
               biometric credential reference, accessibility choices, and Home layout choices.
             </p>

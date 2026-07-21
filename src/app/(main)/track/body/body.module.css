@@ -94,3 +94,108 @@
   color: var(--text-muted);
   margin-top: 4px;
 }
+
+.trackingHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionCopy {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.setupCard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.setupCard:hover {
+  border-color: var(--lavender);
+}
+
+.trackingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+}
+
+.trackingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.primaryNumber {
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: 25px;
+  line-height: 1.1;
+}
+
+.gentleSummary {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.cardActions {
+  margin-top: 4px;
+}
+
+.recentList {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.recentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 37px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.recentRow > span:nth-child(2) {
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.recentRow button {
+  border: 0;
+  padding: 4px 0 4px 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.recentRow button:hover {
+  color: var(--text-primary);
+}

@@ -7,6 +7,7 @@ import type { ResourceCategory } from "./regionResources";
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
 export type ReminderPrivacy = "discreet" | "detailed";
+export type WeightUnit = "auto" | "kg" | "lb" | "st";
 export type AccessibilityProfile = "custom" | "lowVision" | "readingComfort" | "lowCognitiveLoad" | "migraineFriendly" | "largeTouchTargets";
 export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges";
 export type HomeDensity = "compact" | "standard" | "spacious";
@@ -123,6 +124,18 @@ export interface Profile {
   safetyCheckInsEnabled: boolean;
   trustedContactName: string | null;
   trustedContactMethod: string | null;
+  // Weight and food logging are deliberately device-local. A setting of
+  // "auto" takes its display unit from the selected country, while entries
+  // themselves are stored in grams so changing a preference never changes
+  // the underlying record.
+  weightTrackingEnabled: boolean;
+  weightUnit: WeightUnit;
+  weightGoalGrams: number | null;
+  weightReminderEnabled: boolean;
+  weightReminderDay: number;
+  weightReminderTime: string;
+  calorieTrackingEnabled: boolean;
+  calorieTarget: number | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -564,6 +577,26 @@ export interface BodyEntry {
   updatedAt: string;
 }
 
+export interface WeightEntry {
+  id: string;
+  date: string;
+  weightGrams: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalorieEntry {
+  id: string;
+  date: string;
+  label: string;
+  calories: number;
+  meal: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Transition cost & budget tracker (v2) -------------------------------------------
 // Deliberately local-only, same treatment as journal entries - financial
 // records are sensitive, and there's no real need for this to sync even
@@ -724,6 +757,8 @@ type BlossomDb = Dexie & {
   voiceSessions: EntityTable<VoiceSession, "id">;
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
+  weightEntries: EntityTable<WeightEntry, "id">;
+  calorieEntries: EntityTable<CalorieEntry, "id">;
   notifiedReminders: EntityTable<NotifiedReminder, "key">;
   cachedRegionResources: EntityTable<CachedRegionResource, "id">;
   cachedLegalContextNotes: EntityTable<CachedLegalContextNote, "id">;
@@ -1377,6 +1412,53 @@ function createDb(): BlossomDb {
       medication.activeSupplyId ??= firstSupplyByMedication.get(medication.id)?.id ?? null;
     });
   });
+  instance.version(25).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.weightTrackingEnabled = false;
+      profile.weightUnit = "auto";
+      profile.weightGoalGrams = null;
+      profile.weightReminderEnabled = false;
+      profile.weightReminderDay = 0;
+      profile.weightReminderTime = "10:00";
+      profile.calorieTrackingEnabled = false;
+      profile.calorieTarget = null;
+    });
+  });
   return instance;
 }
 
@@ -1431,6 +1513,14 @@ export const DEFAULT_PROFILE: Profile = {
   safetyCheckInsEnabled: false,
   trustedContactName: null,
   trustedContactMethod: null,
+  weightTrackingEnabled: false,
+  weightUnit: "auto",
+  weightGoalGrams: null,
+  weightReminderEnabled: false,
+  weightReminderDay: 0,
+  weightReminderTime: "10:00",
+  calorieTrackingEnabled: false,
+  calorieTarget: null,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
@@ -1466,6 +1556,14 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.safetyCheckInsEnabled === undefined) backfill.safetyCheckInsEnabled = false;
   if (existing.trustedContactName === undefined) backfill.trustedContactName = null;
   if (existing.trustedContactMethod === undefined) backfill.trustedContactMethod = null;
+  if (existing.weightTrackingEnabled === undefined) backfill.weightTrackingEnabled = false;
+  if (existing.weightUnit === undefined) backfill.weightUnit = "auto";
+  if (existing.weightGoalGrams === undefined) backfill.weightGoalGrams = null;
+  if (existing.weightReminderEnabled === undefined) backfill.weightReminderEnabled = false;
+  if (existing.weightReminderDay === undefined) backfill.weightReminderDay = 0;
+  if (existing.weightReminderTime === undefined) backfill.weightReminderTime = "10:00";
+  if (existing.calorieTrackingEnabled === undefined) backfill.calorieTrackingEnabled = false;
+  if (existing.calorieTarget === undefined) backfill.calorieTarget = null;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
     return { ...existing, ...backfill };
@@ -2342,6 +2440,32 @@ export async function deleteBodyEntry(id: string): Promise<void> {
   await db.bodyEntries.delete(id);
 }
 
+export async function addWeightEntry(
+  input: Pick<WeightEntry, "date" | "weightGrams" | "note">
+): Promise<WeightEntry> {
+  const now = new Date().toISOString();
+  const entry: WeightEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.weightEntries.add(entry);
+  return entry;
+}
+
+export async function deleteWeightEntry(id: string): Promise<void> {
+  await db.weightEntries.delete(id);
+}
+
+export async function addCalorieEntry(
+  input: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
+): Promise<CalorieEntry> {
+  const now = new Date().toISOString();
+  const entry: CalorieEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.calorieEntries.add(entry);
+  return entry;
+}
+
+export async function deleteCalorieEntry(id: string): Promise<void> {
+  await db.calorieEntries.delete(id);
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -2413,6 +2537,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceSessionsRaw,
     presentationEntriesRaw,
     bodyEntriesRaw,
+    weightEntries,
+    calorieEntries,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -2440,6 +2566,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.voiceSessions.toArray(),
     db.presentationEntries.toArray(),
     db.bodyEntries.toArray(),
+    db.weightEntries.toArray(),
+    db.calorieEntries.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
@@ -2492,6 +2620,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceSessions,
     presentationEntries,
     bodyEntries,
+    weightEntries,
+    calorieEntries,
   };
 }
 
@@ -2526,6 +2656,8 @@ export async function deleteAllData(): Promise<void> {
       db.voiceSessions,
       db.presentationEntries,
       db.bodyEntries,
+      db.weightEntries,
+      db.calorieEntries,
       db.notifiedReminders,
       db.syncOutbox,
       db.syncMeta,
@@ -2559,6 +2691,8 @@ export async function deleteAllData(): Promise<void> {
         db.voiceSessions.clear(),
         db.presentationEntries.clear(),
         db.bodyEntries.clear(),
+        db.weightEntries.clear(),
+        db.calorieEntries.clear(),
         db.notifiedReminders.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),

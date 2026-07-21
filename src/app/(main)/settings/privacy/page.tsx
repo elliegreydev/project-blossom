@@ -191,7 +191,8 @@ export default function PrivacySettingsPage() {
             <p className={styles.hint}>
               These always stay on this device only, even with sync on:
               journal entries, blood test results, voice practice recordings,
-              presentation and body/progress photos and notes, your saved
+              presentation and body/progress photos and notes, weight and food/calorie logs,
+              your saved
               private links, your app lock PIN or biometric, and your
               accessibility settings.
             </p>
