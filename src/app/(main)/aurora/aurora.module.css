@@ -1,0 +1,45 @@
+.screen { display: flex; flex-direction: column; gap: 22px; padding: max(24px, var(--safe-top)) 20px 36px; }
+.intro, .resources > p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
+.tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 12px; overflow-x: auto; }
+.tab, .tabActive { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-secondary); background: transparent; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.tabActive { border-color: color-mix(in srgb, var(--lavender) 72%, var(--border)); background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised)); color: var(--text-primary); }
+.guide, .resources { display: flex; flex-direction: column; gap: 16px; }
+.guideHeading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.eyebrow, .resourceCategory { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.guide h2, .resources h2 { margin: 4px 0 0; font-family: var(--font-manrope); font-size: 22px; color: var(--text-primary); }
+.notice, .consent, .starter { padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-raised); color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.notice a, .crisisLink, .auroraMessage a { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.consent { display: flex; flex-direction: column; gap: 10px; border-color: color-mix(in srgb, var(--lavender) 45%, var(--border)); }
+.consent strong { color: var(--text-primary); font-family: var(--font-manrope); font-size: 17px; }
+.consent p { margin: 0; }
+.primaryButton { min-height: 44px; align-self: flex-start; padding: 10px 14px; border: 0; border-radius: 10px; background: var(--lavender); color: var(--plum); font-size: 13px; font-weight: 700; cursor: pointer; }
+.primaryButton:disabled { opacity: .5; cursor: default; }
+.clearButton { min-height: 40px; padding: 7px 4px; border: 0; background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; white-space: nowrap; }
+.starter { background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised)); }
+.starter p { margin: 0 0 12px; }
+.promptList { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.promptList button { padding: 0; border: 0; background: transparent; color: var(--text-primary); font-size: 13px; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.messages { display: flex; flex-direction: column; gap: 12px; }
+.userMessage, .auroraMessage { max-width: 92%; padding: 13px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
+.userMessage { align-self: flex-end; background: color-mix(in srgb, var(--lavender) 20%, var(--bg-raised)); }
+.auroraMessage { align-self: flex-start; border: 1px solid var(--border); background: var(--bg-raised); }
+.userMessage > span, .auroraMessage > span { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.userMessage p, .auroraMessage p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.auroraMessage a { display: inline-block; margin-top: 9px; font-size: 13px; }
+.composer { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.composer textarea, .search { width: 100%; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-raised); color: var(--text-primary); font: inherit; font-size: 14px; outline: none; resize: vertical; }
+.composer textarea { min-height: 94px; padding: 12px; }
+.composer textarea:focus, .search:focus { border-color: var(--lavender); }
+.composerFooter { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--text-muted); font-size: 12px; line-height: 1.4; }
+.composerFooter .primaryButton { flex: 0 0 auto; }
+.error { margin: 0; color: var(--status-attention); font-size: 13px; }
+.search { min-height: 46px; padding: 10px 12px; }
+.resourceList { display: grid; gap: 10px; }
+.resourceCard { display: flex; flex-direction: column; gap: 4px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-raised); color: var(--text-secondary); font-size: 13px; line-height: 1.45; transition: border-color var(--duration-fast) var(--ease-standard); }
+.resourceCard:hover { border-color: var(--lavender); }
+.resourceCard strong { color: var(--text-primary); font-family: var(--font-manrope); font-size: 16px; }
+.resourceCard small { margin-top: 3px; color: var(--text-muted); }
+.empty { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+.crisisLink { align-self: flex-start; font-size: 13px; }
+@media (min-width: 720px) { .screen { padding: max(36px, var(--safe-top)) 32px 48px; max-width: 760px; } .resourceList { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .composerFooter { align-items: flex-start; flex-direction: column; } .guideHeading { flex-direction: column; gap: 4px; } }

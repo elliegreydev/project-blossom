@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
             <h2>What stays on your device</h2>
             <p>
               The following stays on the device where you create it and is not included in sync:
-              journal entries and written check-in notes; gender-euphoria entries and Time Capsule
+              journal entries and written check-in notes; Aurora AI conversation history; gender-euphoria entries and Time Capsule
               entries; photos; blood-test records; voice recordings and practice notes; body and
               presentation tracking; weight entries, weight preferences and food/calorie logs;
               social-transition plans and private contact notes; budget entries;
@@ -212,9 +212,18 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Aurora</h2>
             <p>
-              Aurora is currently rule-based rather than a conversational AI. It does not hold
-              conversations or make decisions with legal or similarly significant effects. Blossom only
-              keeps the minimal synced state needed to avoid showing the same guidance repeatedly.
+              Aurora&apos;s ordinary Home suggestions are rule-based. Aurora AI is an optional, signed-in beta
+              feature. Before someone sends their first AI message, Blossom explains that the typed message
+              is sent to Anthropic to generate a reply. Blossom does not automatically send journal entries,
+              medication records, weight or food logs, photos, voice notes, private plans, or other device-only
+              information to Aurora AI.
+            </p>
+            <p>
+              Aurora AI conversation history stays on the person&apos;s device by default and can be deleted there.
+              Blossom keeps only aggregate usage information needed to apply safety, rate and spending limits;
+              it does not keep AI prompts or replies in its own database. Aurora AI does not make decisions with
+              legal or similarly significant effects, and it cannot diagnose, prescribe, monitor emergencies, or
+              contact anyone on a person&apos;s behalf.
             </p>
           </section>
 

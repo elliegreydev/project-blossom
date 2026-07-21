@@ -299,8 +299,8 @@ export default function HomePage() {
                 </button>
               </>
             ) : (
-              <Link href="/settings/aurora" className={styles.auroraDismiss}>
-                Aurora settings
+              <Link href="/aurora" className={styles.auroraDismiss}>
+                Ask Aurora
               </Link>
             )}
           </div>

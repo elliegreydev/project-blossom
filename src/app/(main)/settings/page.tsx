@@ -87,6 +87,7 @@ export default function SettingsPage() {
         <div className={styles.adminSection}>
           <p className={styles.sectionLabel}>Beta</p>
           <div className={styles.group}>
+            <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
             <Row
               href="/beta"
               title="🧪 You're a beta tester"

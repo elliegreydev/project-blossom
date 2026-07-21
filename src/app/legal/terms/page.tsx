@@ -52,6 +52,11 @@ export default function TermsPage() {
               emergency services or an appropriate crisis service directly.
             </p>
             <p>
+              Aurora AI is an optional beta feature. It can help explain Blossom and organise information,
+              but it can make mistakes and is not medical, legal, therapeutic or emergency advice. Do not use it
+              to decide on medication doses or changes, or instead of an appropriate professional or urgent service.
+            </p>
+            <p>
               Regional resources are provided for information. We work to keep them useful, but cannot
               guarantee availability, eligibility, accuracy or outcomes. An external link is not an
               endorsement, and the organisation&apos;s own terms and privacy policy apply when you leave
