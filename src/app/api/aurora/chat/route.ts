@@ -25,6 +25,40 @@ function remainingToday(used: number): number {
   return Math.max(0, DAILY_LIMIT - used);
 }
 
+type ClaudeFailure = {
+  type: string | null;
+  requestId: string | null;
+};
+
+function claudeFailure(payload: unknown, requestId: string | null): ClaudeFailure {
+  const error = payload && typeof payload === "object" && "error" in payload
+    ? (payload as { error?: unknown }).error
+    : null;
+  const type = error && typeof error === "object" && "type" in error && typeof (error as { type?: unknown }).type === "string"
+    ? (error as { type: string }).type
+    : null;
+  return { type, requestId };
+}
+
+function claudeFailureMessage(status: number, failure: ClaudeFailure): string {
+  if (status === 429 || failure.type === "rate_limit_error") {
+    return "Aurora is a little busy right now. Please try again in a minute.";
+  }
+  if (status === 529 || failure.type === "overloaded_error") {
+    return "Aurora is temporarily busy. Please try again shortly.";
+  }
+  if (status === 401 || status === 403 || failure.type === "authentication_error") {
+    return "Aurora’s AI connection needs attention. Please try again a little later.";
+  }
+  if (status === 400 || status === 404 || failure.type === "invalid_request_error" || failure.type === "not_found_error") {
+    return "Aurora’s AI setup needs attention. Please try again a little later.";
+  }
+  if (failure.type === "billing_error") {
+    return "Aurora is temporarily unavailable while its AI service is checked.";
+  }
+  return "Aurora’s AI service could not reply just now. Please try again shortly.";
+}
+
 function textFromClaudeResponse(payload: unknown): { text: string; inputTokens: number; outputTokens: number } | null {
   if (!payload || typeof payload !== "object") return null;
   const response = payload as {
@@ -91,7 +125,10 @@ export async function POST(request: Request) {
     .gte("created_at", startOfDay());
   if (todayUsageError) return NextResponse.json({ error: "Aurora’s safety limit is not ready yet." }, { status: 503 });
   if ((todayUsage?.length ?? 0) >= DAILY_LIMIT) {
-    return NextResponse.json({ error: "Aurora has reached today’s gentle limit. Please try again tomorrow." }, { status: 429 });
+    return NextResponse.json({
+      error: "Aurora has reached today’s gentle limit. Please try again tomorrow.",
+      remainingToday: 0,
+    }, { status: 429 });
   }
 
   const { data: monthUsage, error: monthUsageError } = await service
@@ -132,7 +169,18 @@ export async function POST(request: Request) {
 
   const rawResponse = await anthropicResponse.json().catch(() => null);
   if (!anthropicResponse.ok) {
-    return NextResponse.json({ error: "Aurora could not reply just now. Nothing has been saved." }, { status: 502 });
+    const failure = claudeFailure(rawResponse, anthropicResponse.headers.get("request-id"));
+    // This deliberately logs only provider diagnostics. User messages and
+    // Aurora replies never enter Vercel logs or the usage table.
+    console.error("Aurora AI provider request failed", {
+      status: anthropicResponse.status,
+      type: failure.type,
+      requestId: failure.requestId,
+    });
+    return NextResponse.json({
+      error: claudeFailureMessage(anthropicResponse.status, failure),
+      remainingToday: remainingToday(todayUsage?.length ?? 0),
+    }, { status: 502 });
   }
   const reply = textFromClaudeResponse(rawResponse);
   if (!reply) return NextResponse.json({ error: "Aurora returned an empty reply. Please try again." }, { status: 502 });

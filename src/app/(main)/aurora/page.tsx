@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -57,6 +57,7 @@ export default function AuroraPage() {
   const [error, setError] = useState<string | null>(null);
   const [resourceQuery, setResourceQuery] = useState("");
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
+  const [allowanceStatus, setAllowanceStatus] = useState<"loading" | "ready" | "unavailable">("loading");
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -91,13 +92,44 @@ export default function AuroraPage() {
     return () => { cancelled = true; };
   }, []);
 
+  const refreshAllowance = useCallback(async () => {
+    try {
+      const response = await fetch("/api/aurora/chat");
+      const payload = await response.json().catch(() => null) as { remainingToday?: unknown } | null;
+      if (response.ok && typeof payload?.remainingToday === "number") {
+        setRemainingToday(payload.remainingToday);
+        setAllowanceStatus("ready");
+        return;
+      }
+      setRemainingToday(null);
+      setAllowanceStatus("unavailable");
+    } catch {
+      setRemainingToday(null);
+      setAllowanceStatus("unavailable");
+    }
+  }, []);
+
   useEffect(() => {
     if (access !== "ok") return;
     let cancelled = false;
     void (async () => {
-      const response = await fetch("/api/aurora/chat");
-      const payload = await response.json().catch(() => null) as { remainingToday?: unknown } | null;
-      if (!cancelled && typeof payload?.remainingToday === "number") setRemainingToday(payload.remainingToday);
+      try {
+        const response = await fetch("/api/aurora/chat");
+        const payload = await response.json().catch(() => null) as { remainingToday?: unknown } | null;
+        if (cancelled) return;
+        if (response.ok && typeof payload?.remainingToday === "number") {
+          setRemainingToday(payload.remainingToday);
+          setAllowanceStatus("ready");
+          return;
+        }
+        setRemainingToday(null);
+        setAllowanceStatus("unavailable");
+      } catch {
+        if (!cancelled) {
+          setRemainingToday(null);
+          setAllowanceStatus("unavailable");
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [access]);
@@ -137,7 +169,12 @@ export default function AuroraPage() {
         body: JSON.stringify({ messages: nextMessages.map(({ role, content }) => ({ role, content })) }),
       });
       const payload = await response.json().catch(() => null) as { reply?: unknown; error?: unknown; crisisSupportHref?: unknown; remainingToday?: unknown } | null;
-      if (typeof payload?.remainingToday === "number") setRemainingToday(payload.remainingToday);
+      if (typeof payload?.remainingToday === "number") {
+        setRemainingToday(payload.remainingToday);
+        setAllowanceStatus("ready");
+      } else {
+        void refreshAllowance();
+      }
       const reply = payload?.reply;
       if (!response.ok || typeof reply !== "string") {
         setError(typeof payload?.error === "string" ? payload.error : "Aurora could not reply just now. Nothing has been saved online.");
@@ -216,6 +253,8 @@ export default function AuroraPage() {
                   {remainingToday === 0 ? "Daily limit reached" : `${remainingToday} ${remainingToday === 1 ? "message" : "messages"} left today`}
                 </span>
               )}
+              {access === "ok" && consent && allowanceStatus === "loading" && <span className={styles.allowance}>Checking today’s allowance…</span>}
+              {access === "ok" && consent && allowanceStatus === "unavailable" && <span className={styles.allowance}>Allowance unavailable</span>}
               {messages.length > 0 && <button type="button" className={styles.clearButton} onClick={clearConversation}>Clear this device</button>}
             </div>
           </div>
