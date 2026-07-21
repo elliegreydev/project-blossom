@@ -21,6 +21,10 @@ function startOfMonth(): string {
   return now.toISOString();
 }
 
+function remainingToday(used: number): number {
+  return Math.max(0, DAILY_LIMIT - used);
+}
+
 function textFromClaudeResponse(payload: unknown): { text: string; inputTokens: number; outputTokens: number } | null {
   if (!payload || typeof payload !== "object") return null;
   const response = payload as {
@@ -144,5 +148,37 @@ export async function POST(request: Request) {
   });
   if (usageError) return NextResponse.json({ error: "Aurora’s usage record could not be saved safely." }, { status: 503 });
 
-  return NextResponse.json({ reply: reply.text, safetyOutcome: "normal", crisisSupportHref: null });
+  return NextResponse.json({
+    reply: reply.text,
+    safetyOutcome: "normal",
+    crisisSupportHref: null,
+    remainingToday: remainingToday((todayUsage?.length ?? 0) + 1),
+  });
+}
+
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const [{ data: isBetaTester }, { data: isStaff }] = await Promise.all([
+    supabase.rpc("is_beta_tester"),
+    supabase.rpc("is_staff"),
+  ]);
+  if (isBetaTester !== true && isStaff !== true) return NextResponse.json({ error: "not in beta" }, { status: 403 });
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return NextResponse.json({ error: "not configured" }, { status: 503 });
+  const service = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
+  const { count, error } = await service
+    .from("aurora_ai_usage")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("request_kind", "guide")
+    .gte("created_at", startOfDay());
+  if (error) return NextResponse.json({ error: "usage unavailable" }, { status: 503 });
+
+  return NextResponse.json({ remainingToday: remainingToday(count ?? 0), dailyLimit: DAILY_LIMIT });
 }

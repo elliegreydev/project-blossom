@@ -5,6 +5,8 @@
 .tabActive { border-color: color-mix(in srgb, var(--lavender) 72%, var(--border)); background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised)); color: var(--text-primary); }
 .guide, .resources { display: flex; flex-direction: column; gap: 16px; }
 .guideHeading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.guideControls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.allowance { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 .eyebrow, .resourceCategory { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .guide h2, .resources h2 { margin: 4px 0 0; font-family: var(--font-manrope); font-size: 22px; color: var(--text-primary); }
 .notice, .consent, .starter { padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-raised); color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
@@ -42,4 +44,4 @@
 .empty { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 .crisisLink { align-self: flex-start; font-size: 13px; }
 @media (min-width: 720px) { .screen { padding: max(36px, var(--safe-top)) 32px 48px; max-width: 760px; } .resourceList { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 420px) { .composerFooter { align-items: flex-start; flex-direction: column; } .guideHeading { flex-direction: column; gap: 4px; } }
+@media (max-width: 420px) { .composerFooter { align-items: flex-start; flex-direction: column; } .guideHeading { flex-direction: column; gap: 4px; } .guideControls { justify-content: flex-start; } }

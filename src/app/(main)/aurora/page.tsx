@@ -56,6 +56,7 @@ export default function AuroraPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resourceQuery, setResourceQuery] = useState("");
+  const [remainingToday, setRemainingToday] = useState<number | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -89,6 +90,17 @@ export default function AuroraPage() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (access !== "ok") return;
+    let cancelled = false;
+    void (async () => {
+      const response = await fetch("/api/aurora/chat");
+      const payload = await response.json().catch(() => null) as { remainingToday?: unknown } | null;
+      if (!cancelled && typeof payload?.remainingToday === "number") setRemainingToday(payload.remainingToday);
+    })();
+    return () => { cancelled = true; };
+  }, [access]);
 
   const regionResources = useMemo(() => {
     if (!profile || !cachedResources) return [];
@@ -124,7 +136,8 @@ export default function AuroraPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages.map(({ role, content }) => ({ role, content })) }),
       });
-      const payload = await response.json().catch(() => null) as { reply?: unknown; error?: unknown; crisisSupportHref?: unknown } | null;
+      const payload = await response.json().catch(() => null) as { reply?: unknown; error?: unknown; crisisSupportHref?: unknown; remainingToday?: unknown } | null;
+      if (typeof payload?.remainingToday === "number") setRemainingToday(payload.remainingToday);
       const reply = payload?.reply;
       if (!response.ok || typeof reply !== "string") {
         setError(typeof payload?.error === "string" ? payload.error : "Aurora could not reply just now. Nothing has been saved online.");
@@ -197,7 +210,14 @@ export default function AuroraPage() {
               <span className={styles.eyebrow}>Private AI beta</span>
               <h2 id="guide-title">A calmer way to ask for help</h2>
             </div>
-            {messages.length > 0 && <button type="button" className={styles.clearButton} onClick={clearConversation}>Clear this device</button>}
+            <div className={styles.guideControls}>
+              {access === "ok" && consent && remainingToday !== null && (
+                <span className={styles.allowance}>
+                  {remainingToday === 0 ? "Daily limit reached" : `${remainingToday} ${remainingToday === 1 ? "message" : "messages"} left today`}
+                </span>
+              )}
+              {messages.length > 0 && <button type="button" className={styles.clearButton} onClick={clearConversation}>Clear this device</button>}
+            </div>
           </div>
 
           {access === "checking" ? null : access === "signed-out" ? (
@@ -235,7 +255,7 @@ export default function AuroraPage() {
                 <textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={3} maxLength={1800} placeholder="Ask Aurora something…" aria-label="Message Aurora" />
                 <div className={styles.composerFooter}>
                   <span>Only what you type here is shared with Aurora.</span>
-                  <button type="button" className={styles.primaryButton} disabled={sending || !draft.trim()} onClick={() => void send()}>{sending ? "Aurora is thinking…" : "Send"}</button>
+                  <button type="button" className={styles.primaryButton} disabled={sending || !draft.trim() || remainingToday === 0} onClick={() => void send()}>{sending ? "Aurora is thinking…" : "Send"}</button>
                 </div>
               </div>
             </>
