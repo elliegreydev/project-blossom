@@ -131,6 +131,11 @@ export interface Profile {
   weightTrackingEnabled: boolean;
   weightUnit: WeightUnit;
   weightGoalGrams: number | null;
+  // A snapshot selected by the person as their own reference point. This is
+  // device-only and intentionally does not disappear if an old weight log is
+  // removed later.
+  weightBaseline: WeightBaseline | null;
+  weightBaselineNote: string | null;
   weightReminderEnabled: boolean;
   weightReminderDay: number;
   weightReminderTime: string;
@@ -584,6 +589,12 @@ export interface WeightEntry {
   note: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WeightBaseline {
+  sourceEntryId: string | null;
+  date: string;
+  weightGrams: number;
 }
 
 export interface CalorieEntry {
@@ -1516,6 +1527,8 @@ export const DEFAULT_PROFILE: Profile = {
   weightTrackingEnabled: false,
   weightUnit: "auto",
   weightGoalGrams: null,
+  weightBaseline: null,
+  weightBaselineNote: null,
   weightReminderEnabled: false,
   weightReminderDay: 0,
   weightReminderTime: "10:00",
@@ -1559,6 +1572,8 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.weightTrackingEnabled === undefined) backfill.weightTrackingEnabled = false;
   if (existing.weightUnit === undefined) backfill.weightUnit = "auto";
   if (existing.weightGoalGrams === undefined) backfill.weightGoalGrams = null;
+  if (existing.weightBaseline === undefined) backfill.weightBaseline = null;
+  if (existing.weightBaselineNote === undefined) backfill.weightBaselineNote = null;
   if (existing.weightReminderEnabled === undefined) backfill.weightReminderEnabled = false;
   if (existing.weightReminderDay === undefined) backfill.weightReminderDay = 0;
   if (existing.weightReminderTime === undefined) backfill.weightReminderTime = "10:00";
@@ -1593,7 +1608,7 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
 // them out of the sync queue so a calmer phone layout never surprises someone
 // on their desktop (or vice versa).
 export async function updateDeviceProfile(
-  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout">>
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote">>
 ): Promise<void> {
   await db.profiles.update(LOCAL_PROFILE_ID, patch);
 }

@@ -7,15 +7,22 @@ import AddBodyEntrySheet from "@/components/AddBodyEntrySheet";
 import AddWeightEntrySheet from "@/components/AddWeightEntrySheet";
 import AddCalorieEntrySheet from "@/components/AddCalorieEntrySheet";
 import WeightFoodSettingsSheet from "@/components/WeightFoodSettingsSheet";
+import WeightBaselineSheet from "@/components/WeightBaselineSheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
-import { db, deleteBodyEntry, deleteCalorieEntry, deleteWeightEntry, LOCAL_PROFILE_ID } from "@/lib/db";
+import { db, deleteBodyEntry, deleteCalorieEntry, deleteWeightEntry, LOCAL_PROFILE_ID, updateDeviceProfile } from "@/lib/db";
 import { formatWeight, resolvedWeightUnit, todayKey } from "@/lib/weight";
 import styles from "@/components/feature.module.css";
 import local from "./body.module.css";
 
 function dateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function differenceLabel(currentGrams: number, referenceGrams: number, unit: "kg" | "lb" | "st"): string {
+  const difference = Math.abs(currentGrams - referenceGrams);
+  if (difference === 0) return "At the same weight as your reference.";
+  return `${formatWeight(difference, unit)} different from your reference.`;
 }
 
 export default function BodyProgressPage() {
@@ -27,6 +34,7 @@ export default function BodyProgressPage() {
   const [weightSheetOpen, setWeightSheetOpen] = useState(false);
   const [calorieSheetOpen, setCalorieSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [baselineSheetOpen, setBaselineSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tab, setTab] = useState<"entries" | "byMeasurement">("entries");
 
@@ -34,10 +42,20 @@ export default function BodyProgressPage() {
 
   const unit = resolvedWeightUnit(profile.weightUnit, profile.region);
   const latestWeight = weights[0] ?? null;
+  const baseline = profile.weightBaseline ?? null;
   const today = todayKey();
   const todayFood = calorieEntries.filter((entry) => entry.date === today);
   const todayCalories = todayFood.reduce((total, entry) => total + entry.calories, 0);
   const gentle = profile.gentleMode;
+  const trendEntries = weights.slice(0, 12).reverse();
+  const trendMinimum = trendEntries.length > 0 ? Math.min(...trendEntries.map((entry) => entry.weightGrams)) : 0;
+  const trendMaximum = trendEntries.length > 0 ? Math.max(...trendEntries.map((entry) => entry.weightGrams)) : 0;
+  const trendRange = trendMaximum - trendMinimum;
+  const trendPoints = trendEntries.map((entry, index) => {
+    const x = trendEntries.length === 1 ? 130 : (index / (trendEntries.length - 1)) * 260;
+    const y = trendRange === 0 ? 32 : 56 - ((entry.weightGrams - trendMinimum) / trendRange) * 48;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
 
   const byMeasurement = new Map<string, { date: string; value: string }[]>();
   for (const entry of entries) {
@@ -86,6 +104,27 @@ export default function BodyProgressPage() {
                       {profile.weightGoalGrams != null && <span className={styles.itemMeta}>Goal: {formatWeight(profile.weightGoalGrams, unit)}</span>}
                     </>
                   ) : <p className={styles.itemBody}>There is no pressure to add an entry.</p>}
+                  {latestWeight && (
+                    <div className={local.baselineCard}>
+                      <div className={styles.itemRow}>
+                        <span className={styles.itemTitle}>Your baseline</span>
+                        {baseline && <span className={styles.itemMeta}>{dateLabel(baseline.date)}</span>}
+                      </div>
+                      {baseline ? gentle ? (
+                        <p className={local.gentleSummary}>A private reference is saved. The comparison stays tucked away in Gentle Mode.</p>
+                      ) : (
+                        <>
+                          <p className={local.baselineDifference}>{differenceLabel(latestWeight.weightGrams, baseline.weightGrams, unit)}</p>
+                          {profile.weightBaselineNote && <p className={local.baselineNote}>{profile.weightBaselineNote}</p>}
+                          {trendEntries.length >= 3 && <svg className={local.trend} viewBox="0 0 260 64" role="img" aria-label="A private visual of your recent weight entries"><polyline points={trendPoints} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                        </>
+                      ) : <p className={local.baselineEmpty}>Choose one logged weight as a quiet reference point. It is never a target or a judgement.</p>}
+                      <div className={local.baselineActions}>
+                        <button type="button" className={styles.linkButton} onClick={() => setBaselineSheetOpen(true)}>{baseline ? "Change reference" : "Set a reference"}</button>
+                        {baseline && <button type="button" className={local.clearBaseline} onClick={() => void updateDeviceProfile({ weightBaseline: null, weightBaselineNote: null })}>Clear</button>}
+                      </div>
+                    </div>
+                  )}
                   <div className={local.cardActions}>
                     <button type="button" className={styles.addButton} onClick={() => setWeightSheetOpen(true)}>Log weight</button>
                   </div>
@@ -191,6 +230,7 @@ export default function BodyProgressPage() {
         {weightSheetOpen && <AddWeightEntrySheet profile={profile} onClose={() => setWeightSheetOpen(false)} />}
         {calorieSheetOpen && <AddCalorieEntrySheet onClose={() => setCalorieSheetOpen(false)} />}
         {settingsOpen && <WeightFoodSettingsSheet profile={profile} onClose={() => setSettingsOpen(false)} />}
+        {baselineSheetOpen && <WeightBaselineSheet weights={weights} unit={unit} baseline={baseline} baselineNote={profile.weightBaselineNote ?? null} onClose={() => setBaselineSheetOpen(false)} />}
       </div>
     </SensitiveModuleGate>
   );

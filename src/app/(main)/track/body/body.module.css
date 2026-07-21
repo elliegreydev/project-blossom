@@ -163,6 +163,61 @@
   margin-top: 4px;
 }
 
+.baselineCard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 6px;
+  padding-top: 13px;
+  border-top: 1px solid var(--border);
+}
+
+.baselineDifference,
+.baselineEmpty,
+.baselineNote {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.baselineDifference {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.baselineNote {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.baselineActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clearBaseline {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.clearBaseline:hover {
+  color: var(--text-primary);
+}
+
+.trend {
+  width: 100%;
+  height: 56px;
+  margin-top: 2px;
+  color: var(--lavender-dark, var(--plum));
+}
+
 .recentList {
   display: flex;
   flex-direction: column;
