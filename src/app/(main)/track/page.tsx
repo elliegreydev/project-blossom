@@ -127,6 +127,18 @@ const TRACKERS: {
       </svg>
     ),
   },
+  {
+    module: "intimacy",
+    href: "/track/intimacy",
+    title: "Intimacy & wellbeing",
+    desc: "Private notes, in your own words",
+    tint: "var(--pink)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 20s-7-4.4-7-10.2C5 7.2 6.8 5.5 9 5.5c1.3 0 2.4.7 3 1.8.6-1.1 1.7-1.8 3-1.8 2.2 0 4 1.7 4 4.3C19 15.6 12 20 12 20Z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function TrackPage() {

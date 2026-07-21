@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
               journal entries and written check-in notes; Aurora AI conversation history; gender-euphoria entries and Time Capsule
               entries; photos; blood-test records; voice recordings and practice notes; body and
               presentation tracking; weight entries, weight preferences and food/calorie logs;
-              social-transition plans and private contact notes; budget entries;
+              social-transition plans and private contact notes; budget entries; Intimacy &amp; wellbeing entries;
               safety check-ins and trusted-contact details; saved private links; your app lock, PIN,
               biometric credential reference, accessibility choices, and Home layout choices.
             </p>
@@ -77,7 +77,7 @@ export default function PrivacyPolicyPage() {
               repeating the same nudge.
             </p>
             <p>
-              Written journal and check-in notes, photos, blood tests, voice recordings, social plans,
+              Written journal and check-in notes, Intimacy &amp; wellbeing entries, photos, blood tests, voice recordings, social plans,
               budget data, safety contacts, and the other device-only categories above do not sync.
             </p>
           </section>

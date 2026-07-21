@@ -17,6 +17,7 @@ const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
   { key: "presentation", title: "Presentation", desc: "Outfits, hair, makeup, and things you want to try" },
   { key: "bodyProgress", title: "Body & progress", desc: "A quiet, private place to notice change" },
   { key: "budget", title: "Budget tracker", desc: "Transition costs and savings goals, kept private" },
+  { key: "intimacy", title: "Intimacy & wellbeing", desc: "A private, device-only space for personal notes" },
 ];
 
 export default function ModulesSettingsPage() {

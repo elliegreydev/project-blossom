@@ -55,7 +55,8 @@ export type ModuleKey =
   | "voicePractice"
   | "presentation"
   | "bodyProgress"
-  | "budget";
+  | "budget"
+  | "intimacy";
 
 export interface Profile {
   id: string;
@@ -582,6 +583,28 @@ export interface BodyEntry {
   updatedAt: string;
 }
 
+// Intimacy & wellbeing ---------------------------------------------------------
+// A deliberately private, non-judgemental log. It is local-only like journal
+// writing: no sync, no Home block, no reminders and no global search index.
+// The app never records partners, location or any kind of score.
+export type IntimacyDatePrecision = "exact" | "approximate";
+export type IntimacyFeeling = "good" | "mixed" | "unsure" | "not-good";
+
+export interface IntimacyEntry {
+  id: string;
+  date: string;
+  time: string | null;
+  datePrecision: IntimacyDatePrecision;
+  label: string | null;
+  tags: string[];
+  protectionNote: string | null;
+  feeling: IntimacyFeeling | null;
+  aftercareNote: string | null;
+  privateNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WeightEntry {
   id: string;
   date: string;
@@ -784,6 +807,7 @@ type BlossomDb = Dexie & {
   careSupplyAdjustments: EntityTable<CareSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
+  intimacyEntries: EntityTable<IntimacyEntry, "id">;
   euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
   socialTransitionPeople: EntityTable<SocialTransitionPerson, "id">;
   socialTransitionPlans: EntityTable<SocialTransitionPlan, "id">;
@@ -1539,6 +1563,44 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+  instance.version(27).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -2095,6 +2157,26 @@ export async function deleteJournalEntry(id: string): Promise<void> {
   await db.journalEntries.delete(id);
 }
 
+export async function addIntimacyEntry(
+  input: Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">
+): Promise<IntimacyEntry> {
+  const now = new Date().toISOString();
+  const entry: IntimacyEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
+  await db.intimacyEntries.add(entry);
+  return entry;
+}
+
+export async function updateIntimacyEntry(
+  id: string,
+  patch: Partial<Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  await db.intimacyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteIntimacyEntry(id: string): Promise<void> {
+  await db.intimacyEntries.delete(id);
+}
+
 export async function addEuphoriaEntry(
   input: Pick<EuphoriaEntry, "kind" | "title" | "bodyText" | "photo" | "reopenAt">
 ): Promise<EuphoriaEntry> {
@@ -2630,7 +2712,8 @@ export type DataExportSection =
   | "euphoriaAndSocial"
   | "budget"
   | "savedLinks"
-  | "supportMap";
+  | "supportMap"
+  | "intimacy";
 
 export type DataExportSelection = Record<DataExportSection, boolean>;
 
@@ -2647,6 +2730,7 @@ export const DEFAULT_DATA_EXPORT_SELECTION: DataExportSelection = {
   budget: true,
   savedLinks: true,
   supportMap: false,
+  intimacy: false,
 };
 
 export async function exportAllData(): Promise<Record<string, unknown>> {
@@ -2771,6 +2855,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
 export async function exportSelectedData(selection: DataExportSelection): Promise<Record<string, unknown>> {
   const all = await exportAllData();
   const supportMapEntries = selection.supportMap ? await db.supportMapEntries.toArray() : [];
+  const intimacyEntries = selection.intimacy ? await db.intimacyEntries.toArray() : [];
   return {
     format: "blossom-backup",
     version: 1,
@@ -2804,6 +2889,7 @@ export async function exportSelectedData(selection: DataExportSelection): Promis
     budgetGoals: selection.budget ? all.budgetGoals : [],
     privateLinks: selection.savedLinks ? all.privateLinks : [],
     supportMapEntries,
+    intimacyEntries,
   };
 }
 
@@ -2825,6 +2911,7 @@ const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys:
   { section: "budget", label: "Budget", keys: ["budgetEntries", "budgetGoals"], tables: ["budgetEntries", "budgetGoals"] },
   { section: "savedLinks", label: "Saved links", keys: ["privateLinks"], tables: ["privateLinks"] },
   { section: "supportMap", label: "Personal Support Map", keys: ["supportMapEntries"], tables: ["supportMapEntries"] },
+  { section: "intimacy", label: "Intimacy & wellbeing", keys: ["intimacyEntries"], tables: ["intimacyEntries"] },
 ];
 
 function importRows(payload: Record<string, unknown>, key: string): Array<Record<string, unknown>> {
@@ -2925,6 +3012,7 @@ export async function deleteAllData(): Promise<void> {
       db.careSupplyAdjustments,
       db.appointments,
       db.journalEntries,
+      db.intimacyEntries,
       db.euphoriaEntries,
       db.socialTransitionPeople,
       db.socialTransitionPlans,
@@ -2961,6 +3049,7 @@ export async function deleteAllData(): Promise<void> {
         db.careSupplyAdjustments.clear(),
         db.appointments.clear(),
         db.journalEntries.clear(),
+        db.intimacyEntries.clear(),
         db.euphoriaEntries.clear(),
         db.socialTransitionPeople.clear(),
         db.socialTransitionPlans.clear(),

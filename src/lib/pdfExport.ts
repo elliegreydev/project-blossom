@@ -7,6 +7,7 @@ import type {
   CheckIn,
   Goal,
   JournalEntry,
+  IntimacyEntry,
   JourneyEvent,
   Medication,
   MedicationLog,
@@ -51,6 +52,7 @@ interface ExportShape {
   presentationEntries: Array<Omit<PresentationEntry, "photo"> & { hasPhoto: boolean }>;
   bodyEntries: Array<Omit<BodyEntry, "photo"> & { hasPhoto: boolean }>;
   supportMapEntries?: SupportMapEntry[];
+  intimacyEntries?: IntimacyEntry[];
 }
 
 function fmtDate(iso: string | null | undefined): string {
@@ -453,6 +455,19 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
       d.meta([entry.type, entry.area ?? "", entry.labels.join(", ")].filter(Boolean).join(" Â· "));
       d.meta(entry.contact ?? "");
       d.body(entry.note ?? "");
+      d.spacer(4);
+    }
+  }
+
+  if (data.intimacyEntries && data.intimacyEntries.length > 0) {
+    d.heading("Intimacy & wellbeing");
+    for (const entry of data.intimacyEntries) {
+      d.subheading(entry.label ?? "Private entry");
+      d.meta([fmtDate(entry.date), entry.time ?? "", entry.datePrecision === "approximate" ? "Approximate date" : "", entry.feeling ?? ""].filter(Boolean).join(" Â· "));
+      if (entry.tags.length > 0) d.meta(entry.tags.join(", "));
+      d.body(entry.protectionNote ?? "");
+      d.body(entry.aftercareNote ?? "");
+      d.body(entry.privateNote ?? "");
       d.spacer(4);
     }
   }

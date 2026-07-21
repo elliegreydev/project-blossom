@@ -35,6 +35,7 @@ const EXPORT_SECTIONS: { key: DataExportSection; title: string; desc: string; se
   { key: "budget", title: "Budget", desc: "Costs and savings goals.", sensitive: true },
   { key: "savedLinks", title: "Saved links", desc: "Your own saved resources." },
   { key: "supportMap", title: "Personal Support Map", desc: "Private people, places and organisations.", sensitive: true },
+  { key: "intimacy", title: "Intimacy & wellbeing", desc: "Private entries you chose to record.", sensitive: true },
 ];
 
 type CsvKind = "medication" | "appointment" | "weight" | "journal";
