@@ -44,5 +44,19 @@ export function normaliseConversation(
   });
 
   if (cleaned.some((message) => message === null)) return null;
-  return cleaned as Array<{ role: "user" | "assistant"; content: string }>;
+
+  // A provider error can leave a local user bubble without an assistant
+  // reply. On the next try, merge adjacent user messages so the Anthropic
+  // Messages API still receives the alternating conversation it requires.
+  const compacted: Array<{ role: "user" | "assistant"; content: string }> = [];
+  for (const message of cleaned as Array<{ role: "user" | "assistant"; content: string }>) {
+    const previous = compacted.at(-1);
+    if (previous?.role === message.role) {
+      previous.content = `${previous.content}\n\n${message.content}`;
+    } else {
+      compacted.push(message);
+    }
+  }
+
+  return compacted[0]?.role === "user" ? compacted : null;
 }
