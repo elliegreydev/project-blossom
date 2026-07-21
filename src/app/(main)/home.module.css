@@ -73,6 +73,15 @@
   gap: 30px;
 }
 
+.homeBlocks {
+  display: grid;
+  gap: 30px;
+}
+
+.homeBlock {
+  min-width: 0;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -307,4 +316,129 @@ a.card:hover {
   font-size: 13px;
   color: var(--text-muted);
   align-self: flex-start;
+}
+
+.intentionCard {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--lavender) 7%, var(--bg-raised));
+}
+
+.intentionCopy,
+.intentionActive p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.intentionChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.intentionButton,
+.intentionSelected,
+.resetIntention,
+.intentionAction {
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.intentionSelected,
+.intentionAction {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 18%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.resetIntention {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.intentionActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.intentionAction {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.pinnedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pinnedTool {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nudges {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+[data-density="compact"] .section {
+  padding-top: 12px;
+}
+
+[data-density="compact"] .card {
+  padding-block: 11px;
+}
+
+[data-density="spacious"] .section {
+  padding-top: 24px;
+}
+
+[data-density="spacious"] .card {
+  padding-block: 19px;
+}
+
+@media (min-width: 720px) {
+  .homeBlocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 42px 48px;
+  }
+
+  .homeBlock.wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .intentionActive {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
