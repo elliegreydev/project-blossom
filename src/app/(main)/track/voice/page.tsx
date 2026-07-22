@@ -1,27 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddVoiceGoalSheet from "@/components/AddVoiceGoalSheet";
 import LogVoiceSessionSheet from "@/components/LogVoiceSessionSheet";
 import LivePitchView from "@/components/LivePitchView";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, deleteVoiceGoal, deleteVoiceSession, type VoiceGoal, type VoicePracticeCategory } from "@/lib/db";
 import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 import local from "./voice.module.css";
 
 function RecordingPlayback({ recording }: { recording: Blob }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const url = useMemo(() => URL.createObjectURL(recording), [recording]);
 
   useEffect(() => {
-    const objectUrl = URL.createObjectURL(recording);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [recording]);
+    return () => URL.revokeObjectURL(url);
+  }, [url]);
 
-  if (!url) return null;
-  // eslint-disable-next-line jsx-a11y/media-has-caption
   return <audio controls src={url} style={{ width: "100%", marginTop: 6 }} />;
 }
 
@@ -44,16 +42,19 @@ export default function VoicePracticePage() {
   const [editingGoal, setEditingGoal] = useState<VoiceGoal | null>(null);
   const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
   const [pitchViewOpen, setPitchViewOpen] = useState(false);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   const goals = useLiveQuery(() => db.voiceGoals.toArray(), []);
   const sessions = useLiveQuery(() => db.voiceSessions.orderBy("createdAt").reverse().toArray(), []);
 
   if (goals === undefined || sessions === undefined) return null;
 
-  const goalTitle = (goalId: string) => goals.find((g) => g.id === goalId)?.title ?? "Deleted goal";
+  const visibleGoals = goals.filter((goal) => !isPendingRemoval(goal.id));
+  const visibleSessions = sessions.filter((session) => !isPendingRemoval(session.id));
+  const goalTitle = (goalId: string) => visibleGoals.find((g) => g.id === goalId)?.title ?? "Deleted goal";
 
   const sessionsByGoal = new Map<string, typeof sessions>();
-  for (const session of sessions) {
+  for (const session of visibleSessions) {
     const list = sessionsByGoal.get(session.goalId) ?? [];
     list.push(session);
     sessionsByGoal.set(session.goalId, list);
@@ -149,7 +150,7 @@ export default function VoicePracticePage() {
         </div>
       ) : tab === "goals" ? (
         <div className={styles.section}>
-          {goals.length === 0 ? (
+          {visibleGoals.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyTitle}>No practice goals yet</div>
               <div className={styles.emptySubtitle}>
@@ -159,7 +160,7 @@ export default function VoicePracticePage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {goals.map((goal) => (
+              {visibleGoals.map((goal) => (
                 <div key={goal.id} className={styles.item}>
                   <button type="button" className={styles.itemButton} onClick={() => setEditingGoal(goal)}>
                     <span className={local.categoryTag}>{CATEGORY_LABELS[goal.category]}</span>
@@ -180,7 +181,7 @@ export default function VoicePracticePage() {
                     >
                       Log session
                     </button>
-                    <button className={styles.linkButton} onClick={() => deleteVoiceGoal(goal.id)}>
+                    <button className={styles.linkButton} onClick={() => stageRemoval(goal.id, "This voice practice goal and its sessions", () => deleteVoiceGoal(goal.id))}>
                       Remove
                     </button>
                   </div>
@@ -194,7 +195,7 @@ export default function VoicePracticePage() {
         </div>
       ) : (
         <div className={styles.section}>
-          {sessions.length === 0 ? (
+          {visibleSessions.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyTitle}>Nothing logged yet</div>
               <div className={styles.emptySubtitle}>
@@ -210,7 +211,7 @@ export default function VoicePracticePage() {
                     <div key={session.id} style={{ marginTop: 8 }}>
                       <div className={styles.itemRow}>
                         <span className={styles.itemMeta}>{dateLabel(session.createdAt)}</span>
-                        <button className={styles.linkButton} onClick={() => deleteVoiceSession(session.id)}>
+                        <button className={styles.linkButton} onClick={() => stageRemoval(session.id, "This voice session", () => deleteVoiceSession(session.id))}>
                           Remove
                         </button>
                       </div>
@@ -247,6 +248,7 @@ export default function VoicePracticePage() {
       )}
       {sessionSheetOpen && <LogVoiceSessionSheet onClose={() => setSessionSheetOpen(false)} />}
       {pitchViewOpen && <LivePitchView onClose={() => setPitchViewOpen(false)} />}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }

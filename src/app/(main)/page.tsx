@@ -78,6 +78,7 @@ export default function HomePage() {
   const euphoriaEntries = useLiveQuery(() => db.euphoriaEntries.toArray(), []);
   const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
+  const [auroraReasonOpen, setAuroraReasonOpen] = useState(false);
   const [desktop, setDesktop] = useState(false);
   const [intention, setIntention] = useState<IntentionKey | null>(null);
 
@@ -137,6 +138,14 @@ export default function HomePage() {
     void dismissAuroraNudge(auroraSuggestion.key);
   }
 
+  function auroraReason(): string {
+    if (!auroraSuggestion) return "Aurora has not found a practical, local reminder that needs to take up your space right now.";
+    if (auroraSuggestion.kind === "medication") return "Aurora noticed a schedule or supply detail you recorded on this device.";
+    if (auroraSuggestion.kind === "appointment") return "Aurora noticed an appointment you recorded on this device.";
+    if (auroraSuggestion.kind === "goal") return "Aurora noticed a goal you chose to keep in Blossom.";
+    return "Aurora noticed something you recorded in Blossom. This suggestion is made locally and does not use AI or send your records anywhere.";
+  }
+
   function renderBlock(block: HomeBlockKey) {
     if (block === "focus") return (
       <section className={`${styles.section} ${styles.intentionCard}`} aria-labelledby="intention-title">
@@ -153,7 +162,7 @@ export default function HomePage() {
     if (block === "supplies") return <section className={styles.section} aria-labelledby="supply-heads-up-title"><div className={styles.linkRow}><div><div className={styles.eyebrow}>Supplies</div><h2 id="supply-heads-up-title" className={styles.sectionTitle}>A small supply heads-up</h2></div><Link href="/track/medication" className={styles.link}>Review</Link></div>{supplyHeadsUps.length === 0 ? <div className={styles.emptyRow}><strong>Nothing needs checking.</strong><span>Supply heads-ups appear only when they may help.</span></div> : supplyHeadsUps.map((supply) => <Link key={supply.id} href="/track/medication" className={styles.card}><div className={styles.cardTitle}>{supply.label}</div><div className={styles.cardMeta}>{supply.meta}</div></Link>)}</section>;
     if (block === "pinned") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Shortcuts</div><h2 className={styles.sectionTitle}>Pinned tools</h2></div><Link href="/settings/home" className={styles.link}>Edit</Link></div>{selectedLayout.pinnedTools.length === 0 ? <div className={styles.emptyRow}><strong>Nothing pinned yet.</strong><span>Choose shortcuts in Home screen settings.</span></div> : <div className={styles.pinnedGrid}>{selectedLayout.pinnedTools.map((key) => <Link key={key} href={SHORTCUTS[key].href} className={styles.pinnedTool}>{SHORTCUTS[key].label}</Link>)}</div>}</section>;
     if (block === "journey") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Journey</div><h2 className={styles.sectionTitle}>Recent activity</h2></div><Link href="/journey" className={styles.link}>View all</Link></div>{recentJourney.length === 0 ? <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div> : recentJourney.map((entry) => <div key={entry.id} className={styles.card}><div className={styles.cardTitle}>{entry.title}</div>{formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}</div>)}</section>;
-    if (block === "aurora") return activeProfile.auroraMode === "disabled" ? null : <aside className={styles.auroraCard} aria-label="Aurora suggestion"><div className={styles.auroraText}><span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span><strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong><span>{auroraSuggestion?.message ?? auroraStatus.message}</span></div><div className={styles.auroraActions}>{auroraSuggestion ? <><Link href={auroraSuggestion.href} className={styles.auroraAction}>{auroraSuggestion.actionLabel}</Link><button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>Not now</button></> : <Link href="/settings/aurora" className={styles.auroraDismiss}>Aurora settings</Link>}</div></aside>;
+    if (block === "aurora") return activeProfile.auroraMode === "disabled" ? null : <aside className={styles.auroraCard} aria-label="Aurora suggestion"><div className={styles.auroraText}><span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span><strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong><span>{auroraSuggestion?.message ?? auroraStatus.message}</span>{auroraReasonOpen && <span className={styles.auroraReason}>{auroraReason()}</span>}</div><div className={styles.auroraActions}>{auroraSuggestion ? <><Link href={auroraSuggestion.href} className={styles.auroraAction}>{auroraSuggestion.actionLabel}</Link><button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>Not now</button><button type="button" className={styles.auroraDismiss} aria-expanded={auroraReasonOpen} onClick={() => setAuroraReasonOpen((open) => !open)}>{auroraReasonOpen ? "Hide why" : "Why this?"}</button></> : <Link href="/settings/aurora" className={styles.auroraDismiss}>Aurora settings</Link>}</div></aside>;
     return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><BetaNudge /><DiscordNudge /></section>;
   }
 

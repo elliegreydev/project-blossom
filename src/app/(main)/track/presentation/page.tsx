@@ -6,6 +6,8 @@ import ScreenHeader from "@/components/ScreenHeader";
 import AddPresentationEntrySheet from "@/components/AddPresentationEntrySheet";
 import MarkTriedSheet from "@/components/MarkTriedSheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, deletePresentationEntry, type PresentationCategory, type PresentationEntry } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./presentation.module.css";
@@ -28,13 +30,14 @@ export default function PresentationPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PresentationEntry | null>(null);
   const [tryingEntry, setTryingEntry] = useState<PresentationEntry | null>(null);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   const entries = useLiveQuery(() => db.presentationEntries.orderBy("date").reverse().toArray(), []);
 
   if (entries === undefined) return null;
 
-  const logged = entries.filter((e) => !e.wantToTry);
-  const wantToTry = entries.filter((e) => e.wantToTry);
+  const logged = entries.filter((e) => !isPendingRemoval(e.id) && !e.wantToTry);
+  const wantToTry = entries.filter((e) => !isPendingRemoval(e.id) && e.wantToTry);
   const visible = tab === "log" ? logged : tab === "wantToTry" ? wantToTry : [];
 
   const byCategory = new Map<PresentationCategory, PresentationEntry[]>();
@@ -146,7 +149,7 @@ export default function PresentationPage() {
                         Tried it
                       </button>
                     )}
-                    <button className={styles.linkButton} onClick={() => deletePresentationEntry(entry.id)}>
+                    <button className={styles.linkButton} onClick={() => stageRemoval(entry.id, "This presentation entry", () => deletePresentationEntry(entry.id))}>
                       Remove
                     </button>
                   </div>
@@ -171,6 +174,7 @@ export default function PresentationPage() {
         />
       )}
       {tryingEntry && <MarkTriedSheet entryId={tryingEntry.id} onClose={() => setTryingEntry(null)} />}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }

@@ -2343,6 +2343,49 @@ export async function deleteMedicationLog(id: string): Promise<void> {
   });
 }
 
+export async function updateMedicationLog(
+  id: string,
+  input: Pick<MedicationLog, "scheduledTime" | "status" | "note">
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medicationLogs, db.medications, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    const existing = await db.medicationLogs.get(id);
+    if (!existing) return;
+    const canRecalculateSupply = Boolean(existing.supplyAdjustmentId);
+
+    if (existing.supplyAdjustmentId) {
+      const adjustment = await db.medicationSupplyAdjustments.get(existing.supplyAdjustmentId);
+      const supply = adjustment ? await db.medicationSupplies.get(adjustment.supplyId) : null;
+      if (adjustment && supply && adjustment.kind === "dose") {
+        await db.medicationSupplies.update(supply.id, { quantity: Math.max(0, supply.quantity - adjustment.quantityChange), updatedAt: changedAt });
+        await db.medicationSupplyAdjustments.delete(adjustment.id);
+        await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+        await recordSyncChange("medication_supply_adjustment", adjustment.id, "delete", changedAt);
+      }
+    }
+
+    await db.medicationLogs.update(id, { ...input, supplyAdjustmentId: null, updatedAt: changedAt });
+    await recordSyncChange("medication_log", id, "upsert", changedAt);
+    if (!canRecalculateSupply || input.status !== "taken") return;
+
+    const alreadyTaken = input.scheduledTime
+      ? await db.medicationLogs.where("medicationId").equals(existing.medicationId).and((entry) => entry.id !== id && entry.scheduledTime === input.scheduledTime && entry.status === "taken").first()
+      : null;
+    const medication = await db.medications.get(existing.medicationId);
+    const relatedSupplies = await db.medicationSupplies.where("medicationId").equals(existing.medicationId).toArray();
+    const supply = medication ? currentMedicationSupply(medication, relatedSupplies) : null;
+    if (!supply || alreadyTaken) return;
+
+    const quantityAfter = Math.max(0, supply.quantity - supply.amountPerDose);
+    const adjustment: MedicationSupplyAdjustment = { id: newId(), supplyId: supply.id, medicationId: existing.medicationId, kind: "dose", quantityChange: quantityAfter - supply.quantity, quantityAfter, note: null, createdAt: changedAt, updatedAt: changedAt };
+    await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
+    await db.medicationSupplyAdjustments.add(adjustment);
+    await db.medicationLogs.update(id, { supplyAdjustmentId: adjustment.id, updatedAt: changedAt });
+    await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+    await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
+  });
+}
+
 export async function updateCheckIn(
   id: string,
   patch: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">

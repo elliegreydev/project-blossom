@@ -10,6 +10,8 @@ import WeightFoodSettingsSheet from "@/components/WeightFoodSettingsSheet";
 import WeightBaselineSheet from "@/components/WeightBaselineSheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, deleteBodyEntry, deleteCalorieEntry, deleteWeightEntry, LOCAL_PROFILE_ID, updateDeviceProfile, type BodyEntry, type CalorieEntry, type WeightEntry } from "@/lib/db";
 import { formatWeight, resolvedWeightUnit, todayKey } from "@/lib/weight";
 import styles from "@/components/feature.module.css";
@@ -40,17 +42,21 @@ export default function BodyProgressPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState<BodyEntry | null>(null);
   const [tab, setTab] = useState<"entries" | "byMeasurement">("entries");
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (!profile || entries === undefined || weights === undefined || calorieEntries === undefined) return null;
 
+  const visibleEntries = entries.filter((entry) => !isPendingRemoval(entry.id));
+  const visibleWeights = weights.filter((entry) => !isPendingRemoval(entry.id));
+  const visibleCalories = calorieEntries.filter((entry) => !isPendingRemoval(entry.id));
   const unit = resolvedWeightUnit(profile.weightUnit, profile.region);
-  const latestWeight = weights[0] ?? null;
+  const latestWeight = visibleWeights[0] ?? null;
   const baseline = profile.weightBaseline ?? null;
   const today = todayKey();
-  const todayFood = calorieEntries.filter((entry) => entry.date === today);
+  const todayFood = visibleCalories.filter((entry) => entry.date === today);
   const todayCalories = todayFood.reduce((total, entry) => total + entry.calories, 0);
   const gentle = profile.gentleMode;
-  const trendEntries = weights.slice(0, 12).reverse();
+  const trendEntries = visibleWeights.slice(0, 12).reverse();
   const trendMinimum = trendEntries.length > 0 ? Math.min(...trendEntries.map((entry) => entry.weightGrams)) : 0;
   const trendMaximum = trendEntries.length > 0 ? Math.max(...trendEntries.map((entry) => entry.weightGrams)) : 0;
   const trendRange = trendMaximum - trendMinimum;
@@ -61,7 +67,7 @@ export default function BodyProgressPage() {
   }).join(" ");
 
   const byMeasurement = new Map<string, { date: string; value: string }[]>();
-  for (const entry of entries) {
+  for (const entry of visibleEntries) {
     for (const measurement of entry.measurements) {
       const list = byMeasurement.get(measurement.label) ?? [];
       list.push({ date: entry.date, value: measurement.value });
@@ -131,13 +137,13 @@ export default function BodyProgressPage() {
                   <div className={local.cardActions}>
                     <button type="button" className={styles.addButton} onClick={() => setWeightSheetOpen(true)}>Log weight</button>
                   </div>
-                  {weights.length > 0 && !gentle && (
+                  {visibleWeights.length > 0 && !gentle && (
                     <div className={local.recentList}>
-                      {weights.slice(0, 3).map((entry) => (
+                      {visibleWeights.slice(0, 3).map((entry) => (
                         <div className={local.recentRow} key={entry.id}>
                           <span>{dateLabel(entry.date)}</span><span>{formatWeight(entry.weightGrams, unit)}</span>
                           <button type="button" aria-label={`Edit weight entry from ${dateLabel(entry.date)}`} onClick={() => setEditingWeight(entry)}>Edit</button>
-                          <button type="button" aria-label={`Remove weight entry from ${dateLabel(entry.date)}`} onClick={() => deleteWeightEntry(entry.id)}>Remove</button>
+                          <button type="button" aria-label={`Remove weight entry from ${dateLabel(entry.date)}`} onClick={() => stageRemoval(entry.id, "This weight entry", () => deleteWeightEntry(entry.id))}>Remove</button>
                         </div>
                       ))}
                     </div>
@@ -168,7 +174,7 @@ export default function BodyProgressPage() {
                         <div className={local.recentRow} key={entry.id}>
                           <span>{entry.label}</span><span>{entry.calories} kcal</span>
                           <button type="button" aria-label={`Edit ${entry.label}`} onClick={() => setEditingCalorie(entry)}>Edit</button>
-                          <button type="button" aria-label={`Remove ${entry.label}`} onClick={() => deleteCalorieEntry(entry.id)}>Remove</button>
+                          <button type="button" aria-label={`Remove ${entry.label}`} onClick={() => stageRemoval(entry.id, "This food entry", () => deleteCalorieEntry(entry.id))}>Remove</button>
                         </div>
                       ))}
                     </div>
@@ -179,14 +185,14 @@ export default function BodyProgressPage() {
           )}
         </section>
 
-        {entries.length > 0 && (
+        {visibleEntries.length > 0 && (
           <div className={local.segmented}>
             <button className={`${local.segment} ${tab === "entries" ? local.active : ""}`} onClick={() => setTab("entries")}>All entries</button>
             <button className={`${local.segment} ${tab === "byMeasurement" ? local.active : ""}`} onClick={() => setTab("byMeasurement")}>By measurement</button>
           </div>
         )}
 
-        {tab === "byMeasurement" && entries.length > 0 ? (
+        {tab === "byMeasurement" && visibleEntries.length > 0 ? (
           <div className={styles.section}>
             {measurementGroups.length === 0 ? (
               <div className={styles.empty}>
@@ -203,14 +209,14 @@ export default function BodyProgressPage() {
         ) : (
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Body notes</h2>
-            {entries.length === 0 ? (
+            {visibleEntries.length === 0 ? (
               <div className={styles.empty}>
                 <div className={styles.emptyTitle}>You do not have to track your body at all</div>
                 <div className={styles.emptySubtitle}>If it ever feels useful, this is a quiet, private place to notice change, not judge it.</div>
               </div>
             ) : (
               <div className={styles.list}>
-                {entries.map((entry) => {
+                {visibleEntries.map((entry) => {
                   const expanded = expandedId === entry.id;
                   return <div key={entry.id} className={styles.item}>
                     <button type="button" className={local.entryButton} onClick={() => setExpandedId(expanded ? null : entry.id)}>
@@ -222,7 +228,7 @@ export default function BodyProgressPage() {
                       {entry.photo && <div className={local.photoWrap}><PhotoThumbnail photo={entry.photo} alt="Body progress photo" /></div>}
                       {entry.note && <div className={styles.itemBody}>{entry.note}</div>}
                       <button type="button" className={styles.linkButton} style={{ marginTop: 6 }} onClick={() => setEditingBody(entry)}>Edit</button>
-                      <button type="button" className={styles.linkButton} style={{ marginTop: 6 }} onClick={() => deleteBodyEntry(entry.id)}>Remove</button>
+                      <button type="button" className={styles.linkButton} style={{ marginTop: 6 }} onClick={() => stageRemoval(entry.id, "This body note", () => deleteBodyEntry(entry.id))}>Remove</button>
                     </>}
                   </div>;
                 })}
@@ -237,6 +243,7 @@ export default function BodyProgressPage() {
         {(calorieSheetOpen || editingCalorie) && <AddCalorieEntrySheet entry={editingCalorie} onClose={() => { setCalorieSheetOpen(false); setEditingCalorie(null); }} />}
         {settingsOpen && <WeightFoodSettingsSheet profile={profile} onClose={() => setSettingsOpen(false)} />}
         {baselineSheetOpen && <WeightBaselineSheet weights={weights} unit={unit} baseline={baseline} baselineNote={profile.weightBaselineNote ?? null} onClose={() => setBaselineSheetOpen(false)} />}
+        {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
       </div>
     </SensitiveModuleGate>
   );

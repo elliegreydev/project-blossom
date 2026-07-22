@@ -7,7 +7,10 @@ import AddMedicationSheet from "@/components/AddMedicationSheet";
 import MedicationSupplySheet from "@/components/MedicationSupplySheet";
 import CareSupplySheet from "@/components/CareSupplySheet";
 import ManualDoseSheet from "@/components/ManualDoseSheet";
+import EditDoseSheet from "@/components/EditDoseSheet";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import {
   db,
   dueDosesToday,
@@ -23,6 +26,7 @@ import {
   type Medication,
   type MedicationSupply,
   type CareSupply,
+  type MedicationLog,
 } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./medication.module.css";
@@ -83,8 +87,10 @@ export default function MedicationPage() {
   const [creatingSupply, setCreatingSupply] = useState(false);
   const [careSupply, setCareSupply] = useState<CareSupply | null | "new">(null);
   const [manualDoseOpen, setManualDoseOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<MedicationLog | null>(null);
   const [doseTab, setDoseTab] = useState<"today" | "history">("today");
   const [clock, setClock] = useState(() => new Date());
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 30_000);
@@ -101,6 +107,7 @@ export default function MedicationPage() {
   const historyGroups = meds
     .map((med) => {
       const medLogs = logs
+        .filter((log) => !isPendingRemoval(log.id))
         .filter((l) => l.medicationId === med.id)
         .sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
       const recentLogs = medLogs.filter((l) => new Date(l.loggedAt) >= historyCutoff);
@@ -207,7 +214,8 @@ export default function MedicationPage() {
                       <div key={log.id} className={local.historyRow}>
                         <span className={styles.itemMeta}>{dateTimeLabel(log.scheduledTime ?? log.loggedAt)}</span>
                         <span>{STATUS_LABELS[log.status]}</span>
-                        <button type="button" className={styles.linkButton} onClick={() => { if (window.confirm("Remove this dose record? Any linked supply count will be corrected too.")) void deleteMedicationLog(log.id); }}>Remove</button>
+                        <button type="button" className={styles.linkButton} onClick={() => setEditingLog(log)}>Edit</button>
+                        <button type="button" className={styles.linkButton} onClick={() => stageRemoval(log.id, "This dose record", () => deleteMedicationLog(log.id))}>Remove</button>
                       </div>
                     ))}
                   </div>
@@ -432,6 +440,8 @@ export default function MedicationPage() {
         />
       )}
       {manualDoseOpen && <ManualDoseSheet medications={meds} onClose={() => setManualDoseOpen(false)} />}
+      {editingLog && <EditDoseSheet log={editingLog} onClose={() => setEditingLog(null)} />}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
     </SensitiveModuleGate>
   );

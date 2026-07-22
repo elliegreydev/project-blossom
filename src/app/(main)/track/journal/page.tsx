@@ -8,6 +8,8 @@ import JournalSheet from "@/components/JournalSheet";
 import CheckInSheet from "@/components/CheckInSheet";
 import EuphoriaEntrySheet from "@/components/EuphoriaEntrySheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, deleteJournalEntry, deleteCheckIn, deleteEuphoriaEntry, type CheckIn, type EuphoriaEntry, type EuphoriaMomentKind, type JournalEntry } from "@/lib/db";
 import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
@@ -49,12 +51,14 @@ function EuphoriaCard({
   expanded,
   onToggle,
   onEdit,
+  onRemove,
   sealed = false,
 }: {
   entry: EuphoriaEntry;
   expanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  onRemove: () => void;
   sealed?: boolean;
 }) {
   const hiddenForLater = sealed && !expanded;
@@ -81,7 +85,7 @@ function EuphoriaCard({
           {entry.bodyText && <div className={styles.itemBody}>{entry.bodyText}</div>}
           {entry.reopenAt && <span className={local.capsuleNote}>Time Capsule opened {capsuleLabel(entry.reopenAt)}</span>}
           <button type="button" className={styles.linkButton} onClick={onEdit}>Edit</button>
-          <button type="button" className={styles.linkButton} onClick={() => deleteEuphoriaEntry(entry.id)}>
+          <button type="button" className={styles.linkButton} onClick={onRemove}>
             Remove
           </button>
         </>
@@ -100,6 +104,7 @@ export default function JournalPage() {
   const [editingEuphoria, setEditingEuphoria] = useState<EuphoriaEntry | null>(null);
   const [euphoriaView, setEuphoriaView] = useState<"moments" | "capsules">("moments");
   const [expandedEuphoriaId, setExpandedEuphoriaId] = useState<string | null>(null);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   const entries = useLiveQuery(() => db.journalEntries.orderBy("createdAt").reverse().toArray(), []);
   const checkIns = useLiveQuery(() => db.checkIns.orderBy("createdAt").reverse().toArray(), []);
@@ -107,8 +112,11 @@ export default function JournalPage() {
 
   if (entries === undefined || checkIns === undefined || euphoriaEntries === undefined) return null;
 
+  const visibleJournalEntries = entries.filter((entry) => !isPendingRemoval(entry.id));
+  const visibleCheckIns = checkIns.filter((entry) => !isPendingRemoval(entry.id));
+  const visibleEuphoriaEntries = euphoriaEntries.filter((entry) => !isPendingRemoval(entry.id));
   const trendGroups = SCALE_LABELS.map(([key, label]) => {
-    const values = checkIns
+    const values = visibleCheckIns
       .filter((ci) => ci[key])
       .map((ci) => ({ date: ci.createdAt, value: ci[key] as number }))
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -117,8 +125,8 @@ export default function JournalPage() {
   }).filter((group) => group.values.length > 0);
 
   const today = new Date().toISOString().slice(0, 10);
-  const visibleMoments = euphoriaEntries.filter((entry) => !entry.reopenAt || entry.reopenAt <= today);
-  const capsules = euphoriaEntries.filter((entry) => entry.reopenAt);
+  const visibleMoments = visibleEuphoriaEntries.filter((entry) => !entry.reopenAt || entry.reopenAt <= today);
+  const capsules = visibleEuphoriaEntries.filter((entry) => entry.reopenAt);
 
   return (
     <SensitiveModuleGate>
@@ -184,7 +192,7 @@ export default function JournalPage() {
         </div>
       ) : tab === "journal" ? (
         <div className={styles.section}>
-          {entries.length === 0 ? (
+          {visibleJournalEntries.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyTitle}>A private space</div>
               <div className={styles.emptySubtitle}>
@@ -193,12 +201,12 @@ export default function JournalPage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {entries.map((entry) => (
+              {visibleJournalEntries.map((entry) => (
                 <div key={entry.id} className={styles.item}>
                   <div className={styles.itemRow}>
                     <span className={styles.itemMeta}>{dateLabel(entry.createdAt)}</span>
                     <button className={styles.linkButton} onClick={() => setEditingJournal(entry)}>Edit</button>
-                    <button className={styles.linkButton} onClick={() => deleteJournalEntry(entry.id)}>
+                    <button className={styles.linkButton} onClick={() => stageRemoval(entry.id, "This journal entry", () => deleteJournalEntry(entry.id))}>
                       Remove
                     </button>
                   </div>
@@ -213,7 +221,7 @@ export default function JournalPage() {
         </div>
       ) : tab === "checkins" ? (
         <div className={styles.section}>
-          {checkIns.length === 0 ? (
+          {visibleCheckIns.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyTitle}>No check-ins yet</div>
               <div className={styles.emptySubtitle}>
@@ -222,12 +230,12 @@ export default function JournalPage() {
             </div>
           ) : (
             <div className={styles.list}>
-              {checkIns.map((ci) => (
+              {visibleCheckIns.map((ci) => (
                 <div key={ci.id} className={styles.item}>
                   <div className={styles.itemRow}>
                     <span className={styles.itemMeta}>{dateLabel(ci.createdAt)}</span>
                     <button className={styles.linkButton} onClick={() => setEditingCheckIn(ci)}>Edit</button>
-                    <button className={styles.linkButton} onClick={() => deleteCheckIn(ci.id)}>
+                    <button className={styles.linkButton} onClick={() => stageRemoval(ci.id, "This check-in", () => deleteCheckIn(ci.id))}>
                       Remove
                     </button>
                   </div>
@@ -289,6 +297,7 @@ export default function JournalPage() {
                     expanded={expandedEuphoriaId === entry.id}
                     onToggle={() => setExpandedEuphoriaId(expandedEuphoriaId === entry.id ? null : entry.id)}
                     onEdit={() => setEditingEuphoria(entry)}
+                    onRemove={() => stageRemoval(entry.id, "This affirming moment", () => deleteEuphoriaEntry(entry.id))}
                   />
                 ))}
               </div>
@@ -312,6 +321,7 @@ export default function JournalPage() {
                       expanded={expandedEuphoriaId === entry.id}
                       onToggle={() => setExpandedEuphoriaId(expandedEuphoriaId === entry.id ? null : entry.id)}
                       onEdit={() => setEditingEuphoria(entry)}
+                      onRemove={() => stageRemoval(entry.id, "This Time Capsule", () => deleteEuphoriaEntry(entry.id))}
                     />
                   );
                 })}
@@ -327,6 +337,7 @@ export default function JournalPage() {
       {(journalOpen || editingJournal) && <JournalSheet entry={editingJournal} onClose={() => { setJournalOpen(false); setEditingJournal(null); }} />}
       {(checkInOpen || editingCheckIn) && <CheckInSheet entry={editingCheckIn} onClose={() => { setCheckInOpen(false); setEditingCheckIn(null); }} />}
       {(euphoriaOpen || editingEuphoria) && <EuphoriaEntrySheet entry={editingEuphoria} onClose={() => { setEuphoriaOpen(false); setEditingEuphoria(null); }} />}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
     </SensitiveModuleGate>
   );

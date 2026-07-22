@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddBloodTestSheet from "@/components/AddBloodTestSheet";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, deleteBloodTestEntry, type BloodTestEntry } from "@/lib/db";
 import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
@@ -16,11 +18,12 @@ export default function BloodTestsPage() {
   const entries = useLiveQuery(() => db.bloodTestEntries.toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<BloodTestEntry | null>(null);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (entries === undefined) return null;
 
   const groups = new Map<string, BloodTestEntry[]>();
-  for (const entry of entries) {
+  for (const entry of entries.filter((item) => !isPendingRemoval(item.id))) {
     const list = groups.get(entry.testName) ?? [];
     list.push(entry);
     groups.set(entry.testName, list);
@@ -63,7 +66,7 @@ export default function BloodTestsPage() {
                       <button
                         type="button"
                         className={styles.linkButton}
-                        onClick={() => deleteBloodTestEntry(entry.id)}
+                        onClick={() => stageRemoval(entry.id, "This blood test result", () => deleteBloodTestEntry(entry.id))}
                       >
                         Remove
                       </button>
@@ -100,6 +103,7 @@ export default function BloodTestsPage() {
           }}
         />
       )}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }
