@@ -23,6 +23,16 @@ export default function AuroraSettingsPage() {
         Aurora is your optional guide. She never gives medical advice, never
         guilt-trips you, and never repeats a suggestion you&apos;ve dismissed.
       </p>
+      <div className={styles.field}>
+        <span className={styles.label}>Local suggestions</span>
+        <p className={styles.hint}>
+          Aurora can quietly notice practical things already recorded on this
+          device, such as a scheduled medication, an upcoming appointment, a
+          supply that may need checking, a ready Time Capsule, or a goal you
+          chose to revisit. This works without AI and never sends those records
+          anywhere.
+        </p>
+      </div>
       <div className={styles.optionGrid}>
         {AURORA_MODES.map((m) => (
           <button

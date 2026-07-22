@@ -3,15 +3,15 @@
 import { useMemo, useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addWeightEntry, type Profile } from "@/lib/db";
+import { addWeightEntry, updateWeightEntry, type Profile, type WeightEntry } from "@/lib/db";
 import { gramsFromWeight, resolvedWeightUnit, weightFromGrams, weightUnitLabel } from "@/lib/weight";
 
-export default function AddWeightEntrySheet({ profile, onClose }: { profile: Profile; onClose: () => void }) {
+export default function AddWeightEntrySheet({ profile, entry, onClose }: { profile: Profile; entry?: WeightEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
   const unit = useMemo(() => resolvedWeightUnit(profile.weightUnit, profile.region), [profile.region, profile.weightUnit]);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [value, setValue] = useState("");
-  const [note, setNote] = useState("");
+  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [value, setValue] = useState(entry ? String(weightFromGrams(entry.weightGrams, unit)) : "");
+  const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);
 
   const parsed = Number(value);
@@ -20,11 +20,13 @@ export default function AddWeightEntrySheet({ profile, onClose }: { profile: Pro
   async function save() {
     if (!valid) return;
     setSaving(true);
-    await addWeightEntry({
+    const input = {
       date,
       weightGrams: gramsFromWeight(parsed, unit),
       note: note.trim() || null,
-    });
+    };
+    if (entry) await updateWeightEntry(entry.id, input);
+    else await addWeightEntry(input);
     onClose();
   }
 
@@ -34,7 +36,7 @@ export default function AddWeightEntrySheet({ profile, onClose }: { profile: Pro
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="weight-entry-title">
         <div className={styles.grabber} />
-        <h2 id="weight-entry-title" className={styles.title}>Log weight</h2>
+        <h2 id="weight-entry-title" className={styles.title}>{entry ? "Edit weight" : "Log weight"}</h2>
         <p className={styles.helpText}>Private to this device. A number is only a note, never a grade.</p>
 
         <div className={styles.field}>
@@ -57,7 +59,7 @@ export default function AddWeightEntrySheet({ profile, onClose }: { profile: Pro
 
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>Cancel</button>
-          <button type="button" className={styles.primaryButton} disabled={!valid || saving} onClick={save}>{saving ? "Saving…" : "Save weight"}</button>
+          <button type="button" className={styles.primaryButton} disabled={!valid || saving} onClick={save}>{saving ? "Saving…" : entry ? "Save changes" : "Save weight"}</button>
         </div>
       </div>
     </div>

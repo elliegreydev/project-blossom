@@ -6,11 +6,13 @@ import ScreenHeader from "@/components/ScreenHeader";
 import AddMedicationSheet from "@/components/AddMedicationSheet";
 import MedicationSupplySheet from "@/components/MedicationSupplySheet";
 import CareSupplySheet from "@/components/CareSupplySheet";
+import ManualDoseSheet from "@/components/ManualDoseSheet";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
 import {
   db,
   dueDosesToday,
   currentMedicationSupply,
+  deleteMedicationLog,
   estimatedMedicationSupplyDays,
   logDose,
   medicationSupplyIsLow,
@@ -80,6 +82,7 @@ export default function MedicationPage() {
   const [supplyToEdit, setSupplyToEdit] = useState<MedicationSupply | null>(null);
   const [creatingSupply, setCreatingSupply] = useState(false);
   const [careSupply, setCareSupply] = useState<CareSupply | null | "new">(null);
+  const [manualDoseOpen, setManualDoseOpen] = useState(false);
   const [doseTab, setDoseTab] = useState<"today" | "history">("today");
   const [clock, setClock] = useState(() => new Date());
 
@@ -145,6 +148,12 @@ export default function MedicationPage() {
     <div className={styles.screen}>
       <ScreenHeader title="Medication" backHref="/track" />
 
+      {meds.length > 0 && (
+        <button type="button" className={styles.addButton} onClick={() => setManualDoseOpen(true)}>
+          + Log a dose
+        </button>
+      )}
+
       {(slots.length > 0 || historyGroups.length > 0) && (
         <div className={local.segmented}>
           <button
@@ -198,6 +207,7 @@ export default function MedicationPage() {
                       <div key={log.id} className={local.historyRow}>
                         <span className={styles.itemMeta}>{dateTimeLabel(log.scheduledTime ?? log.loggedAt)}</span>
                         <span>{STATUS_LABELS[log.status]}</span>
+                        <button type="button" className={styles.linkButton} onClick={() => { if (window.confirm("Remove this dose record? Any linked supply count will be corrected too.")) void deleteMedicationLog(log.id); }}>Remove</button>
                       </div>
                     ))}
                   </div>
@@ -421,6 +431,7 @@ export default function MedicationPage() {
           onClose={() => setCareSupply(null)}
         />
       )}
+      {manualDoseOpen && <ManualDoseSheet medications={meds} onClose={() => setManualDoseOpen(false)} />}
     </div>
     </SensitiveModuleGate>
   );

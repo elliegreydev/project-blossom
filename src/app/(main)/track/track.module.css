@@ -38,6 +38,68 @@
   gap: 10px;
 }
 
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.groupHeading h2 {
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+  font-size: 18px;
+}
+
+.groupHeading a {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.careOverview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 44%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.careOverview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.careOverview strong {
+  font-family: var(--font-manrope);
+  font-size: 18px;
+}
+
+.careOverview span:not(.careEyebrow) {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.careEyebrow {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .card {
   display: flex;
   align-items: center;

@@ -192,10 +192,16 @@ export default function PrivacySettingsPage() {
               These always stay on this device only, even with sync on:
               journal entries, blood test results, voice practice recordings,
               presentation and body/progress photos and notes, weight and food/calorie logs,
-              your saved
-              private links, your app lock PIN or biometric, and your
+              your saved private links, Personal Support Map, Intimacy &amp; wellbeing entries,
+              your app lock PIN or biometric, and your
               accessibility settings.
             </p>
+            <div className={styles.field} style={{ gap: 7 }}>
+              <span className={styles.label}>At a glance</span>
+              <span className={styles.hint}>Medication, appointments and goals: local by default, optional sync, never shared automatically.</span>
+              <span className={styles.hint}>Journal, Intimacy, Support Map and local recordings: this device only, even when sync is on.</span>
+              <span className={styles.hint}>Exports: created on this device, and only include the sections you select.</span>
+            </div>
           </>
         )}
       </div>
@@ -226,8 +232,9 @@ export default function PrivacySettingsPage() {
       <div className={styles.field}>
         <span className={styles.label}>Connected services</span>
         <p className={styles.hint}>
-          {(pushEnabled ? "Push notifications: on for this device. " : "Push notifications: off. ") +
-            "Blossom doesn't connect to any third-party services."}
+          {signedIn ? "Supabase: used for your signed-in account and any data you choose to sync. " : "Supabase: not connected on this device. "}
+          {pushEnabled ? "Push notifications: on for this device. " : "Push notifications: off. "}
+          Aurora&apos;s optional AI chat sends only the message you type to Anthropic after you choose to use it; it never receives your Blossom records automatically.
         </p>
       </div>
 

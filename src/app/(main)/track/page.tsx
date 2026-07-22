@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, LOCAL_PROFILE_ID, type ModuleKey } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, recordTrackModuleVisit, type ModuleKey } from "@/lib/db";
 import styles from "./track.module.css";
 
 const ICON_PROPS = {
@@ -146,6 +146,21 @@ export default function TrackPage() {
   if (!profile) return null;
 
   const visible = TRACKERS.filter((t) => profile.enabledModules.includes(t.module));
+  const pinnedModules = profile.trackPinnedModules ?? [];
+  const recentModules = profile.trackRecentModules ?? [];
+  const pinned = pinnedModules.map((key) => visible.find((tool) => tool.module === key)).filter((tool): tool is typeof TRACKERS[number] => Boolean(tool));
+  const recent = recentModules
+    .map((key) => visible.find((tool) => tool.module === key))
+    .filter((tool): tool is typeof TRACKERS[number] => tool !== undefined)
+    .filter((tool) => !pinned.some((item) => item.module === tool.module));
+
+  function ToolCard({ tool }: { tool: typeof TRACKERS[number] }) {
+    return <Link href={tool.href} className={styles.card} onClick={() => void recordTrackModuleVisit(tool.module)}>
+      <div className={styles.cardIcon} style={{ background: `color-mix(in srgb, ${tool.tint} 30%, var(--bg))` }}>{tool.icon}</div>
+      <div className={styles.cardText}><div className={styles.cardTitle}>{tool.title}</div><div className={styles.cardDesc}>{tool.desc}</div></div>
+      <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+    </Link>;
+  }
 
   return (
     <div className={styles.screen}>
@@ -154,22 +169,11 @@ export default function TrackPage() {
         <h1 className={styles.title}>Track</h1>
         <p className={styles.subtitle}>Choose the space that feels useful today.</p>
       </header>
-      <div className={styles.cards}>
-        {visible.map((t) => (
-            <Link key={t.module} href={t.href} className={styles.card}>
-              <div className={styles.cardIcon} style={{ background: `color-mix(in srgb, ${t.tint} 30%, var(--bg))` }}>
-                {t.icon}
-              </div>
-              <div className={styles.cardText}>
-                <div className={styles.cardTitle}>{t.title}</div>
-                <div className={styles.cardDesc}>{t.desc}</div>
-              </div>
-              <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m9 5 7 7-7 7" />
-              </svg>
-            </Link>
-        ))}
-      </div>
+      {(profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && <Link href="/track/care" className={styles.careOverview}><div><span className={styles.careEyebrow}>A calmer overview</span><strong>Care overview</strong><span>Medication, appointments, supplies and blood tests together.</span></div><span aria-hidden="true">→</span></Link>}
+
+      {pinned.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>My spaces</h2><Link href="/settings/modules">Edit</Link></div><div className={styles.cards}>{pinned.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
+      {recent.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>Recently used</h2></div><div className={styles.cards}>{recent.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
+      <section className={styles.group}><div className={styles.groupHeading}><h2>{pinned.length || recent.length ? "All tools" : "Your spaces"}</h2>{visible.length > 3 && <Link href="/settings/modules">Choose what appears</Link>}</div><div className={styles.cards}>{visible.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>
     </div>
   );
 }

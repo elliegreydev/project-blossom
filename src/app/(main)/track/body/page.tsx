@@ -10,7 +10,7 @@ import WeightFoodSettingsSheet from "@/components/WeightFoodSettingsSheet";
 import WeightBaselineSheet from "@/components/WeightBaselineSheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
-import { db, deleteBodyEntry, deleteCalorieEntry, deleteWeightEntry, LOCAL_PROFILE_ID, updateDeviceProfile } from "@/lib/db";
+import { db, deleteBodyEntry, deleteCalorieEntry, deleteWeightEntry, LOCAL_PROFILE_ID, updateDeviceProfile, type BodyEntry, type CalorieEntry, type WeightEntry } from "@/lib/db";
 import { formatWeight, resolvedWeightUnit, todayKey } from "@/lib/weight";
 import styles from "@/components/feature.module.css";
 import local from "./body.module.css";
@@ -32,10 +32,13 @@ export default function BodyProgressPage() {
   const calorieEntries = useLiveQuery(() => db.calorieEntries.orderBy("date").reverse().toArray(), []);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [weightSheetOpen, setWeightSheetOpen] = useState(false);
+  const [editingWeight, setEditingWeight] = useState<WeightEntry | null>(null);
   const [calorieSheetOpen, setCalorieSheetOpen] = useState(false);
+  const [editingCalorie, setEditingCalorie] = useState<CalorieEntry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [baselineSheetOpen, setBaselineSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingBody, setEditingBody] = useState<BodyEntry | null>(null);
   const [tab, setTab] = useState<"entries" | "byMeasurement">("entries");
 
   if (!profile || entries === undefined || weights === undefined || calorieEntries === undefined) return null;
@@ -133,6 +136,7 @@ export default function BodyProgressPage() {
                       {weights.slice(0, 3).map((entry) => (
                         <div className={local.recentRow} key={entry.id}>
                           <span>{dateLabel(entry.date)}</span><span>{formatWeight(entry.weightGrams, unit)}</span>
+                          <button type="button" aria-label={`Edit weight entry from ${dateLabel(entry.date)}`} onClick={() => setEditingWeight(entry)}>Edit</button>
                           <button type="button" aria-label={`Remove weight entry from ${dateLabel(entry.date)}`} onClick={() => deleteWeightEntry(entry.id)}>Remove</button>
                         </div>
                       ))}
@@ -163,6 +167,7 @@ export default function BodyProgressPage() {
                       {todayFood.slice(0, 4).map((entry) => (
                         <div className={local.recentRow} key={entry.id}>
                           <span>{entry.label}</span><span>{entry.calories} kcal</span>
+                          <button type="button" aria-label={`Edit ${entry.label}`} onClick={() => setEditingCalorie(entry)}>Edit</button>
                           <button type="button" aria-label={`Remove ${entry.label}`} onClick={() => deleteCalorieEntry(entry.id)}>Remove</button>
                         </div>
                       ))}
@@ -216,6 +221,7 @@ export default function BodyProgressPage() {
                       {entry.measurements.length > 0 && <div style={{ marginTop: 6 }}>{entry.measurements.map((measurement, index) => <div key={index} className={local.measurementRow}><span>{measurement.label}</span><span className={local.measurementValue}>{measurement.value}</span></div>)}</div>}
                       {entry.photo && <div className={local.photoWrap}><PhotoThumbnail photo={entry.photo} alt="Body progress photo" /></div>}
                       {entry.note && <div className={styles.itemBody}>{entry.note}</div>}
+                      <button type="button" className={styles.linkButton} style={{ marginTop: 6 }} onClick={() => setEditingBody(entry)}>Edit</button>
                       <button type="button" className={styles.linkButton} style={{ marginTop: 6 }} onClick={() => deleteBodyEntry(entry.id)}>Remove</button>
                     </>}
                   </div>;
@@ -226,9 +232,9 @@ export default function BodyProgressPage() {
           </div>
         )}
 
-        {sheetOpen && <AddBodyEntrySheet onClose={() => setSheetOpen(false)} />}
-        {weightSheetOpen && <AddWeightEntrySheet profile={profile} onClose={() => setWeightSheetOpen(false)} />}
-        {calorieSheetOpen && <AddCalorieEntrySheet onClose={() => setCalorieSheetOpen(false)} />}
+        {(sheetOpen || editingBody) && <AddBodyEntrySheet entry={editingBody} onClose={() => { setSheetOpen(false); setEditingBody(null); }} />}
+        {(weightSheetOpen || editingWeight) && <AddWeightEntrySheet profile={profile} entry={editingWeight} onClose={() => { setWeightSheetOpen(false); setEditingWeight(null); }} />}
+        {(calorieSheetOpen || editingCalorie) && <AddCalorieEntrySheet entry={editingCalorie} onClose={() => { setCalorieSheetOpen(false); setEditingCalorie(null); }} />}
         {settingsOpen && <WeightFoodSettingsSheet profile={profile} onClose={() => setSettingsOpen(false)} />}
         {baselineSheetOpen && <WeightBaselineSheet weights={weights} unit={unit} baseline={baseline} baselineNote={profile.weightBaselineNote ?? null} onClose={() => setBaselineSheetOpen(false)} />}
       </div>

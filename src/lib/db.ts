@@ -83,6 +83,10 @@ export interface Profile {
   // another device looks like.
   homePhoneLayout: HomeLayoutConfig;
   homeDesktopLayout: HomeLayoutConfig;
+  // Track is a per-device workbench too. Pinning and recency should never
+  // rearrange another device just because sync is enabled.
+  trackPinnedModules: ModuleKey[];
+  trackRecentModules: ModuleKey[];
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
   ageConfirmedAt: string | null;
@@ -230,6 +234,9 @@ export interface MedicationLog {
   status: DoseStatus;
   loggedAt: string;
   note: string | null;
+  // Added for new logs so correcting a recorded dose can also correct the
+  // optional stock counter. Older logs simply do not have this link.
+  supplyAdjustmentId?: string | null;
   updatedAt: string;
 }
 
@@ -1633,6 +1640,8 @@ export const DEFAULT_PROFILE: Profile = {
   lowEnergyMode: false,
   homePhoneLayout: defaultHomeLayout(),
   homeDesktopLayout: defaultHomeLayout(),
+  trackPinnedModules: [],
+  trackRecentModules: [],
   sensitiveModulesLocked: false,
   syncEnabled: false,
   ageConfirmedAt: null,
@@ -1692,6 +1701,8 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
   if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();
   if (existing.homeDesktopLayout === undefined) backfill.homeDesktopLayout = defaultHomeLayout();
+  if (existing.trackPinnedModules === undefined) backfill.trackPinnedModules = [];
+  if (existing.trackRecentModules === undefined) backfill.trackRecentModules = [];
   if (existing.subregion === undefined) backfill.subregion = null;
   // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
@@ -1739,9 +1750,26 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
 // them out of the sync queue so a calmer phone layout never surprises someone
 // on their desktop (or vice versa).
 export async function updateDeviceProfile(
-  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote">>
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
 ): Promise<void> {
   await db.profiles.update(LOCAL_PROFILE_ID, patch);
+}
+
+export async function recordTrackModuleVisit(module: ModuleKey): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile) return;
+  const recentModules = profile.trackRecentModules ?? [];
+  await updateDeviceProfile({ trackRecentModules: [module, ...recentModules.filter((item) => item !== module)].slice(0, 4) });
+}
+
+export async function togglePinnedTrackModule(module: ModuleKey): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile) return;
+  const pinnedModules = profile.trackPinnedModules ?? [];
+  const pinned = pinnedModules.includes(module)
+    ? pinnedModules.filter((item) => item !== module)
+    : [...pinnedModules, module].slice(0, 3);
+  await updateDeviceProfile({ trackPinnedModules: pinned });
 }
 
 function newId(): string {
@@ -2069,7 +2097,7 @@ export async function logDose(
   input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
-  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, ...input };
+  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, supplyAdjustmentId: null, ...input };
   await db.transaction("rw", db.medications, db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationLogs.add(log);
     await recordSyncChange("medication_log", log.id, "upsert", changedAt);
@@ -2101,6 +2129,7 @@ export async function logDose(
     };
     await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
     await db.medicationSupplyAdjustments.add(adjustment);
+    await db.medicationLogs.update(log.id, { supplyAdjustmentId: adjustment.id, updatedAt: changedAt });
     await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
     await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
   });
@@ -2157,6 +2186,10 @@ export async function deleteJournalEntry(id: string): Promise<void> {
   await db.journalEntries.delete(id);
 }
 
+export async function updateJournalEntry(id: string, bodyText: string): Promise<void> {
+  await db.journalEntries.update(id, { bodyText, updatedAt: new Date().toISOString() });
+}
+
 export async function addIntimacyEntry(
   input: Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">
 ): Promise<IntimacyEntry> {
@@ -2188,6 +2221,13 @@ export async function addEuphoriaEntry(
 
 export async function deleteEuphoriaEntry(id: string): Promise<void> {
   await db.euphoriaEntries.delete(id);
+}
+
+export async function updateEuphoriaEntry(
+  id: string,
+  patch: Partial<Pick<EuphoriaEntry, "kind" | "title" | "bodyText" | "photo" | "reopenAt">>
+): Promise<void> {
+  await db.euphoriaEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
 }
 
 // Social transition planner ------------------------------------------------------
@@ -2275,6 +2315,42 @@ export async function deleteCheckIn(id: string): Promise<void> {
   await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
     await db.checkIns.delete(id);
     await recordSyncChange("check_in", id, "delete", changedAt);
+  });
+}
+
+export async function deleteMedicationLog(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    const log = await db.medicationLogs.get(id);
+    if (!log) return;
+
+    if (log.supplyAdjustmentId) {
+      const adjustment = await db.medicationSupplyAdjustments.get(log.supplyAdjustmentId);
+      const supply = adjustment ? await db.medicationSupplies.get(adjustment.supplyId) : null;
+      if (adjustment && supply && adjustment.kind === "dose") {
+        await db.medicationSupplies.update(supply.id, {
+          quantity: Math.max(0, supply.quantity - adjustment.quantityChange),
+          updatedAt: changedAt,
+        });
+        await db.medicationSupplyAdjustments.delete(adjustment.id);
+        await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+        await recordSyncChange("medication_supply_adjustment", adjustment.id, "delete", changedAt);
+      }
+    }
+
+    await db.medicationLogs.delete(id);
+    await recordSyncChange("medication_log", id, "delete", changedAt);
+  });
+}
+
+export async function updateCheckIn(
+  id: string,
+  patch: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
+    await db.checkIns.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("check_in", id, "upsert", changedAt);
   });
 }
 
@@ -2631,6 +2707,13 @@ export async function deleteBodyEntry(id: string): Promise<void> {
   await db.bodyEntries.delete(id);
 }
 
+export async function updateBodyEntry(
+  id: string,
+  patch: Pick<BodyEntry, "date" | "measurements" | "photo" | "note">
+): Promise<void> {
+  await db.bodyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
 export async function addWeightEntry(
   input: Pick<WeightEntry, "date" | "weightGrams" | "note">
 ): Promise<WeightEntry> {
@@ -2644,6 +2727,13 @@ export async function deleteWeightEntry(id: string): Promise<void> {
   await db.weightEntries.delete(id);
 }
 
+export async function updateWeightEntry(
+  id: string,
+  patch: Pick<WeightEntry, "date" | "weightGrams" | "note">
+): Promise<void> {
+  await db.weightEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
 export async function addCalorieEntry(
   input: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
 ): Promise<CalorieEntry> {
@@ -2655,6 +2745,13 @@ export async function addCalorieEntry(
 
 export async function deleteCalorieEntry(id: string): Promise<void> {
   await db.calorieEntries.delete(id);
+}
+
+export async function updateCalorieEntry(
+  id: string,
+  patch: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
+): Promise<void> {
+  await db.calorieEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
 }
 
 // App lock (PIN) ------------------------------------------------------------------

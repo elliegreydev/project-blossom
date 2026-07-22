@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addCheckIn } from "@/lib/db";
+import { addCheckIn, updateCheckIn, type CheckIn } from "@/lib/db";
 
 const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; label: string }[] = [
   { key: "mood", label: "Mood" },
@@ -13,10 +13,16 @@ const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; la
   { key: "comfort", label: "Comfort" },
 ];
 
-export default function CheckInSheet({ onClose }: { onClose: () => void }) {
+export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [values, setValues] = useState<Record<string, number>>({});
-  const [note, setNote] = useState("");
+  const [values, setValues] = useState<Record<string, number>>(() => ({
+    mood: entry?.mood ?? 0,
+    energy: entry?.energy ?? 0,
+    confidence: entry?.confidence ?? 0,
+    stress: entry?.stress ?? 0,
+    comfort: entry?.comfort ?? 0,
+  }));
+  const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);
 
   function setValue(key: string, v: number) {
@@ -25,14 +31,16 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
 
   async function save() {
     setSaving(true);
-    await addCheckIn({
+    const input = {
       mood: values.mood || null,
       energy: values.energy || null,
       confidence: values.confidence || null,
       stress: values.stress || null,
       comfort: values.comfort || null,
       note: note.trim() || null,
-    });
+    };
+    if (entry) await updateCheckIn(entry.id, input);
+    else await addCheckIn(input);
     setSaving(false);
     onClose();
   }
@@ -43,7 +51,7 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="checkin-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="checkin-sheet-title" className={styles.title}>How are you today?</h2>
+        <h2 id="checkin-sheet-title" className={styles.title}>{entry ? "Edit check-in" : "How are you today?"}</h2>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -6 }}>
           Every part is optional. Fill in only what feels right.
         </p>
@@ -88,7 +96,7 @@ export default function CheckInSheet({ onClose }: { onClose: () => void }) {
             disabled={!hasAny || saving}
             onClick={save}
           >
-            Save check-in
+            {entry ? "Save changes" : "Save check-in"}
           </button>
         </div>
       </div>

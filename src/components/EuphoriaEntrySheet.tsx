@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addEuphoriaEntry, type EuphoriaMomentKind } from "@/lib/db";
+import { addEuphoriaEntry, updateEuphoriaEntry, type EuphoriaEntry, type EuphoriaMomentKind } from "@/lib/db";
 
 const MOMENT_KINDS: Array<{ key: EuphoriaMomentKind; label: string }> = [
   { key: "affirming-interaction", label: "Affirming moment" },
@@ -24,14 +24,14 @@ function addMonths(months: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export default function EuphoriaEntrySheet({ onClose }: { onClose: () => void }) {
+export default function EuphoriaEntrySheet({ entry, onClose }: { entry?: EuphoriaEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [kind, setKind] = useState<EuphoriaMomentKind>("affirming-interaction");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [kind, setKind] = useState<EuphoriaMomentKind>(entry?.kind ?? "affirming-interaction");
+  const [title, setTitle] = useState(entry?.title ?? "");
+  const [body, setBody] = useState(entry?.bodyText ?? "");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [capsuleChoice, setCapsuleChoice] = useState<CapsuleChoice>("none");
-  const [customDate, setCustomDate] = useState("");
+  const [capsuleChoice, setCapsuleChoice] = useState<CapsuleChoice>(() => entry?.reopenAt ? "custom" : "none");
+  const [customDate, setCustomDate] = useState(entry?.reopenAt ?? "");
   const [saving, setSaving] = useState(false);
 
   const hasSomethingToKeep = title.trim() || body.trim() || photo;
@@ -47,13 +47,15 @@ export default function EuphoriaEntrySheet({ onClose }: { onClose: () => void })
   async function save() {
     if (!hasSomethingToKeep) return;
     setSaving(true);
-    await addEuphoriaEntry({
+    const input = {
       kind,
       title: title.trim() || null,
       bodyText: body.trim() || null,
-      photo,
+      photo: photo ?? entry?.photo ?? null,
       reopenAt: reopenAt(),
-    });
+    };
+    if (entry) await updateEuphoriaEntry(entry.id, input);
+    else await addEuphoriaEntry(input);
     setSaving(false);
     onClose();
   }
@@ -62,7 +64,7 @@ export default function EuphoriaEntrySheet({ onClose }: { onClose: () => void })
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="euphoria-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="euphoria-sheet-title" className={styles.title}>Keep an affirming moment</h2>
+        <h2 id="euphoria-sheet-title" className={styles.title}>{entry ? "Edit an affirming moment" : "Keep an affirming moment"}</h2>
         <p className={styles.helpText}>This is private and stays on this device. A few words is enough.</p>
 
         <div className={styles.field}>
@@ -89,7 +91,7 @@ export default function EuphoriaEntrySheet({ onClose }: { onClose: () => void })
         <label className={styles.field}>
           <span className={styles.label}>Photo (optional)</span>
           <input type="file" accept="image/*" className={styles.input} onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
-          <span className={styles.fieldHint}>Photos stay only on this device. They are never uploaded or synced.</span>
+          <span className={styles.fieldHint}>{entry?.photo && !photo ? "Leave this blank to keep the photo already saved. " : ""}Photos stay only on this device. They are never uploaded or synced.</span>
         </label>
 
         <div className={styles.field}>
@@ -115,7 +117,7 @@ export default function EuphoriaEntrySheet({ onClose }: { onClose: () => void })
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>Cancel</button>
           <button type="button" className={styles.primaryButton} disabled={!hasSomethingToKeep || saving} onClick={save}>
-            {capsuleChoice === "none" ? "Keep this moment" : "Seal Time Capsule"}
+            {entry ? "Save changes" : capsuleChoice === "none" ? "Keep this moment" : "Seal Time Capsule"}
           </button>
         </div>
       </div>

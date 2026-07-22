@@ -8,7 +8,7 @@ import JournalSheet from "@/components/JournalSheet";
 import CheckInSheet from "@/components/CheckInSheet";
 import EuphoriaEntrySheet from "@/components/EuphoriaEntrySheet";
 import PhotoThumbnail from "@/components/PhotoThumbnail";
-import { db, deleteJournalEntry, deleteCheckIn, deleteEuphoriaEntry, type CheckIn, type EuphoriaEntry, type EuphoriaMomentKind } from "@/lib/db";
+import { db, deleteJournalEntry, deleteCheckIn, deleteEuphoriaEntry, type CheckIn, type EuphoriaEntry, type EuphoriaMomentKind, type JournalEntry } from "@/lib/db";
 import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 import local from "./journal.module.css";
@@ -48,11 +48,13 @@ function EuphoriaCard({
   entry,
   expanded,
   onToggle,
+  onEdit,
   sealed = false,
 }: {
   entry: EuphoriaEntry;
   expanded: boolean;
   onToggle: () => void;
+  onEdit: () => void;
   sealed?: boolean;
 }) {
   const hiddenForLater = sealed && !expanded;
@@ -78,6 +80,7 @@ function EuphoriaCard({
           )}
           {entry.bodyText && <div className={styles.itemBody}>{entry.bodyText}</div>}
           {entry.reopenAt && <span className={local.capsuleNote}>Time Capsule opened {capsuleLabel(entry.reopenAt)}</span>}
+          <button type="button" className={styles.linkButton} onClick={onEdit}>Edit</button>
           <button type="button" className={styles.linkButton} onClick={() => deleteEuphoriaEntry(entry.id)}>
             Remove
           </button>
@@ -90,8 +93,11 @@ function EuphoriaCard({
 export default function JournalPage() {
   const [tab, setTab] = useState<"journal" | "checkins" | "trends" | "euphoria">("journal");
   const [journalOpen, setJournalOpen] = useState(false);
+  const [editingJournal, setEditingJournal] = useState<JournalEntry | null>(null);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [editingCheckIn, setEditingCheckIn] = useState<CheckIn | null>(null);
   const [euphoriaOpen, setEuphoriaOpen] = useState(false);
+  const [editingEuphoria, setEditingEuphoria] = useState<EuphoriaEntry | null>(null);
   const [euphoriaView, setEuphoriaView] = useState<"moments" | "capsules">("moments");
   const [expandedEuphoriaId, setExpandedEuphoriaId] = useState<string | null>(null);
 
@@ -191,6 +197,7 @@ export default function JournalPage() {
                 <div key={entry.id} className={styles.item}>
                   <div className={styles.itemRow}>
                     <span className={styles.itemMeta}>{dateLabel(entry.createdAt)}</span>
+                    <button className={styles.linkButton} onClick={() => setEditingJournal(entry)}>Edit</button>
                     <button className={styles.linkButton} onClick={() => deleteJournalEntry(entry.id)}>
                       Remove
                     </button>
@@ -219,6 +226,7 @@ export default function JournalPage() {
                 <div key={ci.id} className={styles.item}>
                   <div className={styles.itemRow}>
                     <span className={styles.itemMeta}>{dateLabel(ci.createdAt)}</span>
+                    <button className={styles.linkButton} onClick={() => setEditingCheckIn(ci)}>Edit</button>
                     <button className={styles.linkButton} onClick={() => deleteCheckIn(ci.id)}>
                       Remove
                     </button>
@@ -280,6 +288,7 @@ export default function JournalPage() {
                     entry={entry}
                     expanded={expandedEuphoriaId === entry.id}
                     onToggle={() => setExpandedEuphoriaId(expandedEuphoriaId === entry.id ? null : entry.id)}
+                    onEdit={() => setEditingEuphoria(entry)}
                   />
                 ))}
               </div>
@@ -302,6 +311,7 @@ export default function JournalPage() {
                       sealed={sealed}
                       expanded={expandedEuphoriaId === entry.id}
                       onToggle={() => setExpandedEuphoriaId(expandedEuphoriaId === entry.id ? null : entry.id)}
+                      onEdit={() => setEditingEuphoria(entry)}
                     />
                   );
                 })}
@@ -314,9 +324,9 @@ export default function JournalPage() {
         </div>
       )}
 
-      {journalOpen && <JournalSheet onClose={() => setJournalOpen(false)} />}
-      {checkInOpen && <CheckInSheet onClose={() => setCheckInOpen(false)} />}
-      {euphoriaOpen && <EuphoriaEntrySheet onClose={() => setEuphoriaOpen(false)} />}
+      {(journalOpen || editingJournal) && <JournalSheet entry={editingJournal} onClose={() => { setJournalOpen(false); setEditingJournal(null); }} />}
+      {(checkInOpen || editingCheckIn) && <CheckInSheet entry={editingCheckIn} onClose={() => { setCheckInOpen(false); setEditingCheckIn(null); }} />}
+      {(euphoriaOpen || editingEuphoria) && <EuphoriaEntrySheet entry={editingEuphoria} onClose={() => { setEuphoriaOpen(false); setEditingEuphoria(null); }} />}
     </div>
     </SensitiveModuleGate>
   );

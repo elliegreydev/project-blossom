@@ -3,17 +3,17 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addCalorieEntry } from "@/lib/db";
+import { addCalorieEntry, updateCalorieEntry, type CalorieEntry } from "@/lib/db";
 
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack", "Drink", "Other"];
 
-export default function AddCalorieEntrySheet({ onClose }: { onClose: () => void }) {
+export default function AddCalorieEntrySheet({ entry, onClose }: { entry?: CalorieEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [label, setLabel] = useState("");
-  const [calories, setCalories] = useState("");
-  const [meal, setMeal] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [label, setLabel] = useState(entry?.label ?? "");
+  const [calories, setCalories] = useState(entry ? String(entry.calories) : "");
+  const [meal, setMeal] = useState<string | null>(entry?.meal ?? null);
+  const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);
   const parsed = Number(calories);
   const valid = label.trim().length > 0 && Number.isFinite(parsed) && parsed > 0 && parsed <= 10000;
@@ -21,7 +21,9 @@ export default function AddCalorieEntrySheet({ onClose }: { onClose: () => void 
   async function save() {
     if (!valid) return;
     setSaving(true);
-    await addCalorieEntry({ date, label: label.trim(), calories: Math.round(parsed), meal, note: note.trim() || null });
+    const input = { date, label: label.trim(), calories: Math.round(parsed), meal, note: note.trim() || null };
+    if (entry) await updateCalorieEntry(entry.id, input);
+    else await addCalorieEntry(input);
     onClose();
   }
 
@@ -29,7 +31,7 @@ export default function AddCalorieEntrySheet({ onClose }: { onClose: () => void 
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="food-entry-title">
         <div className={styles.grabber} />
-        <h2 id="food-entry-title" className={styles.title}>Add food or drink</h2>
+        <h2 id="food-entry-title" className={styles.title}>{entry ? "Edit food or drink" : "Add food or drink"}</h2>
         <p className={styles.helpText}>A simple personal log. Blossom does not judge, recommend, or calculate a diet.</p>
 
         <div className={styles.field}>
@@ -56,7 +58,7 @@ export default function AddCalorieEntrySheet({ onClose }: { onClose: () => void 
         </div>
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>Cancel</button>
-          <button type="button" className={styles.primaryButton} disabled={!valid || saving} onClick={save}>{saving ? "Saving…" : "Add entry"}</button>
+          <button type="button" className={styles.primaryButton} disabled={!valid || saving} onClick={save}>{saving ? "Saving…" : entry ? "Save changes" : "Add entry"}</button>
         </div>
       </div>
     </div>
