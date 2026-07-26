@@ -158,6 +158,12 @@ export interface Profile {
   // Data). Device-local, same treatment as timezone - a backup made from one
   // device says nothing about whether another device has an up to date copy.
   lastBackupExportedAt: string | null;
+  // Completed step keys for the "Starting HRT safely" checklist (see
+  // Settings > Getting started). Purely a personal reference tool - never
+  // medical advice, just pointers to Blossom's own existing features and a
+  // nudge to think about practical logistics. Device-local, same reasoning
+  // as the other device-convenience fields above.
+  hrtStartChecklistDone: string[];
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -1720,6 +1726,7 @@ export const DEFAULT_PROFILE: Profile = {
   calorieTrackingEnabled: false,
   calorieTarget: null,
   lastBackupExportedAt: null,
+  hrtStartChecklistDone: [],
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {

@@ -104,6 +104,7 @@ export default function SettingsPage() {
         <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
         <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
+        <Row href="/settings/getting-started" title="Starting HRT safely" meta="Practical steps, not medical advice" />
       </div>
 
       <div className={styles.group}>
