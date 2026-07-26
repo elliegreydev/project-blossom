@@ -8,11 +8,14 @@ import styles from "./admin.module.css";
 
 const NAV = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/mine", label: "Mine" },
   { href: "/admin/resources", label: "Resources" },
   { href: "/admin/support", label: "Support" },
   { href: "/admin/ideas", label: "Ideas" },
   { href: "/admin/issues", label: "Issues" },
   { href: "/admin/notes", label: "Notes" },
+  { href: "/admin/search", label: "Search" },
+  { href: "/admin/onboarding", label: "Onboarding" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/operations", label: "Operations" },
   { href: "/admin/audit", label: "Audit" },

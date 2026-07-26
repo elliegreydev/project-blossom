@@ -62,6 +62,24 @@ export default function AdminOverviewPage() {
         opening anyone&apos;s account data.
       </p>
       <div className={styles.grid}>
+        <Link href="/admin/mine" className={styles.card}>
+          <span className={styles.cardTitle}>My open items</span>
+          <span className={styles.cardDesc}>
+            Everything on your plate - open cases, assigned issues, active notes - in one place.
+          </span>
+        </Link>
+        <Link href="/admin/search" className={styles.card}>
+          <span className={styles.cardTitle}>Staff search</span>
+          <span className={styles.cardDesc}>
+            Search across Known issues, Handoff notes, and support case subjects.
+          </span>
+        </Link>
+        <Link href="/admin/onboarding" className={styles.card}>
+          <span className={styles.cardTitle}>Getting started</span>
+          <span className={styles.cardDesc}>
+            New to the team? A short checklist of things worth knowing.
+          </span>
+        </Link>
         <Link href="/admin/resources" className={styles.card}>
           <span className={styles.cardTitle}>Support resources</span>
           <span className={styles.cardDesc}>
