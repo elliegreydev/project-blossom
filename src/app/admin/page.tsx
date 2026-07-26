@@ -80,6 +80,18 @@ export default function AdminOverviewPage() {
             New to the team? A short checklist of things worth knowing.
           </span>
         </Link>
+        <Link href="/admin/docs" className={styles.card}>
+          <span className={styles.cardTitle}>Knowledge base</span>
+          <span className={styles.cardDesc}>
+            Durable, written playbooks and reference docs for the team.
+          </span>
+        </Link>
+        <Link href="/admin/incidents" className={styles.card}>
+          <span className={styles.cardTitle}>Incident log</span>
+          <span className={styles.cardDesc}>
+            A retrospective record of what broke, the impact, and what changed as a result.
+          </span>
+        </Link>
         <Link href="/admin/resources" className={styles.card}>
           <span className={styles.cardTitle}>Support resources</span>
           <span className={styles.cardDesc}>
