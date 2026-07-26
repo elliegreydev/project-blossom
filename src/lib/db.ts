@@ -123,6 +123,14 @@ export interface Profile {
   safetyCheckInsEnabled: boolean;
   trustedContactName: string | null;
   trustedContactMethod: string | null;
+  // Quiet hours (see src/lib/reminders.ts's isQuietHours) - a "do not
+  // disturb" window that holds reminder notifications back rather than
+  // firing them, then lets them through once the window ends. Never
+  // suppresses anything else in the app. Undefined on rows created before
+  // this field existed - callers treat that the same as disabled.
+  quietHoursEnabled: boolean;
+  quietHoursStart: string | null; // "HH:MM", 24h, wall-clock local time
+  quietHoursEnd: string | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -1418,6 +1426,9 @@ export const DEFAULT_PROFILE: Profile = {
   safetyCheckInsEnabled: false,
   trustedContactName: null,
   trustedContactMethod: null,
+  quietHoursEnabled: false,
+  quietHoursStart: "22:00",
+  quietHoursEnd: "07:00",
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {

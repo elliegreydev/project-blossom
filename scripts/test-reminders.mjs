@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { dueMedicationReminders, dueAppointmentReminders } from "../src/lib/reminders.ts";
+import { dueMedicationReminders, dueAppointmentReminders, isQuietHours } from "../src/lib/reminders.ts";
 
 const NOW = new Date("2026-07-16T12:00:00.000Z");
 
@@ -182,5 +182,31 @@ assert.equal(
   0,
   "11:58 is hours away in America/New_York's local time at this NOW - the zone param must actually be used, not ignored"
 );
+
+// Quiet hours - overnight window (22:00-07:00), local device time (no zone).
+function atLocalTime(hh, mm) {
+  const d = new Date(NOW);
+  d.setHours(hh, mm, 0, 0);
+  return d;
+}
+
+assert.equal(isQuietHours(atLocalTime(23, 0), true, "22:00", "07:00"), true, "23:00 is inside an overnight 22:00-07:00 window");
+assert.equal(isQuietHours(atLocalTime(3, 0), true, "22:00", "07:00"), true, "03:00 is inside an overnight 22:00-07:00 window");
+assert.equal(isQuietHours(atLocalTime(12, 0), true, "22:00", "07:00"), false, "midday is outside an overnight 22:00-07:00 window");
+assert.equal(isQuietHours(atLocalTime(7, 0), true, "22:00", "07:00"), false, "the end boundary itself is not inside the window");
+assert.equal(isQuietHours(atLocalTime(22, 0), true, "22:00", "07:00"), true, "the start boundary itself is inside the window");
+
+// Same-day window (e.g. a 13:00-14:00 nap block), no midnight crossing.
+assert.equal(isQuietHours(atLocalTime(13, 30), true, "13:00", "14:00"), true, "13:30 is inside a same-day 13:00-14:00 window");
+assert.equal(isQuietHours(atLocalTime(15, 0), true, "13:00", "14:00"), false, "15:00 is outside a same-day 13:00-14:00 window");
+
+// Disabled or unset never suppresses, regardless of time.
+assert.equal(isQuietHours(atLocalTime(23, 0), false, "22:00", "07:00"), false, "disabled quiet hours never suppress");
+assert.equal(isQuietHours(atLocalTime(23, 0), true, null, "07:00"), false, "no start time set never suppresses");
+
+// timeZone param (server/cron path) - NOW is noon UTC, 08:00 in
+// America/New_York in July, which is outside a 22:00-07:00 window.
+assert.equal(isQuietHours(NOW, true, "22:00", "07:00", "America/New_York"), false, "08:00 America/New_York is outside 22:00-07:00");
+assert.equal(isQuietHours(NOW, true, "07:00", "09:00", "America/New_York"), true, "08:00 America/New_York is inside 07:00-09:00");
 
 console.log("reminders.ts tests passed");

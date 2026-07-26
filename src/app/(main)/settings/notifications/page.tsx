@@ -147,6 +147,53 @@ export default function NotificationsSettingsPage() {
       </div>
       {pushMessage && <p className={styles.hint}>{pushMessage}</p>}
 
+      <div className={styles.toggleRow}>
+        <div className={styles.toggleText}>
+          <span className={styles.toggleTitle}>Quiet hours</span>
+          <span className={styles.toggleDesc}>
+            {profile.quietHoursEnabled
+              ? `Held back ${profile.quietHoursStart ?? "22:00"}–${profile.quietHoursEnd ?? "07:00"}`
+              : "Off - reminders can arrive any time"}
+          </span>
+        </div>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={() => updateProfile({ quietHoursEnabled: !profile.quietHoursEnabled })}
+        >
+          {profile.quietHoursEnabled ? "Turn off" : "Turn on"}
+        </button>
+      </div>
+
+      {profile.quietHoursEnabled && (
+        <div className={styles.field}>
+          <span className={styles.label}>Held back between</span>
+          <div className={styles.optionGrid}>
+            <label className={styles.field}>
+              <span className={styles.label}>From</span>
+              <input
+                type="time"
+                className={styles.input}
+                value={profile.quietHoursStart ?? "22:00"}
+                onChange={(e) => updateProfile({ quietHoursStart: e.target.value })}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>Until</span>
+              <input
+                type="time"
+                className={styles.input}
+                value={profile.quietHoursEnd ?? "07:00"}
+                onChange={(e) => updateProfile({ quietHoursEnd: e.target.value })}
+              />
+            </label>
+          </div>
+          <p className={styles.hint}>
+            A reminder due in this window waits until it ends, rather than being skipped entirely.
+          </p>
+        </div>
+      )}
+
       <div className={styles.field}>
         <span className={styles.label}>Reminder text</span>
         <div className={styles.optionGrid}>

@@ -22,7 +22,7 @@ const MAX_NOTIFICATIONS = 3;
 // footgun). Weekday index matches Date#getDay() (0 = Sunday).
 const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-function zonedNow(now: Date, timeZone: string): { minuteOfDay: number; weekday: number; dateKey: string } {
+export function zonedNow(now: Date, timeZone: string): { minuteOfDay: number; weekday: number; dateKey: string } {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
@@ -107,6 +107,27 @@ function shouldFire(state: NotifiedReminder | undefined, nowTime: number): boole
   }
   if (state.count >= MAX_NOTIFICATIONS) return false;
   return nowTime - new Date(state.firedAt).getTime() >= RENAG_INTERVAL_MS;
+}
+
+function parseHHMM(value: string): number {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Whether `now` falls inside the [start, end) quiet hours window. Handles a
+// window that crosses midnight (e.g. 22:00-07:00) as well as one that
+// doesn't (e.g. 13:00-14:00 for a nap). Reminders are never suppressed
+// outright - see the callers in LocalReminderService and the reminder
+// cron, which hold a due reminder back rather than dropping it, so it still
+// arrives once the window ends.
+export function isQuietHours(now: Date, enabled: boolean, start: string | null, end: string | null, timeZone?: string): boolean {
+  if (!enabled || !start || !end) return false;
+  const nowMinute = timeZone ? zonedNow(now, timeZone).minuteOfDay : now.getHours() * 60 + now.getMinutes();
+  const startMinute = parseHHMM(start);
+  const endMinute = parseHHMM(end);
+  if (startMinute === endMinute) return false;
+  if (startMinute < endMinute) return nowMinute >= startMinute && nowMinute < endMinute;
+  return nowMinute >= startMinute || nowMinute < endMinute;
 }
 
 export function dueMedicationReminders(

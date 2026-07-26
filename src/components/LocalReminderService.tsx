@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, markReminderNotified, notifiedReminderState } from "@/lib/db";
-import { dueAppointmentReminders, dueMedicationReminders, dueSafetyCheckInReminders } from "@/lib/reminders";
+import { dueAppointmentReminders, dueMedicationReminders, dueSafetyCheckInReminders, isQuietHours } from "@/lib/reminders";
 
 const CHECK_INTERVAL_MS = 30 * 1000;
 
@@ -32,8 +32,10 @@ export default function LocalReminderService() {
       if (!profile?.notificationsEnabled || Notification.permission !== "granted") return;
       if (!medications || !medicationLogs || !appointments) return;
 
-      const notified = await notifiedReminderState();
       const now = new Date();
+      if (isQuietHours(now, profile.quietHoursEnabled, profile.quietHoursStart, profile.quietHoursEnd)) return;
+
+      const notified = await notifiedReminderState();
       const pending = [
         ...dueMedicationReminders(medications, medicationLogs, notified, now),
         ...dueAppointmentReminders(appointments, notified, now),

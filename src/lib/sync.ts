@@ -153,6 +153,9 @@ async function localPayload(
         sensitive_modules_locked: profile.sensitiveModulesLocked,
         age_confirmed_at: profile.ageConfirmedAt,
         onboarding_completed_at: profile.onboardingCompletedAt,
+        quiet_hours_enabled: profile.quietHoursEnabled,
+        quiet_hours_start: profile.quietHoursStart,
+        quiet_hours_end: profile.quietHoursEnd,
         // Pushed but deliberately never restored on pull (see Profile.timezone
         // in db.ts) - each device should keep reflecting its own current zone.
         timezone: profile.timezone,
@@ -462,6 +465,9 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         sensitiveModulesLocked: Boolean(row.sensitive_modules_locked),
         ageConfirmedAt: nullableString(row.age_confirmed_at),
         onboardingCompletedAt: nullableString(row.onboarding_completed_at),
+        quietHoursEnabled: Boolean(row.quiet_hours_enabled),
+        quietHoursStart: nullableString(row.quiet_hours_start),
+        quietHoursEnd: nullableString(row.quiet_hours_end),
         syncEnabled: true,
         createdAt: createdAt || local.createdAt,
         updatedAt: changedAt || local.updatedAt,
