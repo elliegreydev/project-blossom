@@ -235,6 +235,32 @@ export interface Medication {
 
 export type DoseStatus = "taken" | "skipped" | "delayed" | "not_logged";
 
+// Injection site rotation - optional, only meaningful for route "injection".
+// Purely a memory aid (which spot was used last, so the next one can be
+// somewhere else) - never a rotation schedule or medical instruction.
+export type InjectionSite =
+  | "left-thigh"
+  | "right-thigh"
+  | "left-abdomen"
+  | "right-abdomen"
+  | "left-glute"
+  | "right-glute"
+  | "left-arm"
+  | "right-arm"
+  | "other";
+
+export const INJECTION_SITE_LABELS: Record<InjectionSite, string> = {
+  "left-thigh": "Left thigh",
+  "right-thigh": "Right thigh",
+  "left-abdomen": "Left abdomen",
+  "right-abdomen": "Right abdomen",
+  "left-glute": "Left glute",
+  "right-glute": "Right glute",
+  "left-arm": "Left arm",
+  "right-arm": "Right arm",
+  other: "Other",
+};
+
 export interface MedicationLog {
   id: string;
   medicationId: string;
@@ -245,6 +271,10 @@ export interface MedicationLog {
   // Added for new logs so correcting a recorded dose can also correct the
   // optional stock counter. Older logs simply do not have this link.
   supplyAdjustmentId?: string | null;
+  // Optional, only meaningful for injection-route medications. Undefined on
+  // rows created before this field existed - callers treat that the same as
+  // null (no site recorded).
+  injectionSite?: InjectionSite | null;
   updatedAt: string;
 }
 
@@ -2105,10 +2135,10 @@ export async function clearCareSupplySnooze(id: string): Promise<void> {
 }
 
 export async function logDose(
-  input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
+  input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note" | "injectionSite">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
-  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, supplyAdjustmentId: null, ...input };
+  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, supplyAdjustmentId: null, injectionSite: null, ...input };
   await db.transaction("rw", db.medications, db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationLogs.add(log);
     await recordSyncChange("medication_log", log.id, "upsert", changedAt);
@@ -2356,7 +2386,7 @@ export async function deleteMedicationLog(id: string): Promise<void> {
 
 export async function updateMedicationLog(
   id: string,
-  input: Pick<MedicationLog, "scheduledTime" | "status" | "note">
+  input: Pick<MedicationLog, "scheduledTime" | "status" | "note" | "injectionSite">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.transaction("rw", db.medicationLogs, db.medications, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {

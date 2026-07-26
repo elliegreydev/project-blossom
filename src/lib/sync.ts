@@ -13,6 +13,7 @@ import {
   type DoseStatus,
   type GoalStatus,
   type HrtStatus,
+  type InjectionSite,
   type JourneyCategory,
   type MedicationFrequency,
   type MedicationRoute,
@@ -245,6 +246,7 @@ async function localPayload(
             status: item.status,
             logged_at: item.loggedAt,
             note: item.note,
+            injection_site: item.injectionSite ?? null,
           }
         : null;
     }
@@ -549,6 +551,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         status: stringValue(row.status) as DoseStatus,
         loggedAt: stringValue(row.logged_at),
         note: nullableString(row.note),
+        injectionSite: nullableString(row.injection_site) as InjectionSite | null,
         updatedAt: changedAt,
       });
       return;

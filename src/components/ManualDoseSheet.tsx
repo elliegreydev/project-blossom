@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { logDose, type DoseStatus, type Medication } from "@/lib/db";
+import { logDose, INJECTION_SITE_LABELS, type DoseStatus, type InjectionSite, type Medication, type MedicationLog } from "@/lib/db";
 
 const STATUSES: Array<{ key: DoseStatus; label: string }> = [
   { key: "taken", label: "Taken" },
@@ -11,7 +11,17 @@ const STATUSES: Array<{ key: DoseStatus; label: string }> = [
   { key: "skipped", label: "Skipped" },
 ];
 
-export default function ManualDoseSheet({ medications, onClose }: { medications: Medication[]; onClose: () => void }) {
+const INJECTION_SITES = Object.keys(INJECTION_SITE_LABELS) as InjectionSite[];
+
+export default function ManualDoseSheet({
+  medications,
+  medicationLogs,
+  onClose,
+}: {
+  medications: Medication[];
+  medicationLogs: MedicationLog[];
+  onClose: () => void;
+}) {
   const dialogRef = useSheetDialog(onClose);
   const now = new Date();
   const [medicationId, setMedicationId] = useState(medications[0]?.id ?? "");
@@ -19,7 +29,14 @@ export default function ManualDoseSheet({ medications, onClose }: { medications:
   const [time, setTime] = useState(now.toTimeString().slice(0, 5));
   const [status, setStatus] = useState<DoseStatus>("taken");
   const [note, setNote] = useState("");
+  const [injectionSite, setInjectionSite] = useState<InjectionSite | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const medication = medications.find((m) => m.id === medicationId);
+  const isInjection = medication?.route === "injection";
+  const lastSite = [...medicationLogs]
+    .filter((l) => l.medicationId === medicationId && l.injectionSite)
+    .sort((a, b) => (b.scheduledTime ?? b.loggedAt).localeCompare(a.scheduledTime ?? a.loggedAt))[0]?.injectionSite;
 
   async function save() {
     if (!medicationId || !date || !time) return;
@@ -29,6 +46,7 @@ export default function ManualDoseSheet({ medications, onClose }: { medications:
       scheduledTime: new Date(`${date}T${time}:00`).toISOString(),
       status,
       note: note.trim() || null,
+      injectionSite: isInjection ? injectionSite : null,
     });
     setSaving(false);
     onClose();
@@ -63,6 +81,25 @@ export default function ManualDoseSheet({ medications, onClose }: { medications:
           </div>
           {status === "taken" && <span className={styles.fieldHint}>If you set up supply tracking, this will reduce the active supply by one recorded dose.</span>}
         </div>
+
+        {isInjection && (
+          <div className={styles.field}>
+            <span className={styles.label}>Injection site (optional)</span>
+            <div className={styles.chipRow}>
+              {INJECTION_SITES.map((site) => (
+                <button
+                  key={site}
+                  type="button"
+                  className={`${styles.chip} ${injectionSite === site ? styles.selected : ""}`}
+                  onClick={() => setInjectionSite(injectionSite === site ? null : site)}
+                >
+                  {INJECTION_SITE_LABELS[site]}
+                </button>
+              ))}
+            </div>
+            {lastSite && <span className={styles.fieldHint}>Last used: {INJECTION_SITE_LABELS[lastSite]}. Just a memory aid - nothing here tells you where to inject.</span>}
+          </div>
+        )}
 
         <label className={styles.field}>
           <span className={styles.label}>Note (optional)</span>

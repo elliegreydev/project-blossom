@@ -22,6 +22,7 @@ import {
   nextMedicationDose,
   careSupplyNeedsAttention,
   updateMedication,
+  INJECTION_SITE_LABELS,
   type DoseStatus,
   type Medication,
   type MedicationSupply,
@@ -214,6 +215,7 @@ export default function MedicationPage() {
                       <div key={log.id} className={local.historyRow}>
                         <span className={styles.itemMeta}>{dateTimeLabel(log.scheduledTime ?? log.loggedAt)}</span>
                         <span>{STATUS_LABELS[log.status]}</span>
+                        {log.injectionSite && <span className={styles.itemMeta}>{INJECTION_SITE_LABELS[log.injectionSite]}</span>}
                         <button type="button" className={styles.linkButton} onClick={() => setEditingLog(log)}>Edit</button>
                         <button type="button" className={styles.linkButton} onClick={() => stageRemoval(log.id, "This dose record", () => deleteMedicationLog(log.id))}>Remove</button>
                       </div>
@@ -439,8 +441,8 @@ export default function MedicationPage() {
           onClose={() => setCareSupply(null)}
         />
       )}
-      {manualDoseOpen && <ManualDoseSheet medications={meds} onClose={() => setManualDoseOpen(false)} />}
-      {editingLog && <EditDoseSheet log={editingLog} onClose={() => setEditingLog(null)} />}
+      {manualDoseOpen && <ManualDoseSheet medications={meds} medicationLogs={logs!} onClose={() => setManualDoseOpen(false)} />}
+      {editingLog && <EditDoseSheet log={editingLog} medication={meds.find((m) => m.id === editingLog.medicationId)} onClose={() => setEditingLog(null)} />}
       {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
     </SensitiveModuleGate>
