@@ -18,6 +18,13 @@ interface StaffIssue {
   created_at: string;
 }
 
+interface IssueComment {
+  id: string;
+  issue_id: string;
+  body: string;
+  created_at: string;
+}
+
 const SEVERITIES: Severity[] = ["low", "medium", "high", "critical"];
 const STATUSES: Status[] = ["open", "in_progress", "resolved", "wont_fix"];
 const STATUS_LABELS: Record<Status, string> = {
@@ -43,18 +50,27 @@ export default function AdminIssuesPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newSeverity, setNewSeverity] = useState<Severity>("medium");
+  const [comments, setComments] = useState<Record<string, IssueComment[]>>({});
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
   async function load() {
     const supabase = createClient();
-    const [{ data }, { data: userData }] = await Promise.all([
+    const [{ data }, { data: userData }, { data: commentData }] = await Promise.all([
       supabase
         .from("staff_issues")
         .select("id,title,description,severity,status,reported_by,assigned_to,created_at")
         .order("created_at", { ascending: false }),
       supabase.auth.getUser(),
+      supabase.from("staff_issue_comments").select("id,issue_id,body,created_at").order("created_at", { ascending: true }),
     ]);
     setItems((data as StaffIssue[]) ?? []);
     setUserId(userData.user?.id ?? null);
+    const grouped: Record<string, IssueComment[]> = {};
+    for (const comment of (commentData as IssueComment[]) ?? []) {
+      (grouped[comment.issue_id] ??= []).push(comment);
+    }
+    setComments(grouped);
     setLoading(false);
   }
 
@@ -100,6 +116,31 @@ export default function AdminIssuesPage() {
       setMessage(error.message);
       return;
     }
+    void load();
+  }
+
+  function toggleExpanded(issueId: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(issueId)) next.delete(issueId);
+      else next.add(issueId);
+      return next;
+    });
+  }
+
+  async function addComment(issueId: string) {
+    const body = (commentDrafts[issueId] ?? "").trim();
+    if (!body) return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { error } = await supabase.from("staff_issue_comments").insert({ issue_id: issueId, body, created_by: user?.id ?? null });
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setCommentDrafts((prev) => ({ ...prev, [issueId]: "" }));
     void load();
   }
 
@@ -185,6 +226,38 @@ export default function AdminIssuesPage() {
                   )}
                 </div>
               </div>
+
+              <button type="button" className={styles.secondaryButton} style={{ width: "fit-content" }} onClick={() => toggleExpanded(item.id)}>
+                {expanded.has(item.id) ? "Hide" : "Show"} comments ({(comments[item.id] ?? []).length})
+              </button>
+
+              {expanded.has(item.id) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                  {(comments[item.id] ?? []).map((comment) => (
+                    <div key={comment.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                      <span className={styles.subtitle} style={{ margin: 0, whiteSpace: "pre-wrap" }}>{comment.body}</span>
+                      <div className={styles.mutedCell}>
+                        {new Date(comment.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                  ))}
+                  <textarea
+                    className={styles.textarea}
+                    value={commentDrafts[item.id] ?? ""}
+                    onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    placeholder="Add a comment"
+                  />
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    style={{ width: "fit-content" }}
+                    disabled={!(commentDrafts[item.id] ?? "").trim()}
+                    onClick={() => addComment(item.id)}
+                  >
+                    Add comment
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
