@@ -3225,4 +3225,13 @@ export async function deleteAllData(): Promise<void> {
       ]);
     }
   );
+
+  // Aurora AI's conversation history and consent flag live in localStorage,
+  // not Dexie (see src/app/(main)/aurora/page.tsx), so a full data wipe has
+  // to clear them separately or they'd be the one thing "delete everything"
+  // leaves behind.
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("blossom:aurora-ai-history:v1");
+    window.localStorage.removeItem("blossom:aurora-ai-consent:v1");
+  }
 }
