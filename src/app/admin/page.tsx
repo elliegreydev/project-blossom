@@ -7,8 +7,40 @@ import styles from "./admin.module.css";
 
 const ADMINISTRATOR_RANK = 80;
 
+interface HandoffNote {
+  id: string;
+  body: string;
+  pinned: boolean;
+  created_at: string;
+}
+
 export default function AdminOverviewPage() {
   const [rank, setRank] = useState(0);
+  const [notes, setNotes] = useState<HandoffNote[]>([]);
+  const [draft, setDraft] = useState("");
+
+  async function loadNotes() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("staff_handoff_notes")
+      .select("id,body,pinned,created_at")
+      .is("resolved_at", null)
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(4);
+    setNotes((data as HandoffNote[]) ?? []);
+  }
+
+  async function quickAddNote() {
+    if (!draft.trim()) return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from("staff_handoff_notes").insert({ body: draft.trim(), created_by: user?.id ?? null });
+    setDraft("");
+    void loadNotes();
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -16,6 +48,7 @@ export default function AdminOverviewPage() {
     supabase.rpc("my_staff_rank").then(({ data }) => {
       if (!cancelled && typeof data === "number") setRank(data);
     });
+    void loadNotes();
     return () => {
       cancelled = true;
     };
@@ -45,6 +78,18 @@ export default function AdminOverviewPage() {
           <span className={styles.cardTitle}>Ideas & bug reports</span>
           <span className={styles.cardDesc}>
             Triage feature ideas from the public board and bug reports sent in by users.
+          </span>
+        </Link>
+        <Link href="/admin/issues" className={styles.card}>
+          <span className={styles.cardTitle}>Known issues</span>
+          <span className={styles.cardDesc}>
+            Internal-only bug tracker for things staff notice, before or instead of a public report.
+          </span>
+        </Link>
+        <Link href="/admin/notes" className={styles.card}>
+          <span className={styles.cardTitle}>Handoff notes</span>
+          <span className={styles.cardDesc}>
+            Quick context for the team that doesn&apos;t belong to any one tool.
           </span>
         </Link>
         <Link href="/admin/analytics" className={styles.card}>
@@ -88,6 +133,34 @@ export default function AdminOverviewPage() {
           </>
         )}
       </div>
+
+      <h2 className={styles.title} style={{ fontSize: 18, marginTop: 8 }}>Team notes</h2>
+      <div className={styles.field}>
+        <textarea
+          className={styles.textarea}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Leave a quick note for the team"
+        />
+        <button type="button" className={styles.primaryButton} style={{ width: "fit-content" }} disabled={!draft.trim()} onClick={quickAddNote}>
+          Add note
+        </button>
+      </div>
+      {notes.length === 0 ? (
+        <p className={styles.subtitle}>Nothing active right now.</p>
+      ) : (
+        <div className={styles.feedbackList}>
+          {notes.map((note) => (
+            <div key={note.id} className={styles.feedbackCard}>
+              {note.pinned && <span className={`${styles.badge} ${styles.badgeUnreviewed}`}>Pinned</span>}
+              <span className={styles.subtitle} style={{ margin: 0, whiteSpace: "pre-wrap" }}>{note.body}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <Link href="/admin/notes" className={styles.secondaryButton} style={{ width: "fit-content" }}>
+        View all notes
+      </Link>
     </>
   );
 }

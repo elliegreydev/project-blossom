@@ -12,6 +12,7 @@ interface OperationsSnapshot {
   resources: { unreviewed: number; overdue: number };
   cases: { open: number; olderThanThreeDays: number };
   auditEntries: number;
+  openIssues: number;
 }
 
 function ageInDays(value: string): number {
@@ -27,16 +28,17 @@ export default function OperationsPage() {
     const supabase = createClient();
 
     async function load() {
-      const [{ data: staff, error: staffError }, { data: resources, error: resourceError }, { data: cases, error: caseError }, { count: auditEntries, error: auditError }] = await Promise.all([
+      const [{ data: staff, error: staffError }, { data: resources, error: resourceError }, { data: cases, error: caseError }, { count: auditEntries, error: auditError }, { count: openIssues, error: issuesError }] = await Promise.all([
         supabase.rpc("is_staff"),
         supabase.from("region_resources").select("reviewed_by_staff,last_reviewed_at"),
         supabase.from("support_cases").select("status,created_at"),
         supabase.from("support_case_access_log").select("id", { count: "exact", head: true }),
+        supabase.from("staff_issues").select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
 
       if (cancelled) return;
 
-      const ready = !staffError && staff === true && !resourceError && !caseError && !auditError;
+      const ready = !staffError && staff === true && !resourceError && !caseError && !auditError && !issuesError;
       setHealth(ready ? "ready" : "needs-attention");
       setSnapshot({
         resources: {
@@ -48,6 +50,7 @@ export default function OperationsPage() {
           olderThanThreeDays: (cases ?? []).filter((supportCase) => supportCase.status === "open" && ageInDays(supportCase.created_at) > 3).length,
         },
         auditEntries: auditEntries ?? 0,
+        openIssues: openIssues ?? 0,
       });
     }
 
@@ -84,6 +87,12 @@ export default function OperationsPage() {
           <span className={styles.cardTitle}>Support cases</span>
           <span className={styles.cardDesc}>
             {snapshot ? `${snapshot.cases.open} open · ${snapshot.cases.olderThanThreeDays} open for more than three days` : "Loading case status…"}
+          </span>
+        </Link>
+        <Link href="/admin/issues" className={styles.card}>
+          <span className={styles.cardTitle}>Known issues</span>
+          <span className={styles.cardDesc}>
+            {snapshot ? `${snapshot.openIssues} open` : "Loading issue status…"}
           </span>
         </Link>
         <Link href="/admin/audit" className={styles.card}>
