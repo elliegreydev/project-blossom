@@ -87,6 +87,7 @@ export default function SettingsPage() {
         <div className={styles.adminSection}>
           <p className={styles.sectionLabel}>Beta</p>
           <div className={styles.group}>
+            <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
             <Row
               href="/beta"
               title="🧪 You're a beta tester"
@@ -100,6 +101,7 @@ export default function SettingsPage() {
         <Row href="/reminders" title="Reminders" meta="Everything coming up, in one place" />
         <Row href="/search" title="Search" meta="Find anything you've added" />
         <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
+        <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
         <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
         <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
       </div>
@@ -119,6 +121,7 @@ export default function SettingsPage() {
         />
         <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
         <Row href="/settings/bridge" title="Blossom Bridge" meta="Temporary links for people without an account" />
+        <Row href="/settings/support-map" title="Personal Support Map" meta="Private people, places and organisations" />
       </div>
 
       <div className={styles.group}>

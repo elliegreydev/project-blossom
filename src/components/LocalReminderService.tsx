@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, markReminderNotified, notifiedReminderState } from "@/lib/db";
-import { dueAppointmentReminders, dueMedicationReminders, dueSafetyCheckInReminders, isQuietHours } from "@/lib/reminders";
+import { dueAppointmentReminders, dueMedicationReminders, dueSafetyCheckInReminders, dueWeightReminders, isQuietHours } from "@/lib/reminders";
 
 const CHECK_INTERVAL_MS = 30 * 1000;
 
@@ -42,6 +42,7 @@ export default function LocalReminderService() {
         ...(profile.safetyCheckInsEnabled && safetyCheckIns
           ? dueSafetyCheckInReminders(safetyCheckIns, notified, now)
           : []),
+        ...dueWeightReminders(profile, notified, now),
       ];
 
       const detailed = profile.reminderPrivacy === "detailed";

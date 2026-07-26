@@ -8,6 +8,7 @@ import {
   clearMedicationSupplySnooze,
   createMedicationSupply,
   estimatedMedicationSupplyDays,
+  setCurrentMedicationSupply,
   setMedicationSupplyQuantity,
   snoozeMedicationSupply,
   updateMedicationSupply,
@@ -31,16 +32,21 @@ function adjustmentLabel(adjustment: MedicationSupplyAdjustment): string {
 export default function MedicationSupplySheet({
   medication,
   supply,
+  hasOtherSupplies,
+  isCurrentSupply,
   adjustments,
   onClose,
 }: {
   medication: Medication;
   supply: MedicationSupply | null;
+  hasOtherSupplies: boolean;
+  isCurrentSupply: boolean;
   adjustments: MedicationSupplyAdjustment[];
   onClose: () => void;
 }) {
   const dialogRef = useSheetDialog(onClose);
   const [quantity, setQuantity] = useState(String(supply?.quantity ?? ""));
+  const [label, setLabel] = useState(supply?.label ?? "");
   const [supplyUnit, setSupplyUnit] = useState(supply?.supplyUnit ?? "items");
   const [amountPerDose, setAmountPerDose] = useState(String(supply?.amountPerDose ?? "1"));
   const [lowSupplyDays, setLowSupplyDays] = useState(supply?.lowSupplyDays === null || supply?.lowSupplyDays === undefined ? "7" : String(supply.lowSupplyDays));
@@ -51,6 +57,7 @@ export default function MedicationSupplySheet({
   const [restockAmount, setRestockAmount] = useState("");
   const [exactAmount, setExactAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [openedAt] = useState(() => Date.now());
 
   const parsedQuantity = Number(quantity);
   const parsedAmountPerDose = Number(amountPerDose);
@@ -66,6 +73,7 @@ export default function MedicationSupplySheet({
     if (!canSave) return;
     setSaving(true);
     const details = {
+      label: label.trim() || null,
       supplyUnit: supplyUnit.trim(),
       amountPerDose: parsedAmountPerDose,
       lowSupplyDays: parsedLowSupplyDays,
@@ -117,13 +125,21 @@ export default function MedicationSupplySheet({
     onClose();
   }
 
+  async function makeCurrent() {
+    if (!supply) return;
+    setSaving(true);
+    await setCurrentMedicationSupply(medication.id, supply.id);
+    setSaving(false);
+    onClose();
+  }
+
   const recentAdjustments = [...adjustments]
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
     .slice(0, 4);
 
   const estimatedDaysLeft = supply ? estimatedMedicationSupplyDays(medication, supply) : null;
   const wouldBeLow = Boolean(supply && supply.lowSupplyDays !== null && estimatedDaysLeft !== null && estimatedDaysLeft <= supply.lowSupplyDays);
-  const isSnoozed = Boolean(supply?.snoozedUntil && new Date(supply.snoozedUntil).getTime() > Date.now());
+  const isSnoozed = Boolean(supply?.snoozedUntil && new Date(supply.snoozedUntil).getTime() > openedAt);
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -131,7 +147,7 @@ export default function MedicationSupplySheet({
         <div className={styles.grabber} />
         <div className={supplyStyles.titleRow}>
           <div>
-            <h2 id="supply-sheet-title" className={styles.title}>{supply ? "Medication supply" : "Set up supply tracking"}</h2>
+            <h2 id="supply-sheet-title" className={styles.title}>{supply ? "Medication supply" : hasOtherSupplies ? "Add another supply" : "Set up supply tracking"}</h2>
             <p className={supplyStyles.subtitle}>{medication.name}</p>
           </div>
           {supply && <strong className={supplyStyles.count}>{displayNumber(supply.quantity)} {supply.supplyUnit}</strong>}
@@ -185,6 +201,25 @@ export default function MedicationSupplySheet({
             </div>
           </div>
         )}
+
+        {supply && hasOtherSupplies && !isCurrentSupply && (
+          <div className={styles.field}>
+            <span className={styles.label}>Dose logging</span>
+            <p className={supplyStyles.explainer}>This is a backup supply. Blossom will only reduce the current supply when you mark a dose as taken.</p>
+            <button type="button" className={styles.tertiaryButton} style={{ alignSelf: "flex-start" }} disabled={saving} onClick={() => void makeCurrent()}>
+              Use this supply now
+            </button>
+          </div>
+        )}
+
+        {supply && isCurrentSupply && hasOtherSupplies && (
+          <p className={supplyStyles.explainer}>This is the supply Blossom reduces when you mark a dose as taken.</p>
+        )}
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="supply-label">Name this supply (optional)</label>
+          <input id="supply-label" className={styles.input} value={label} onChange={(event) => setLabel(event.target.value)} placeholder="e.g. Current vial, spare box" />
+        </div>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="supply-unit">What are you counting?</label>

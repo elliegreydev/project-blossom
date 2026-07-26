@@ -207,6 +207,7 @@ async function localPayload(
             route: item.route,
             unit: item.unit,
             frequency: item.frequency,
+            active_supply_id: item.activeSupplyId,
             active: item.active,
             created_at: item.createdAt,
           }
@@ -219,6 +220,7 @@ async function localPayload(
             ...shared,
             id: item.id,
             medication_id: item.medicationId,
+            label: item.label,
             quantity: item.quantity,
             supply_unit: item.supplyUnit,
             amount_per_dose: item.amountPerDose,
@@ -514,6 +516,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         route: nullableString(row.route) as MedicationRoute | null,
         unit: nullableString(row.unit),
         frequency,
+        activeSupplyId: nullableString(row.active_supply_id),
         active: Boolean(row.active),
         createdAt,
         updatedAt: changedAt,
@@ -524,6 +527,7 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
       await db.medicationSupplies.put({
         id,
         medicationId: stringValue(row.medication_id),
+        label: nullableString(row.label),
         quantity: nullableNumber(row.quantity) ?? 0,
         supplyUnit: stringValue(row.supply_unit),
         amountPerDose: nullableNumber(row.amount_per_dose) ?? 1,

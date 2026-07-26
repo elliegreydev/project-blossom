@@ -3,14 +3,14 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addBodyEntry, type BodyMeasurement } from "@/lib/db";
+import { addBodyEntry, updateBodyEntry, type BodyEntry, type BodyMeasurement } from "@/lib/db";
 
-export default function AddBodyEntrySheet({ onClose }: { onClose: () => void }) {
+export default function AddBodyEntrySheet({ entry, onClose }: { entry?: BodyEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [measurements, setMeasurements] = useState<BodyMeasurement[]>([{ label: "", value: "" }]);
+  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [measurements, setMeasurements] = useState<BodyMeasurement[]>(entry?.measurements.length ? entry.measurements : [{ label: "", value: "" }]);
   const [photo, setPhoto] = useState<File | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);
 
   function setMeasurement(index: number, field: "label" | "value", value: string) {
@@ -28,12 +28,14 @@ export default function AddBodyEntrySheet({ onClose }: { onClose: () => void }) 
   async function save() {
     setSaving(true);
     const cleanMeasurements = measurements.filter((m) => m.label.trim() && m.value.trim());
-    await addBodyEntry({
+    const input = {
       date,
       measurements: cleanMeasurements,
-      photo,
+      photo: photo ?? entry?.photo ?? null,
       note: note.trim() || null,
-    });
+    };
+    if (entry) await updateBodyEntry(entry.id, input);
+    else await addBodyEntry(input);
     setSaving(false);
     onClose();
   }
@@ -53,7 +55,7 @@ export default function AddBodyEntrySheet({ onClose }: { onClose: () => void }) 
       >
         <div className={styles.grabber} />
         <h2 id="body-entry-sheet-title" className={styles.title}>
-          Add an entry
+          {entry ? "Edit entry" : "Add an entry"}
         </h2>
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5, marginTop: -8 }}>
           Everything here is optional. Any photo stays only on this device -
@@ -114,6 +116,7 @@ export default function AddBodyEntrySheet({ onClose }: { onClose: () => void }) 
             className={styles.input}
             onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
           />
+          {entry?.photo && !photo && <span className={styles.fieldHint}>Leave this blank to keep the photo already saved.</span>}
         </div>
 
         <div className={styles.field}>
@@ -140,7 +143,7 @@ export default function AddBodyEntrySheet({ onClose }: { onClose: () => void }) 
             disabled={!hasAnything || saving}
             onClick={save}
           >
-            Save entry
+            {entry ? "Save changes" : "Save entry"}
           </button>
         </div>
       </div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import {
   db,
   LOCAL_PROFILE_ID,
@@ -36,6 +38,7 @@ export default function JourneyPage() {
   const milestones = useLiveQuery(() => db.milestones.toArray(), []);
   const journeyEvents = useLiveQuery(() => db.journeyEvents.toArray(), []);
   const [activeCategory, setActiveCategory] = useState<JourneyCategory | null>(null);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (!profile || milestones === undefined || journeyEvents === undefined) return null;
 
@@ -46,6 +49,7 @@ export default function JourneyPage() {
   });
 
   const allEntries = [...milestones, ...journeyEvents]
+    .filter((entry) => !isPendingRemoval(entry.id))
     .filter((e) => !activeCategory || e.category === activeCategory)
     .sort((a, b) => {
       // Undated entries first-ish is jarring; sort by eventDate desc, undated last.
@@ -110,7 +114,7 @@ export default function JourneyPage() {
               <button
                 type="button"
                 className={styles.entryRemove}
-                onClick={() => (isMilestone(entry) ? deleteMilestone(entry.id) : deleteJourneyEvent(entry.id))}
+                onClick={() => stageRemoval(entry.id, "This Journey entry", () => isMilestone(entry) ? deleteMilestone(entry.id) : deleteJourneyEvent(entry.id))}
               >
                 Remove
               </button>
@@ -118,6 +122,7 @@ export default function JourneyPage() {
           ))}
         </div>
       )}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }

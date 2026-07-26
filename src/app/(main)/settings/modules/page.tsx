@@ -3,7 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
-import { db, LOCAL_PROFILE_ID, updateProfile, type ModuleKey } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, togglePinnedTrackModule, updateProfile, type ModuleKey } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 
 const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
@@ -17,11 +17,13 @@ const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
   { key: "presentation", title: "Presentation", desc: "Outfits, hair, makeup, and things you want to try" },
   { key: "bodyProgress", title: "Body & progress", desc: "A quiet, private place to notice change" },
   { key: "budget", title: "Budget tracker", desc: "Transition costs and savings goals, kept private" },
+  { key: "intimacy", title: "Intimacy & wellbeing", desc: "A private, device-only space for personal notes" },
 ];
 
 export default function ModulesSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   if (!profile) return null;
+  const pinnedModules = profile.trackPinnedModules ?? [];
 
   function toggle(key: ModuleKey, on: boolean) {
     const next = on
@@ -35,13 +37,15 @@ export default function ModulesSettingsPage() {
       <ScreenHeader title="Enabled modules" backHref="/settings" />
       <p className={styles.hint}>
         Turn off anything you don&apos;t want to use. You can turn it back on
-        any time, and nothing you&apos;ve already added is deleted.
+        any time, and nothing you&apos;ve already added is deleted. Pin up to three
+        enabled tools to My spaces in Track. Those pins stay on this device.
       </p>
       {MODULES.map((m) => (
         <div key={m.key} className={styles.toggleRow}>
           <div className={styles.toggleText}>
             <span className={styles.toggleTitle}>{m.title}</span>
             <span className={styles.toggleDesc}>{m.desc}</span>
+            {profile.enabledModules.includes(m.key) && <button type="button" className={styles.tertiaryButton} style={{ alignSelf: "flex-start", padding: "4px 0", minHeight: 34 }} disabled={!pinnedModules.includes(m.key) && pinnedModules.length >= 3} onClick={() => void togglePinnedTrackModule(m.key)}>{pinnedModules.includes(m.key) ? "Remove from My spaces" : pinnedModules.length >= 3 ? "My spaces is full" : "Pin to My spaces"}</button>}
           </div>
           <Toggle
             checked={profile.enabledModules.includes(m.key)}

@@ -23,14 +23,16 @@ function toLocalDateTimeParts(iso: string): { date: string; time: string } {
 
 export default function AddAppointmentSheet({
   appointment,
+  initialTitle,
   onClose,
 }: {
   appointment?: Appointment | null;
+  initialTitle?: string;
   onClose: () => void;
 }) {
   const dialogRef = useSheetDialog(onClose);
   const initial = appointment ? toLocalDateTimeParts(appointment.appointmentAt) : null;
-  const [title, setTitle] = useState(appointment?.title ?? "");
+  const [title, setTitle] = useState(appointment?.title ?? initialTitle ?? "");
   const [date, setDate] = useState(initial?.date ?? "");
   const [time, setTime] = useState(initial?.time ?? "09:00");
   const [location, setLocation] = useState(appointment?.location ?? "");

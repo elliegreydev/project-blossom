@@ -16,6 +16,8 @@ function context(overrides = {}) {
     journeyEvents: [],
     medications: [],
     medicationLogs: [],
+    medicationSupplies: [],
+    careSupplies: [],
     appointments: [],
     journalEntries: [],
     checkIns: [],
@@ -23,6 +25,7 @@ function context(overrides = {}) {
     voiceGoals: [],
     voiceSessions: [],
     presentationEntries: [],
+    euphoriaEntries: [],
     nudgeStates: [],
     ...overrides,
   };
@@ -33,6 +36,65 @@ assert.equal(
   null,
   "disabled mode should never surface a suggestion"
 );
+
+const supplyHeadsUp = selectAuroraSuggestion(
+  context({
+    milestones: [{ id: "started" }],
+    medications: [
+      {
+        id: "medication-1",
+        name: "Private medication",
+        route: "tablet",
+        unit: null,
+        frequency: { times: ["18:00"], days: null },
+        active: true,
+        createdAt: "2026-07-01T12:00:00.000Z",
+        updatedAt: "2026-07-01T12:00:00.000Z",
+      },
+    ],
+    medicationSupplies: [
+      {
+        id: "supply-1",
+        medicationId: "medication-1",
+        label: null,
+        quantity: 2,
+        supplyUnit: "tablets",
+        amountPerDose: 1,
+        lowSupplyDays: 3,
+        renewalDate: null,
+        expiryDate: null,
+        pharmacy: null,
+        note: null,
+        snoozedUntil: null,
+        createdAt: "2026-07-01T12:00:00.000Z",
+        updatedAt: "2026-07-01T12:00:00.000Z",
+      },
+    ],
+  })
+);
+assert.equal(supplyHeadsUp?.title, "One of your supplies could use a look", "low supplies should reach Aurora");
+assert.equal(supplyHeadsUp?.message.includes("Private medication"), false, "supply copy should stay discreet");
+
+const upcomingDose = selectAuroraSuggestion(
+  context({
+    milestones: [{ id: "started" }],
+    journalEntries: [{ createdAt: "2026-07-13T12:00:00.000Z" }],
+    medications: [
+      {
+        id: "medication-2",
+        name: "Private medication",
+        route: "tablet",
+        unit: null,
+        frequency: { times: ["13:00"], days: null },
+        active: true,
+        createdAt: "2026-07-01T12:00:00.000Z",
+        updatedAt: "2026-07-01T12:00:00.000Z",
+      },
+    ],
+  })
+);
+assert.equal(upcomingDose?.title, "A medication reminder is close", "an upcoming scheduled dose should reach Aurora");
+assert.equal(upcomingDose?.message.includes("Private medication"), false, "upcoming dose copy should stay discreet");
 
 assert.equal(
   selectAuroraSuggestion(context({ profile: { ...context().profile, auroraMode: "quiet" } })),

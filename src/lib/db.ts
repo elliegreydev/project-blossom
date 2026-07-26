@@ -7,6 +7,7 @@ import type { ResourceCategory } from "./regionResources";
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
 export type ReminderPrivacy = "discreet" | "detailed";
+export type WeightUnit = "auto" | "kg" | "lb" | "st";
 export type AccessibilityProfile = "custom" | "lowVision" | "readingComfort" | "lowCognitiveLoad" | "migraineFriendly" | "largeTouchTargets";
 export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges";
 export type HomeDensity = "compact" | "standard" | "spacious";
@@ -54,7 +55,8 @@ export type ModuleKey =
   | "voicePractice"
   | "presentation"
   | "bodyProgress"
-  | "budget";
+  | "budget"
+  | "intimacy";
 
 export interface Profile {
   id: string;
@@ -81,6 +83,10 @@ export interface Profile {
   // another device looks like.
   homePhoneLayout: HomeLayoutConfig;
   homeDesktopLayout: HomeLayoutConfig;
+  // Track is a per-device workbench too. Pinning and recency should never
+  // rearrange another device just because sync is enabled.
+  trackPinnedModules: ModuleKey[];
+  trackRecentModules: ModuleKey[];
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
   ageConfirmedAt: string | null;
@@ -131,6 +137,23 @@ export interface Profile {
   quietHoursEnabled: boolean;
   quietHoursStart: string | null; // "HH:MM", 24h, wall-clock local time
   quietHoursEnd: string | null;
+  // Weight and food logging are deliberately device-local. A setting of
+  // "auto" takes its display unit from the selected country, while entries
+  // themselves are stored in grams so changing a preference never changes
+  // the underlying record.
+  weightTrackingEnabled: boolean;
+  weightUnit: WeightUnit;
+  weightGoalGrams: number | null;
+  // A snapshot selected by the person as their own reference point. This is
+  // device-only and intentionally does not disappear if an old weight log is
+  // removed later.
+  weightBaseline: WeightBaseline | null;
+  weightBaselineNote: string | null;
+  weightReminderEnabled: boolean;
+  weightReminderDay: number;
+  weightReminderTime: string;
+  calorieTrackingEnabled: boolean;
+  calorieTarget: number | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -202,6 +225,9 @@ export interface Medication {
   route: MedicationRoute | null;
   unit: string | null;
   frequency: MedicationFrequency | null;
+  // The supply Blossom should reduce when this medication is logged as taken.
+  // Other supplies are kept as separate, user-managed backups.
+  activeSupplyId: string | null;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -216,6 +242,9 @@ export interface MedicationLog {
   status: DoseStatus;
   loggedAt: string;
   note: string | null;
+  // Added for new logs so correcting a recorded dose can also correct the
+  // optional stock counter. Older logs simply do not have this link.
+  supplyAdjustmentId?: string | null;
   updatedAt: string;
 }
 
@@ -228,6 +257,7 @@ export type MedicationSupplyAdjustmentKind = "initial" | "dose" | "restock" | "c
 export interface MedicationSupply {
   id: string;
   medicationId: string;
+  label: string | null;
   quantity: number;
   supplyUnit: string;
   amountPerDose: number;
@@ -568,6 +598,54 @@ export interface BodyEntry {
   updatedAt: string;
 }
 
+// Intimacy & wellbeing ---------------------------------------------------------
+// A deliberately private, non-judgemental log. It is local-only like journal
+// writing: no sync, no Home block, no reminders and no global search index.
+// The app never records partners, location or any kind of score.
+export type IntimacyDatePrecision = "exact" | "approximate";
+export type IntimacyFeeling = "good" | "mixed" | "unsure" | "not-good";
+
+export interface IntimacyEntry {
+  id: string;
+  date: string;
+  time: string | null;
+  datePrecision: IntimacyDatePrecision;
+  label: string | null;
+  tags: string[];
+  protectionNote: string | null;
+  feeling: IntimacyFeeling | null;
+  aftercareNote: string | null;
+  privateNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeightEntry {
+  id: string;
+  date: string;
+  weightGrams: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeightBaseline {
+  sourceEntryId: string | null;
+  date: string;
+  weightGrams: number;
+}
+
+export interface CalorieEntry {
+  id: string;
+  date: string;
+  label: string;
+  calories: number;
+  meal: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Transition cost & budget tracker (v2) -------------------------------------------
 // Deliberately local-only, same treatment as journal entries - financial
 // records are sensitive, and there's no real need for this to sync even
@@ -605,6 +683,37 @@ export interface PrivateLink {
   url: string;
   note: string | null;
   createdAt: string;
+}
+
+// Personal support map ----------------------------------------------------------
+// This is a private directory rather than a literal map: precise coordinates,
+// public reviews and third-party map services would make a sensitive feature
+// needlessly exposing. Entries live only in this device's IndexedDB and are
+// intentionally absent from the sync queue and standard account export.
+
+export type SupportMapEntryType = "person" | "clinic" | "organisation" | "community" | "place" | "other";
+export type SupportMapLabel =
+  | "affirming"
+  | "unknown"
+  | "avoid"
+  | "emergency"
+  | "practical"
+  | "emotional"
+  | "medical"
+  | "legal";
+
+export interface SupportMapEntry {
+  id: string;
+  name: string;
+  type: SupportMapEntryType;
+  labels: SupportMapLabel[];
+  contact: string | null;
+  area: string | null;
+  note: string | null;
+  reviewOn: string | null;
+  isFavourite: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Safety check-ins ---------------------------------------------------------------
@@ -713,6 +822,7 @@ type BlossomDb = Dexie & {
   careSupplyAdjustments: EntityTable<CareSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
+  intimacyEntries: EntityTable<IntimacyEntry, "id">;
   euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
   socialTransitionPeople: EntityTable<SocialTransitionPerson, "id">;
   socialTransitionPlans: EntityTable<SocialTransitionPlan, "id">;
@@ -720,6 +830,7 @@ type BlossomDb = Dexie & {
   checkIns: EntityTable<CheckIn, "id">;
   goals: EntityTable<Goal, "id">;
   privateLinks: EntityTable<PrivateLink, "id">;
+  supportMapEntries: EntityTable<SupportMapEntry, "id">;
   safetyCheckIns: EntityTable<SafetyCheckIn, "id">;
   budgetEntries: EntityTable<BudgetEntry, "id">;
   budgetGoals: EntityTable<BudgetGoal, "id">;
@@ -728,6 +839,8 @@ type BlossomDb = Dexie & {
   voiceSessions: EntityTable<VoiceSession, "id">;
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
+  weightEntries: EntityTable<WeightEntry, "id">;
+  calorieEntries: EntityTable<CalorieEntry, "id">;
   notifiedReminders: EntityTable<NotifiedReminder, "key">;
   cachedRegionResources: EntityTable<CachedRegionResource, "id">;
   cachedLegalContextNotes: EntityTable<CachedLegalContextNote, "id">;
@@ -1371,6 +1484,137 @@ function createDb(): BlossomDb {
     cachedLegalContextNotes: "id, country, subregion",
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
+  }).upgrade(async (tx) => {
+    const supplies = await tx.table("medicationSupplies").toArray() as MedicationSupply[];
+    const firstSupplyByMedication = new Map<string, MedicationSupply>();
+    for (const supply of [...supplies].sort((first, second) => first.createdAt.localeCompare(second.createdAt))) {
+      if (!firstSupplyByMedication.has(supply.medicationId)) firstSupplyByMedication.set(supply.medicationId, supply);
+    }
+    await tx.table("medications").toCollection().modify((medication: Medication) => {
+      medication.activeSupplyId ??= firstSupplyByMedication.get(medication.id)?.id ?? null;
+    });
+  });
+  instance.version(25).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  }).upgrade(async (tx) => {
+    await tx.table("profiles").toCollection().modify((profile: Profile) => {
+      profile.weightTrackingEnabled = false;
+      profile.weightUnit = "auto";
+      profile.weightGoalGrams = null;
+      profile.weightReminderEnabled = false;
+      profile.weightReminderDay = 0;
+      profile.weightReminderTime = "10:00";
+      profile.calorieTrackingEnabled = false;
+      profile.calorieTarget = null;
+    });
+  });
+  instance.version(26).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+  instance.version(27).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
   });
   return instance;
 }
@@ -1404,6 +1648,8 @@ export const DEFAULT_PROFILE: Profile = {
   lowEnergyMode: false,
   homePhoneLayout: defaultHomeLayout(),
   homeDesktopLayout: defaultHomeLayout(),
+  trackPinnedModules: [],
+  trackRecentModules: [],
   sensitiveModulesLocked: false,
   syncEnabled: false,
   ageConfirmedAt: null,
@@ -1429,6 +1675,16 @@ export const DEFAULT_PROFILE: Profile = {
   quietHoursEnabled: false,
   quietHoursStart: "22:00",
   quietHoursEnd: "07:00",
+  weightTrackingEnabled: false,
+  weightUnit: "auto",
+  weightGoalGrams: null,
+  weightBaseline: null,
+  weightBaselineNote: null,
+  weightReminderEnabled: false,
+  weightReminderDay: 0,
+  weightReminderTime: "10:00",
+  calorieTrackingEnabled: false,
+  calorieTarget: null,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {
@@ -1456,6 +1712,8 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
   if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();
   if (existing.homeDesktopLayout === undefined) backfill.homeDesktopLayout = defaultHomeLayout();
+  if (existing.trackPinnedModules === undefined) backfill.trackPinnedModules = [];
+  if (existing.trackRecentModules === undefined) backfill.trackRecentModules = [];
   if (existing.subregion === undefined) backfill.subregion = null;
   // Onboarding used to hardcode "UK" (region was locked, not user-chosen).
   // The real country picker uses full names to match SUBREGIONS/COUNTRIES.
@@ -1464,6 +1722,16 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.safetyCheckInsEnabled === undefined) backfill.safetyCheckInsEnabled = false;
   if (existing.trustedContactName === undefined) backfill.trustedContactName = null;
   if (existing.trustedContactMethod === undefined) backfill.trustedContactMethod = null;
+  if (existing.weightTrackingEnabled === undefined) backfill.weightTrackingEnabled = false;
+  if (existing.weightUnit === undefined) backfill.weightUnit = "auto";
+  if (existing.weightGoalGrams === undefined) backfill.weightGoalGrams = null;
+  if (existing.weightBaseline === undefined) backfill.weightBaseline = null;
+  if (existing.weightBaselineNote === undefined) backfill.weightBaselineNote = null;
+  if (existing.weightReminderEnabled === undefined) backfill.weightReminderEnabled = false;
+  if (existing.weightReminderDay === undefined) backfill.weightReminderDay = 0;
+  if (existing.weightReminderTime === undefined) backfill.weightReminderTime = "10:00";
+  if (existing.calorieTrackingEnabled === undefined) backfill.calorieTrackingEnabled = false;
+  if (existing.calorieTarget === undefined) backfill.calorieTarget = null;
   if (Object.keys(backfill).length > 0) {
     await db.profiles.update(LOCAL_PROFILE_ID, backfill);
     return { ...existing, ...backfill };
@@ -1493,9 +1761,26 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
 // them out of the sync queue so a calmer phone layout never surprises someone
 // on their desktop (or vice versa).
 export async function updateDeviceProfile(
-  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout">>
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
 ): Promise<void> {
   await db.profiles.update(LOCAL_PROFILE_ID, patch);
+}
+
+export async function recordTrackModuleVisit(module: ModuleKey): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile) return;
+  const recentModules = profile.trackRecentModules ?? [];
+  await updateDeviceProfile({ trackRecentModules: [module, ...recentModules.filter((item) => item !== module)].slice(0, 4) });
+}
+
+export async function togglePinnedTrackModule(module: ModuleKey): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile) return;
+  const pinnedModules = profile.trackPinnedModules ?? [];
+  const pinned = pinnedModules.includes(module)
+    ? pinnedModules.filter((item) => item !== module)
+    : [...pinnedModules, module].slice(0, 3);
+  await updateDeviceProfile({ trackPinnedModules: pinned });
 }
 
 function newId(): string {
@@ -1608,6 +1893,7 @@ export async function addMedication(
   const medication: Medication = {
     id: newId(),
     active: true,
+    activeSupplyId: null,
     createdAt: now,
     updatedAt: now,
     ...input,
@@ -1644,7 +1930,7 @@ export function medicationSupplyIsLow(medication: Medication, supply: Medication
 }
 
 export async function createMedicationSupply(
-  input: Pick<MedicationSupply, "medicationId" | "quantity" | "supplyUnit" | "amountPerDose" | "lowSupplyDays" | "renewalDate" | "expiryDate" | "pharmacy" | "note">
+  input: Pick<MedicationSupply, "medicationId" | "label" | "quantity" | "supplyUnit" | "amountPerDose" | "lowSupplyDays" | "renewalDate" | "expiryDate" | "pharmacy" | "note">
 ): Promise<MedicationSupply> {
   const now = new Date().toISOString();
   const supply: MedicationSupply = {
@@ -1666,13 +1952,36 @@ export async function createMedicationSupply(
     createdAt: now,
     updatedAt: now,
   };
-  await db.transaction("rw", db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+  await db.transaction("rw", db.medications, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationSupplies.add(supply);
     await db.medicationSupplyAdjustments.add(adjustment);
+    const medication = await db.medications.get(supply.medicationId);
+    const suppliesForMedication = await db.medicationSupplies.where("medicationId").equals(supply.medicationId).toArray();
+    if (medication && !medication.activeSupplyId && suppliesForMedication.length === 1) {
+      await db.medications.update(medication.id, { activeSupplyId: supply.id, updatedAt: now });
+      await recordSyncChange("medication", medication.id, "upsert", now);
+    }
     await recordSyncChange("medication_supply", supply.id, "upsert", now);
     await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", now);
   });
   return supply;
+}
+
+export function currentMedicationSupply(
+  medication: Medication,
+  supplies: MedicationSupply[]
+): MedicationSupply | null {
+  const related = supplies.filter((supply) => supply.medicationId === medication.id);
+  if (related.length === 0) return null;
+  return related.find((supply) => supply.id === medication.activeSupplyId)
+    ?? [...related].sort((first, second) => first.createdAt.localeCompare(second.createdAt))[0]
+    ?? null;
+}
+
+export async function setCurrentMedicationSupply(medicationId: string, supplyId: string): Promise<void> {
+  const supply = await db.medicationSupplies.get(supplyId);
+  if (!supply || supply.medicationId !== medicationId) return;
+  await updateMedication(medicationId, { activeSupplyId: supplyId });
 }
 
 export async function updateMedicationSupply(
@@ -1799,8 +2108,8 @@ export async function logDose(
   input: Pick<MedicationLog, "medicationId" | "scheduledTime" | "status" | "note">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
-  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, ...input };
-  await db.transaction("rw", db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+  const log: MedicationLog = { id: newId(), loggedAt: changedAt, updatedAt: changedAt, supplyAdjustmentId: null, ...input };
+  await db.transaction("rw", db.medications, db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
     await db.medicationLogs.add(log);
     await recordSyncChange("medication_log", log.id, "upsert", changedAt);
 
@@ -1812,7 +2121,9 @@ export async function logDose(
           .and((entry) => entry.id !== log.id && entry.scheduledTime === input.scheduledTime && entry.status === "taken")
           .first()
       : null;
-    const supply = await db.medicationSupplies.where("medicationId").equals(input.medicationId).first();
+    const medication = await db.medications.get(input.medicationId);
+    const relatedSupplies = await db.medicationSupplies.where("medicationId").equals(input.medicationId).toArray();
+    const supply = medication ? currentMedicationSupply(medication, relatedSupplies) : null;
     if (!supply || alreadyTaken) return;
 
     const quantityAfter = Math.max(0, supply.quantity - supply.amountPerDose);
@@ -1829,6 +2140,7 @@ export async function logDose(
     };
     await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
     await db.medicationSupplyAdjustments.add(adjustment);
+    await db.medicationLogs.update(log.id, { supplyAdjustmentId: adjustment.id, updatedAt: changedAt });
     await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
     await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
   });
@@ -1885,6 +2197,30 @@ export async function deleteJournalEntry(id: string): Promise<void> {
   await db.journalEntries.delete(id);
 }
 
+export async function updateJournalEntry(id: string, bodyText: string): Promise<void> {
+  await db.journalEntries.update(id, { bodyText, updatedAt: new Date().toISOString() });
+}
+
+export async function addIntimacyEntry(
+  input: Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">
+): Promise<IntimacyEntry> {
+  const now = new Date().toISOString();
+  const entry: IntimacyEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
+  await db.intimacyEntries.add(entry);
+  return entry;
+}
+
+export async function updateIntimacyEntry(
+  id: string,
+  patch: Partial<Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  await db.intimacyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteIntimacyEntry(id: string): Promise<void> {
+  await db.intimacyEntries.delete(id);
+}
+
 export async function addEuphoriaEntry(
   input: Pick<EuphoriaEntry, "kind" | "title" | "bodyText" | "photo" | "reopenAt">
 ): Promise<EuphoriaEntry> {
@@ -1896,6 +2232,13 @@ export async function addEuphoriaEntry(
 
 export async function deleteEuphoriaEntry(id: string): Promise<void> {
   await db.euphoriaEntries.delete(id);
+}
+
+export async function updateEuphoriaEntry(
+  id: string,
+  patch: Partial<Pick<EuphoriaEntry, "kind" | "title" | "bodyText" | "photo" | "reopenAt">>
+): Promise<void> {
+  await db.euphoriaEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
 }
 
 // Social transition planner ------------------------------------------------------
@@ -1983,6 +2326,85 @@ export async function deleteCheckIn(id: string): Promise<void> {
   await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
     await db.checkIns.delete(id);
     await recordSyncChange("check_in", id, "delete", changedAt);
+  });
+}
+
+export async function deleteMedicationLog(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medicationLogs, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    const log = await db.medicationLogs.get(id);
+    if (!log) return;
+
+    if (log.supplyAdjustmentId) {
+      const adjustment = await db.medicationSupplyAdjustments.get(log.supplyAdjustmentId);
+      const supply = adjustment ? await db.medicationSupplies.get(adjustment.supplyId) : null;
+      if (adjustment && supply && adjustment.kind === "dose") {
+        await db.medicationSupplies.update(supply.id, {
+          quantity: Math.max(0, supply.quantity - adjustment.quantityChange),
+          updatedAt: changedAt,
+        });
+        await db.medicationSupplyAdjustments.delete(adjustment.id);
+        await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+        await recordSyncChange("medication_supply_adjustment", adjustment.id, "delete", changedAt);
+      }
+    }
+
+    await db.medicationLogs.delete(id);
+    await recordSyncChange("medication_log", id, "delete", changedAt);
+  });
+}
+
+export async function updateMedicationLog(
+  id: string,
+  input: Pick<MedicationLog, "scheduledTime" | "status" | "note">
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.medicationLogs, db.medications, db.medicationSupplies, db.medicationSupplyAdjustments, db.syncOutbox, async () => {
+    const existing = await db.medicationLogs.get(id);
+    if (!existing) return;
+    const canRecalculateSupply = Boolean(existing.supplyAdjustmentId);
+
+    if (existing.supplyAdjustmentId) {
+      const adjustment = await db.medicationSupplyAdjustments.get(existing.supplyAdjustmentId);
+      const supply = adjustment ? await db.medicationSupplies.get(adjustment.supplyId) : null;
+      if (adjustment && supply && adjustment.kind === "dose") {
+        await db.medicationSupplies.update(supply.id, { quantity: Math.max(0, supply.quantity - adjustment.quantityChange), updatedAt: changedAt });
+        await db.medicationSupplyAdjustments.delete(adjustment.id);
+        await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+        await recordSyncChange("medication_supply_adjustment", adjustment.id, "delete", changedAt);
+      }
+    }
+
+    await db.medicationLogs.update(id, { ...input, supplyAdjustmentId: null, updatedAt: changedAt });
+    await recordSyncChange("medication_log", id, "upsert", changedAt);
+    if (!canRecalculateSupply || input.status !== "taken") return;
+
+    const alreadyTaken = input.scheduledTime
+      ? await db.medicationLogs.where("medicationId").equals(existing.medicationId).and((entry) => entry.id !== id && entry.scheduledTime === input.scheduledTime && entry.status === "taken").first()
+      : null;
+    const medication = await db.medications.get(existing.medicationId);
+    const relatedSupplies = await db.medicationSupplies.where("medicationId").equals(existing.medicationId).toArray();
+    const supply = medication ? currentMedicationSupply(medication, relatedSupplies) : null;
+    if (!supply || alreadyTaken) return;
+
+    const quantityAfter = Math.max(0, supply.quantity - supply.amountPerDose);
+    const adjustment: MedicationSupplyAdjustment = { id: newId(), supplyId: supply.id, medicationId: existing.medicationId, kind: "dose", quantityChange: quantityAfter - supply.quantity, quantityAfter, note: null, createdAt: changedAt, updatedAt: changedAt };
+    await db.medicationSupplies.update(supply.id, { quantity: quantityAfter, updatedAt: changedAt });
+    await db.medicationSupplyAdjustments.add(adjustment);
+    await db.medicationLogs.update(id, { supplyAdjustmentId: adjustment.id, updatedAt: changedAt });
+    await recordSyncChange("medication_supply", supply.id, "upsert", changedAt);
+    await recordSyncChange("medication_supply_adjustment", adjustment.id, "upsert", changedAt);
+  });
+}
+
+export async function updateCheckIn(
+  id: string,
+  patch: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
+): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {
+    await db.checkIns.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("check_in", id, "upsert", changedAt);
   });
 }
 
@@ -2077,6 +2499,31 @@ export function dueDosesToday(med: Medication, now: Date): string[] {
   });
 }
 
+export function nextMedicationDose(
+  medications: Medication[],
+  logs: MedicationLog[],
+  now: Date
+): { medication: Medication; scheduledTime: string } | null {
+  // Look far enough ahead to cover weekly and long interval schedules without
+  // pretending that an unscheduled medication has a next dose.
+  const candidates: Array<{ medication: Medication; scheduledTime: string }> = [];
+  for (const medication of medications) {
+    if (!medication.active || !medication.frequency) continue;
+    for (let dayOffset = 0; dayOffset <= 366; dayOffset += 1) {
+      const day = new Date(now);
+      day.setDate(day.getDate() + dayOffset);
+      const scheduled = dueDosesToday(medication, day);
+      for (const scheduledTime of scheduled) {
+        const logged = logs.some((log) => log.medicationId === medication.id && log.scheduledTime === scheduledTime);
+        if (!logged) candidates.push({ medication, scheduledTime });
+      }
+      // Once this medication has an unlogged slot, later days cannot be its next one.
+      if (candidates.some((candidate) => candidate.medication.id === medication.id)) break;
+    }
+  }
+  return candidates.sort((first, second) => first.scheduledTime.localeCompare(second.scheduledTime))[0] ?? null;
+}
+
 // Local reminders --------------------------------------------------------------
 
 export async function notifiedReminderState(): Promise<NotifiedReminder[]> {
@@ -2117,6 +2564,31 @@ export async function addPrivateLink(
 
 export async function deletePrivateLink(id: string): Promise<void> {
   await db.privateLinks.delete(id);
+}
+
+// Personal support map ----------------------------------------------------------
+// These entries stay on this device. Do not add them to SyncEntity or use
+// recordSyncChange: private contacts and approximate locations should not
+// travel to another device simply because account sync is enabled.
+
+export async function addSupportMapEntry(
+  input: Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">
+): Promise<SupportMapEntry> {
+  const now = new Date().toISOString();
+  const entry: SupportMapEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
+  await db.supportMapEntries.add(entry);
+  return entry;
+}
+
+export async function updateSupportMapEntry(
+  id: string,
+  patch: Partial<Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">>
+): Promise<void> {
+  await db.supportMapEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteSupportMapEntry(id: string): Promise<void> {
+  await db.supportMapEntries.delete(id);
 }
 
 // Transition cost & budget tracker (v2) -------------------------------------------
@@ -2289,6 +2761,53 @@ export async function deleteBodyEntry(id: string): Promise<void> {
   await db.bodyEntries.delete(id);
 }
 
+export async function updateBodyEntry(
+  id: string,
+  patch: Pick<BodyEntry, "date" | "measurements" | "photo" | "note">
+): Promise<void> {
+  await db.bodyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function addWeightEntry(
+  input: Pick<WeightEntry, "date" | "weightGrams" | "note">
+): Promise<WeightEntry> {
+  const now = new Date().toISOString();
+  const entry: WeightEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.weightEntries.add(entry);
+  return entry;
+}
+
+export async function deleteWeightEntry(id: string): Promise<void> {
+  await db.weightEntries.delete(id);
+}
+
+export async function updateWeightEntry(
+  id: string,
+  patch: Pick<WeightEntry, "date" | "weightGrams" | "note">
+): Promise<void> {
+  await db.weightEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function addCalorieEntry(
+  input: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
+): Promise<CalorieEntry> {
+  const now = new Date().toISOString();
+  const entry: CalorieEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.calorieEntries.add(entry);
+  return entry;
+}
+
+export async function deleteCalorieEntry(id: string): Promise<void> {
+  await db.calorieEntries.delete(id);
+}
+
+export async function updateCalorieEntry(
+  id: string,
+  patch: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
+): Promise<void> {
+  await db.calorieEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
 // App lock (PIN) ------------------------------------------------------------------
 // The PIN is never stored in plain text, only a SHA-256 hash. This protects
 // against casual/local snooping (e.g. someone opening IndexedDB devtools) but
@@ -2332,6 +2851,39 @@ export async function clearBiometricUnlockCredential(): Promise<void> {
 
 // Data export / deletion -----------------------------------------------------------
 
+export type DataExportSection =
+  | "profile"
+  | "journey"
+  | "medications"
+  | "appointments"
+  | "journal"
+  | "goals"
+  | "health"
+  | "voiceAndPresentation"
+  | "euphoriaAndSocial"
+  | "budget"
+  | "savedLinks"
+  | "supportMap"
+  | "intimacy";
+
+export type DataExportSelection = Record<DataExportSection, boolean>;
+
+export const DEFAULT_DATA_EXPORT_SELECTION: DataExportSelection = {
+  profile: true,
+  journey: true,
+  medications: true,
+  appointments: true,
+  journal: true,
+  goals: true,
+  health: true,
+  voiceAndPresentation: true,
+  euphoriaAndSocial: true,
+  budget: true,
+  savedLinks: true,
+  supportMap: false,
+  intimacy: false,
+};
+
 export async function exportAllData(): Promise<Record<string, unknown>> {
   const [
     profile,
@@ -2360,6 +2912,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceSessionsRaw,
     presentationEntriesRaw,
     bodyEntriesRaw,
+    weightEntries,
+    calorieEntries,
   ] = await Promise.all([
     db.profiles.get(LOCAL_PROFILE_ID),
     db.milestones.toArray(),
@@ -2387,6 +2941,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.voiceSessions.toArray(),
     db.presentationEntries.toArray(),
     db.bodyEntries.toArray(),
+    db.weightEntries.toArray(),
+    db.calorieEntries.toArray(),
   ]);
   // appLockPinHash is deliberately excluded - it's a security credential,
   // not personal data the user needs back in an export.
@@ -2439,7 +2995,156 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     voiceSessions,
     presentationEntries,
     bodyEntries,
+    weightEntries,
+    calorieEntries,
   };
+}
+
+// A deliberate export builder. The normal full export remains available for
+// backwards compatibility, while this creates a versioned portable backup
+// with only the sections a person picked. Support Map is deliberately opt-in.
+export async function exportSelectedData(selection: DataExportSelection): Promise<Record<string, unknown>> {
+  const all = await exportAllData();
+  const supportMapEntries = selection.supportMap ? await db.supportMapEntries.toArray() : [];
+  const intimacyEntries = selection.intimacy ? await db.intimacyEntries.toArray() : [];
+  return {
+    format: "blossom-backup",
+    version: 1,
+    exportedAt: all.exportedAt,
+    includedSections: Object.entries(selection).filter(([, included]) => included).map(([section]) => section),
+    profile: selection.profile ? all.profile : {},
+    milestones: selection.journey ? all.milestones : [],
+    journeyEvents: selection.journey ? all.journeyEvents : [],
+    medications: selection.medications ? all.medications : [],
+    medicationLogs: selection.medications ? all.medicationLogs : [],
+    medicationSupplies: selection.medications ? all.medicationSupplies : [],
+    medicationSupplyAdjustments: selection.medications ? all.medicationSupplyAdjustments : [],
+    careSupplies: selection.medications ? all.careSupplies : [],
+    careSupplyAdjustments: selection.medications ? all.careSupplyAdjustments : [],
+    appointments: selection.appointments ? all.appointments : [],
+    journalEntries: selection.journal ? all.journalEntries : [],
+    checkIns: selection.journal ? all.checkIns : [],
+    goals: selection.goals ? all.goals : [],
+    bloodTestEntries: selection.health ? all.bloodTestEntries : [],
+    bodyEntries: selection.health ? all.bodyEntries : [],
+    weightEntries: selection.health ? all.weightEntries : [],
+    calorieEntries: selection.health ? all.calorieEntries : [],
+    voiceGoals: selection.voiceAndPresentation ? all.voiceGoals : [],
+    voiceSessions: selection.voiceAndPresentation ? all.voiceSessions : [],
+    presentationEntries: selection.voiceAndPresentation ? all.presentationEntries : [],
+    euphoriaEntries: selection.euphoriaAndSocial ? all.euphoriaEntries : [],
+    socialTransitionPeople: selection.euphoriaAndSocial ? all.socialTransitionPeople : [],
+    socialTransitionPlans: selection.euphoriaAndSocial ? all.socialTransitionPlans : [],
+    socialTransitionTasks: selection.euphoriaAndSocial ? all.socialTransitionTasks : [],
+    budgetEntries: selection.budget ? all.budgetEntries : [],
+    budgetGoals: selection.budget ? all.budgetGoals : [],
+    privateLinks: selection.savedLinks ? all.privateLinks : [],
+    supportMapEntries,
+    intimacyEntries,
+  };
+}
+
+export type BlossomImportSection = Exclude<DataExportSection, "profile">;
+export interface BlossomImportPreview {
+  sections: Array<{ section: BlossomImportSection; label: string; incoming: number; likelyDuplicates: number }>;
+  invalidRows: number;
+}
+
+const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys: string[]; tables: string[] }> = [
+  { section: "journey", label: "Journey", keys: ["milestones", "journeyEvents"], tables: ["milestones", "journeyEvents"] },
+  { section: "medications", label: "Medications & supplies", keys: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"], tables: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"] },
+  { section: "appointments", label: "Appointments", keys: ["appointments"], tables: ["appointments"] },
+  { section: "journal", label: "Journal & check-ins", keys: ["journalEntries", "checkIns"], tables: ["journalEntries", "checkIns"] },
+  { section: "goals", label: "Goals", keys: ["goals"], tables: ["goals"] },
+  { section: "health", label: "Health & body records", keys: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"], tables: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"] },
+  { section: "voiceAndPresentation", label: "Voice & presentation", keys: ["voiceGoals", "voiceSessions", "presentationEntries"], tables: ["voiceGoals", "voiceSessions", "presentationEntries"] },
+  { section: "euphoriaAndSocial", label: "Euphoria & social transition", keys: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"], tables: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"] },
+  { section: "budget", label: "Budget", keys: ["budgetEntries", "budgetGoals"], tables: ["budgetEntries", "budgetGoals"] },
+  { section: "savedLinks", label: "Saved links", keys: ["privateLinks"], tables: ["privateLinks"] },
+  { section: "supportMap", label: "Personal Support Map", keys: ["supportMapEntries"], tables: ["supportMapEntries"] },
+  { section: "intimacy", label: "Intimacy & wellbeing", keys: ["intimacyEntries"], tables: ["intimacyEntries"] },
+];
+
+function importRows(payload: Record<string, unknown>, key: string): Array<Record<string, unknown>> {
+  const value = payload[key];
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
+}
+
+// A conservative match only used to flag a likely duplicate in the preview.
+// Import itself never overwrites an existing row: exact ID collisions are skipped.
+function importFingerprint(table: string, row: Record<string, unknown>): string {
+  const fields: Record<string, string[]> = {
+    medications: ["name", "route"],
+    appointments: ["title", "appointmentAt"],
+    journalEntries: ["bodyText", "createdAt"],
+    weightEntries: ["date", "weightGrams"],
+    goals: ["title"],
+    supportMapEntries: ["name", "type"],
+  };
+  const keys = fields[table] ?? ["id"];
+  return keys.map((key) => String(row[key] ?? "")).join("\u0000").toLocaleLowerCase();
+}
+
+export async function previewBlossomImport(payload: Record<string, unknown>): Promise<BlossomImportPreview> {
+  let invalidRows = 0;
+  const sections = await Promise.all(IMPORT_TABLES.map(async (definition) => {
+    let incoming = 0;
+    let likelyDuplicates = 0;
+    for (let index = 0; index < definition.keys.length; index += 1) {
+      const rows = importRows(payload, definition.keys[index]);
+      incoming += rows.length;
+      invalidRows += (Array.isArray(payload[definition.keys[index]]) ? (payload[definition.keys[index]] as unknown[]).length : 0) - rows.length;
+      const existing = await db.table(definition.tables[index]).toArray() as Record<string, unknown>[];
+      const existingFingerprints = new Set(existing.map((row) => importFingerprint(definition.tables[index], row)));
+      likelyDuplicates += rows.filter((row) => existing.some((current) => current.id === row.id) || existingFingerprints.has(importFingerprint(definition.tables[index], row))).length;
+    }
+    return { section: definition.section, label: definition.label, incoming, likelyDuplicates };
+  }));
+  return { sections: sections.filter((section) => section.incoming > 0), invalidRows };
+}
+
+export async function mergeBlossomImport(payload: Record<string, unknown>, sections: BlossomImportSection[]): Promise<{ imported: number; skipped: number }> {
+  let imported = 0;
+  let skipped = 0;
+  for (const definition of IMPORT_TABLES) {
+    if (!sections.includes(definition.section)) continue;
+    for (let index = 0; index < definition.keys.length; index += 1) {
+      const table = db.table(definition.tables[index]);
+      const existingIds = new Set((await table.toCollection().primaryKeys()).map(String));
+      const rows = importRows(payload, definition.keys[index])
+        .filter((row) => typeof row.id === "string")
+        .map((row) => hydrateImportedRow(definition.tables[index], row));
+      const fresh = rows.filter((row) => !existingIds.has(String(row.id)));
+      skipped += rows.length - fresh.length;
+      if (fresh.length > 0) {
+        await table.bulkAdd(fresh);
+        imported += fresh.length;
+      }
+    }
+  }
+  return { imported, skipped };
+}
+
+// Binary media is never in a JSON export. Restore the expected local-only
+// fields as null rather than leaving malformed records for a screen to trip on.
+function hydrateImportedRow(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  const hydrated = { ...row };
+  if (table === "presentationEntries" || table === "bodyEntries" || table === "euphoriaEntries") {
+    delete hydrated.hasPhoto;
+    hydrated.photo ??= null;
+  }
+  if (table === "voiceSessions") {
+    delete hydrated.hasRecording;
+    hydrated.recording ??= null;
+  }
+  if (table === "appointments") {
+    hydrated.builderData ??= emptyAppointmentBuilderData();
+    hydrated.reminderMinutesBefore ??= null;
+    hydrated.outcomeNote ??= null;
+    hydrated.rescheduledFrom ??= null;
+  }
+  if (table === "medications") hydrated.activeSupplyId ??= null;
+  return hydrated;
 }
 
 export async function deleteAllData(): Promise<void> {
@@ -2458,6 +3163,7 @@ export async function deleteAllData(): Promise<void> {
       db.careSupplyAdjustments,
       db.appointments,
       db.journalEntries,
+      db.intimacyEntries,
       db.euphoriaEntries,
       db.socialTransitionPeople,
       db.socialTransitionPlans,
@@ -2465,6 +3171,7 @@ export async function deleteAllData(): Promise<void> {
       db.checkIns,
       db.goals,
       db.privateLinks,
+      db.supportMapEntries,
       db.safetyCheckIns,
       db.budgetEntries,
       db.budgetGoals,
@@ -2473,6 +3180,8 @@ export async function deleteAllData(): Promise<void> {
       db.voiceSessions,
       db.presentationEntries,
       db.bodyEntries,
+      db.weightEntries,
+      db.calorieEntries,
       db.notifiedReminders,
       db.syncOutbox,
       db.syncMeta,
@@ -2491,6 +3200,7 @@ export async function deleteAllData(): Promise<void> {
         db.careSupplyAdjustments.clear(),
         db.appointments.clear(),
         db.journalEntries.clear(),
+        db.intimacyEntries.clear(),
         db.euphoriaEntries.clear(),
         db.socialTransitionPeople.clear(),
         db.socialTransitionPlans.clear(),
@@ -2498,6 +3208,7 @@ export async function deleteAllData(): Promise<void> {
         db.checkIns.clear(),
         db.goals.clear(),
         db.privateLinks.clear(),
+        db.supportMapEntries.clear(),
         db.safetyCheckIns.clear(),
         db.budgetEntries.clear(),
         db.budgetGoals.clear(),
@@ -2506,6 +3217,8 @@ export async function deleteAllData(): Promise<void> {
         db.voiceSessions.clear(),
         db.presentationEntries.clear(),
         db.bodyEntries.clear(),
+        db.weightEntries.clear(),
+        db.calorieEntries.clear(),
         db.notifiedReminders.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),

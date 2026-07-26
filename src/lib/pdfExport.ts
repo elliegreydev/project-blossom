@@ -7,6 +7,7 @@ import type {
   CheckIn,
   Goal,
   JournalEntry,
+  IntimacyEntry,
   JourneyEvent,
   Medication,
   MedicationLog,
@@ -15,6 +16,7 @@ import type {
   PresentationEntry,
   PrivateLink,
   Profile,
+  SupportMapEntry,
   VoiceGoal,
   VoiceSession,
 } from "./db";
@@ -49,6 +51,8 @@ interface ExportShape {
   voiceSessions: Array<Omit<VoiceSession, "recording"> & { hasRecording: boolean }>;
   presentationEntries: Array<Omit<PresentationEntry, "photo"> & { hasPhoto: boolean }>;
   bodyEntries: Array<Omit<BodyEntry, "photo"> & { hasPhoto: boolean }>;
+  supportMapEntries?: SupportMapEntry[];
+  intimacyEntries?: IntimacyEntry[];
 }
 
 function fmtDate(iso: string | null | undefined): string {
@@ -236,7 +240,7 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
   d.coverHeader(
     `Your data, exported ${fmtDateTime(data.exportedAt)}${data.profile.displayName ? ` for ${data.profile.displayName}` : ""}`
   );
-  d.body("This is a plain-language copy of everything you've added to Blossom. Photos aren't included here - they stay local-only and never leave your device, including in this export.");
+  d.body("This is a plain-language copy of the Blossom sections selected for this export. Photos and recordings aren't included here - they stay local-only and never leave your device, including in this export.");
 
   const medNameById = new Map(data.medications.map((m) => [m.id, m.name]));
 
@@ -440,6 +444,32 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.meta(link.url);
     d.body(link.note ?? "");
     d.spacer(4);
+  }
+
+  // Personal Support Map is intentionally absent unless it was chosen in the
+  // export builder. It is sensitive local information, not a default export.
+  if (data.supportMapEntries && data.supportMapEntries.length > 0) {
+    d.heading("Personal Support Map");
+    for (const entry of data.supportMapEntries) {
+      d.subheading(entry.name);
+      d.meta([entry.type, entry.area ?? "", entry.labels.join(", ")].filter(Boolean).join(" Â· "));
+      d.meta(entry.contact ?? "");
+      d.body(entry.note ?? "");
+      d.spacer(4);
+    }
+  }
+
+  if (data.intimacyEntries && data.intimacyEntries.length > 0) {
+    d.heading("Intimacy & wellbeing");
+    for (const entry of data.intimacyEntries) {
+      d.subheading(entry.label ?? "Private entry");
+      d.meta([fmtDate(entry.date), entry.time ?? "", entry.datePrecision === "approximate" ? "Approximate date" : "", entry.feeling ?? ""].filter(Boolean).join(" Â· "));
+      if (entry.tags.length > 0) d.meta(entry.tags.join(", "));
+      d.body(entry.protectionNote ?? "");
+      d.body(entry.aftercareNote ?? "");
+      d.body(entry.privateNote ?? "");
+      d.spacer(4);
+    }
   }
 
   return d.finish();

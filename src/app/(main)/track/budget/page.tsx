@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddBudgetEntrySheet from "@/components/AddBudgetEntrySheet";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import {
   db,
   deleteBudgetEntry,
@@ -43,10 +45,12 @@ export default function BudgetPage() {
   const [addingGoal, setAddingGoal] = useState(false);
   const [savingsInputFor, setSavingsInputFor] = useState<string | null>(null);
   const [savingsAmount, setSavingsAmount] = useState("");
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (entries === undefined || goals === undefined) return null;
 
-  const visibleEntries = entries.filter((e) => !activeCategory || e.category === activeCategory);
+  const visibleGoals = goals.filter((goal) => !isPendingRemoval(goal.id));
+  const visibleEntries = entries.filter((entry) => !isPendingRemoval(entry.id) && (!activeCategory || entry.category === activeCategory));
   const total = visibleEntries.reduce((sum, e) => sum + e.amount, 0);
 
   async function createGoal() {
@@ -77,20 +81,20 @@ export default function BudgetPage() {
 
       <div className={styles.section} style={{ borderTop: "none", paddingTop: 0 }}>
         <div className={styles.sectionTitle}>Savings goals</div>
-        {goals.length === 0 && (
+        {visibleGoals.length === 0 && (
           <div className={styles.empty}>
             <div className={styles.emptyTitle}>No goals yet</div>
             <div className={styles.emptySubtitle}>Set one whenever it feels useful - a surgery fund, a legal fee pot, anything.</div>
           </div>
         )}
         <div className={styles.list}>
-          {goals.map((goal) => {
+          {visibleGoals.map((goal) => {
             const pct = Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100));
             return (
               <div key={goal.id} className={styles.item}>
                 <div className={styles.itemRow}>
                   <span className={styles.itemTitle}>{goal.label}</span>
-                  <button type="button" className={styles.linkButton} onClick={() => deleteBudgetGoal(goal.id)}>
+                  <button type="button" className={styles.linkButton} onClick={() => stageRemoval(goal.id, "This savings goal", () => deleteBudgetGoal(goal.id))}>
                     Remove
                   </button>
                 </div>
@@ -189,7 +193,7 @@ export default function BudgetPage() {
                   </div>
                   {entry.description && <span className={styles.itemMeta}>{entry.description}</span>}
                 </button>
-                <button type="button" className={styles.linkButton} onClick={() => deleteBudgetEntry(entry.id)}>
+                <button type="button" className={styles.linkButton} onClick={() => stageRemoval(entry.id, "This expense", () => deleteBudgetEntry(entry.id))}>
                   Remove
                 </button>
               </div>
@@ -210,6 +214,7 @@ export default function BudgetPage() {
           }}
         />
       )}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }

@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import AddAppointmentSheet from "@/components/AddAppointmentSheet";
-import { db, deleteAppointment, type Appointment } from "@/lib/db";
+import AppointmentWorkspaceSheet from "@/components/AppointmentWorkspaceSheet";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
+import { addGoal, db, deleteAppointment, type Appointment } from "@/lib/db";
 import { downloadIcs } from "@/lib/ics";
 import styles from "@/components/feature.module.css";
 
@@ -23,12 +26,15 @@ export default function CalendarPage() {
   const appts = useLiveQuery(() => db.appointments.orderBy("appointmentAt").toArray(), []);
   const [addOpen, setAddOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [workspaceAppointment, setWorkspaceAppointment] = useState<Appointment | null>(null);
+  const [draftAppointmentTitle, setDraftAppointmentTitle] = useState("");
   const [now] = useState(() => Date.now());
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (appts === undefined) return null;
 
-  const upcoming = appts.filter((a) => new Date(a.appointmentAt).getTime() >= now);
-  const past = appts.filter((a) => new Date(a.appointmentAt).getTime() < now).reverse();
+  const upcoming = appts.filter((a) => !isPendingRemoval(a.id) && new Date(a.appointmentAt).getTime() >= now);
+  const past = appts.filter((a) => !isPendingRemoval(a.id) && new Date(a.appointmentAt).getTime() < now).reverse();
 
   function slugForFilename(title: string): string {
     return title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "appointment";
@@ -47,6 +53,9 @@ export default function CalendarPage() {
           {a.preparationNote && <div className={styles.itemBody}>{a.preparationNote}</div>}
         </button>
         <div className={styles.doseActions}>
+          <button type="button" className={styles.linkButton} onClick={() => setWorkspaceAppointment(a)}>
+            Prepare
+          </button>
           <button
             type="button"
             className={styles.linkButton}
@@ -54,7 +63,7 @@ export default function CalendarPage() {
           >
             Add to calendar
           </button>
-          <button type="button" className={styles.linkButton} onClick={() => deleteAppointment(a.id)}>
+          <button type="button" className={styles.linkButton} onClick={() => stageRemoval(a.id, "This appointment", () => deleteAppointment(a.id))}>
             Remove
           </button>
         </div>
@@ -106,12 +115,16 @@ export default function CalendarPage() {
       {(addOpen || editingAppointment) && (
         <AddAppointmentSheet
           appointment={editingAppointment}
+          initialTitle={draftAppointmentTitle}
           onClose={() => {
             setAddOpen(false);
             setEditingAppointment(null);
+            setDraftAppointmentTitle("");
           }}
         />
       )}
+      {workspaceAppointment && <AppointmentWorkspaceSheet appointment={workspaceAppointment} onClose={() => setWorkspaceAppointment(null)} onCreateGoal={async (title) => { await addGoal({ title, category: null, target: null }); }} onCreateAppointment={(title) => { setWorkspaceAppointment(null); setDraftAppointmentTitle(title); setAddOpen(true); }} />}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }

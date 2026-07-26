@@ -1,0 +1,117 @@
+.privacyNote {
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 42%, var(--border));
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--lavender) 8%, var(--bg-raised));
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search {
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  font: inherit;
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--lavender);
+}
+
+.filterGroup,
+.pills,
+.entryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.filter {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter.active {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.entry {
+  gap: 9px;
+}
+
+.entryButton {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.favourite {
+  min-width: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.favourite:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--lavender) 14%, transparent);
+}
+
+.pill {
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg));
+  font-size: 12px;
+}
+
+.pill.avoid {
+  border: 1px solid color-mix(in srgb, var(--pink) 40%, var(--border));
+  background: color-mix(in srgb, var(--pink) 12%, var(--bg));
+}
+
+.review {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.reviewDue {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.entryActions {
+  margin-top: -4px;
+}

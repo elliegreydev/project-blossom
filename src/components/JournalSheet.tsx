@@ -3,17 +3,18 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addJournalEntry } from "@/lib/db";
+import { addJournalEntry, updateJournalEntry, type JournalEntry } from "@/lib/db";
 
-export default function JournalSheet({ onClose }: { onClose: () => void }) {
+export default function JournalSheet({ entry, onClose }: { entry?: JournalEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(entry?.bodyText ?? "");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!body.trim()) return;
     setSaving(true);
-    await addJournalEntry(body.trim());
+    if (entry) await updateJournalEntry(entry.id, body.trim());
+    else await addJournalEntry(body.trim());
     setSaving(false);
     onClose();
   }
@@ -22,7 +23,7 @@ export default function JournalSheet({ onClose }: { onClose: () => void }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="journal-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="journal-sheet-title" className={styles.title}>New journal entry</h2>
+        <h2 id="journal-sheet-title" className={styles.title}>{entry ? "Edit journal entry" : "New journal entry"}</h2>
         <div className={styles.field}>
           <textarea
             aria-label="Journal entry"
@@ -44,7 +45,7 @@ export default function JournalSheet({ onClose }: { onClose: () => void }) {
             disabled={!body.trim() || saving}
             onClick={save}
           >
-            Save entry
+            {entry ? "Save changes" : "Save entry"}
           </button>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import AddGoalSheet from "@/components/AddGoalSheet";
 import CompleteGoalSheet from "@/components/CompleteGoalSheet";
+import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { db, updateGoal, type Goal, type JourneyCategory } from "@/lib/db";
 import styles from "@/components/feature.module.css";
 import local from "./goals.module.css";
@@ -23,11 +25,13 @@ export default function GoalsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [completing, setCompleting] = useState<Goal | null>(null);
+  const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (goals === undefined) return null;
 
-  const active = goals.filter((g) => g.status === "active");
-  const done = goals.filter((g) => g.status === "completed");
+  const visibleGoals = goals.filter((goal) => !isPendingRemoval(goal.id));
+  const active = visibleGoals.filter((g) => g.status === "active");
+  const done = visibleGoals.filter((g) => g.status === "completed");
 
   const byArea = new Map<JourneyCategory, Goal[]>();
   for (const goal of [...active, ...done]) {
@@ -124,7 +128,7 @@ export default function GoalsPage() {
                       </button>
                       <button
                         className={styles.linkButton}
-                        onClick={() => updateGoal(goal.id, { status: "archived" })}
+                        onClick={() => stageRemoval(goal.id, "This goal", () => updateGoal(goal.id, { status: "archived" }))}
                       >
                         Archive
                       </button>
@@ -183,6 +187,7 @@ export default function GoalsPage() {
           onClose={() => setCompleting(null)}
         />
       )}
+      {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );
 }
