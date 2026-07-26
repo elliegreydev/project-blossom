@@ -33,6 +33,42 @@ function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
   return new Date(entry.eventDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Anniversaries within the next ANNIVERSARY_WINDOW_DAYS, including today.
+// Only entries with an exact date and at least one completed year qualify -
+// no "0 years since" for something added today. Mirrors the day/month
+// matching aurora.ts's onThisDayMemory uses, just looking forward instead
+// of only at today.
+const ANNIVERSARY_WINDOW_DAYS = 45;
+const ANNIVERSARY_LIMIT = 6;
+
+interface Anniversary {
+  id: string;
+  title: string;
+  years: number;
+  daysUntil: number;
+}
+
+function upcomingAnniversaries(entries: (Milestone | JourneyEvent)[], now: Date): Anniversary[] {
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return entries
+    .filter((entry) => entry.datePrecision === "exact" && entry.eventDate)
+    .map((entry) => {
+      // Parse "YYYY-MM-DD" as local calendar components directly, not via
+      // `new Date(string)` (which parses date-only strings as UTC midnight -
+      // reading .getMonth()/.getDate() back in local time can then land on
+      // the wrong calendar day depending on the device's timezone offset).
+      const [eventYear, eventMonth, eventDay] = (entry.eventDate as string).split("-").map(Number);
+      let next = new Date(now.getFullYear(), eventMonth - 1, eventDay);
+      if (next < todayStart) next = new Date(now.getFullYear() + 1, eventMonth - 1, eventDay);
+      const daysUntil = Math.round((next.getTime() - todayStart.getTime()) / 86400000);
+      const years = next.getFullYear() - eventYear;
+      return { id: entry.id, title: entry.title, years, daysUntil };
+    })
+    .filter((a) => a.years >= 1 && a.daysUntil <= ANNIVERSARY_WINDOW_DAYS)
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+    .slice(0, ANNIVERSARY_LIMIT);
+}
+
 export default function JourneyPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const milestones = useLiveQuery(() => db.milestones.toArray(), []);
@@ -41,6 +77,8 @@ export default function JourneyPage() {
   const { pendingRemoval, stageRemoval, undoRemoval, isPendingRemoval } = useUndoableRemoval();
 
   if (!profile || milestones === undefined || journeyEvents === undefined) return null;
+
+  const anniversaries = upcomingAnniversaries([...milestones, ...journeyEvents], new Date());
 
   const visibleCategories = (Object.keys(CATEGORY_LABELS) as JourneyCategory[]).filter((cat) => {
     if (cat === "medical") return profile.enabledModules.includes("medication");
@@ -66,6 +104,21 @@ export default function JourneyPage() {
         <h1 className={styles.title}>Journey</h1>
         <p className={styles.subtitle}>A quiet timeline of the moments that matter to you.</p>
       </header>
+
+      {anniversaries.length > 0 && (
+        <div className={styles.anniversaries}>
+          {anniversaries.map((a) => (
+            <div key={a.id} className={styles.anniversaryCard}>
+              <span className={styles.anniversaryEyebrow}>
+                {a.daysUntil === 0 ? "Today" : `In ${a.daysUntil} day${a.daysUntil === 1 ? "" : "s"}`}
+              </span>
+              <span className={styles.anniversaryTitle}>
+                {a.years} year{a.years === 1 ? "" : "s"} since {a.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {visibleCategories.length > 0 && (
         <div className={styles.filters} role="group" aria-label="Filter journey by category">
