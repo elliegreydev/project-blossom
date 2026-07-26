@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/db";
 import styles from "./QuickAdd.module.css";
 import AddMilestoneSheet from "./AddMilestoneSheet";
 import AddMedicationSheet from "./AddMedicationSheet";
@@ -28,6 +30,8 @@ export default function QuickAdd() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const medications = useLiveQuery(() => db.medications.toArray(), []);
+  const appointments = useLiveQuery(() => db.appointments.toArray(), []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -122,8 +126,8 @@ export default function QuickAdd() {
       )}
 
       {sheet === "milestone" && <AddMilestoneSheet onClose={() => setSheet(null)} />}
-      {sheet === "medication" && <AddMedicationSheet onClose={() => setSheet(null)} />}
-      {sheet === "appointment" && <AddAppointmentSheet onClose={() => setSheet(null)} />}
+      {sheet === "medication" && <AddMedicationSheet existingMedications={medications ?? []} onClose={() => setSheet(null)} />}
+      {sheet === "appointment" && <AddAppointmentSheet existingAppointments={appointments ?? []} onClose={() => setSheet(null)} />}
       {sheet === "journal" && <JournalSheet onClose={() => setSheet(null)} />}
       {sheet === "bloodTest" && <AddBloodTestSheet onClose={() => setSheet(null)} />}
       {sheet === "voiceSession" && <LogVoiceSessionSheet onClose={() => setSheet(null)} />}

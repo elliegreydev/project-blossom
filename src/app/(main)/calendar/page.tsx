@@ -116,6 +116,7 @@ export default function CalendarPage() {
         <AddAppointmentSheet
           appointment={editingAppointment}
           initialTitle={draftAppointmentTitle}
+          existingAppointments={appts!}
           onClose={() => {
             setAddOpen(false);
             setEditingAppointment(null);

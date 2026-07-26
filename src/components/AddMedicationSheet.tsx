@@ -30,9 +30,11 @@ function todayLocalDateKey(): string {
 
 export default function AddMedicationSheet({
   medication,
+  existingMedications,
   onClose,
 }: {
   medication?: Medication | null;
+  existingMedications: Medication[];
   onClose: () => void;
 }) {
   const dialogRef = useSheetDialog(onClose);
@@ -48,6 +50,13 @@ export default function AddMedicationSheet({
   const [intervalDays, setIntervalDays] = useState(medication?.frequency?.intervalDays ?? 5);
   const [anchorDate, setAnchorDate] = useState(medication?.frequency?.anchorDate ?? todayLocalDateKey());
   const [saving, setSaving] = useState(false);
+  const [duplicateAcknowledged, setDuplicateAcknowledged] = useState(false);
+
+  // Only checked against active medications - re-adding something under the
+  // same name after stopping and restarting a course isn't a mistake.
+  const duplicate = existingMedications.find(
+    (m) => m.id !== medication?.id && m.active && m.name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
 
   function toggleDay(d: number) {
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
@@ -59,6 +68,10 @@ export default function AddMedicationSheet({
 
   async function save() {
     if (!name.trim()) return;
+    if (duplicate && !duplicateAcknowledged) {
+      setDuplicateAcknowledged(true);
+      return;
+    }
     setSaving(true);
     const input = {
       name: name.trim(),
@@ -238,6 +251,12 @@ export default function AddMedicationSheet({
           </>
         )}
 
+        {duplicate && duplicateAcknowledged && (
+          <p className={styles.fieldHint} style={{ color: "var(--pink)" }}>
+            You already have an active medication called &ldquo;{duplicate.name}&rdquo;. Add anyway, or cancel to go back and check.
+          </p>
+        )}
+
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>
             Cancel
@@ -248,7 +267,7 @@ export default function AddMedicationSheet({
             disabled={!name.trim() || saving}
             onClick={save}
           >
-            {medication ? "Save changes" : "Add medication"}
+            {duplicate && duplicateAcknowledged ? "Add anyway" : medication ? "Save changes" : "Add medication"}
           </button>
         </div>
       </div>

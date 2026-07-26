@@ -414,6 +414,7 @@ export default function MedicationPage() {
       {(sheetOpen || editingMedication) && (
         <AddMedicationSheet
           medication={editingMedication}
+          existingMedications={allMeds!}
           onClose={() => {
             setSheetOpen(false);
             setEditingMedication(null);

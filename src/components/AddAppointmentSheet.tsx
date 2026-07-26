@@ -21,13 +21,20 @@ function toLocalDateTimeParts(iso: string): { date: string; time: string } {
   return { date, time };
 }
 
+// Same title (trimmed, case-insensitive) within a day of the chosen date -
+// close enough to be worth a heads-up, loose enough not to flag a genuinely
+// separate follow-up appointment a week later.
+const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export default function AddAppointmentSheet({
   appointment,
   initialTitle,
+  existingAppointments,
   onClose,
 }: {
   appointment?: Appointment | null;
   initialTitle?: string;
+  existingAppointments: Appointment[];
   onClose: () => void;
 }) {
   const dialogRef = useSheetDialog(onClose);
@@ -41,9 +48,25 @@ export default function AddAppointmentSheet({
     appointment ? appointment.reminderMinutesBefore : 60
   );
   const [saving, setSaving] = useState(false);
+  const [duplicateAcknowledged, setDuplicateAcknowledged] = useState(false);
+
+  const chosenAt = date ? new Date(`${date}T${time || "09:00"}`).getTime() : null;
+  const duplicate =
+    chosenAt !== null
+      ? existingAppointments.find(
+          (a) =>
+            a.id !== appointment?.id &&
+            a.title.trim().toLowerCase() === title.trim().toLowerCase() &&
+            Math.abs(new Date(a.appointmentAt).getTime() - chosenAt) <= DUPLICATE_WINDOW_MS
+        )
+      : undefined;
 
   async function save() {
     if (!title.trim() || !date) return;
+    if (duplicate && !duplicateAcknowledged) {
+      setDuplicateAcknowledged(true);
+      return;
+    }
     setSaving(true);
     const appointmentAt = new Date(`${date}T${time || "09:00"}`).toISOString();
     const input = {
@@ -125,6 +148,12 @@ export default function AddAppointmentSheet({
           </div>
         </div>
 
+        {duplicate && duplicateAcknowledged && (
+          <p className={styles.fieldHint} style={{ color: "var(--pink)" }}>
+            You already have &ldquo;{duplicate.title}&rdquo; around {new Date(duplicate.appointmentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Add anyway, or cancel to go back and check.
+          </p>
+        )}
+
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>
             Cancel
@@ -135,7 +164,7 @@ export default function AddAppointmentSheet({
             disabled={!title.trim() || !date || saving}
             onClick={save}
           >
-            {appointment ? "Save changes" : "Add appointment"}
+            {duplicate && duplicateAcknowledged ? "Add anyway" : appointment ? "Save changes" : "Add appointment"}
           </button>
         </div>
       </div>
