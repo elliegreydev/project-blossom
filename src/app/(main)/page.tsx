@@ -143,6 +143,7 @@ export default function HomePage() {
     if (auroraSuggestion.kind === "medication") return "Aurora noticed a schedule or supply detail you recorded on this device.";
     if (auroraSuggestion.kind === "appointment") return "Aurora noticed an appointment you recorded on this device.";
     if (auroraSuggestion.kind === "goal") return "Aurora noticed a goal you chose to keep in Blossom.";
+    if (auroraSuggestion.kind === "backup") return "A quiet, occasional reminder based on how long it's been since your last backup export.";
     return "Aurora noticed something you recorded in Blossom. This suggestion is made locally and does not use AI or send your records anywhere.";
   }
 

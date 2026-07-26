@@ -3,16 +3,20 @@
 import { ChangeEvent, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ScreenHeader from "@/components/ScreenHeader";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   DEFAULT_DATA_EXPORT_SELECTION,
   addAppointment,
   addJournalEntry,
   addMedication,
   addWeightEntry,
+  db,
   deleteAllData,
   exportSelectedData,
   mergeBlossomImport,
   previewBlossomImport,
+  updateProfile,
+  LOCAL_PROFILE_ID,
   type BlossomImportPreview,
   type BlossomImportSection,
   type DataExportSection,
@@ -45,6 +49,14 @@ const CSV_TEMPLATES: Record<CsvKind, { label: string; filename: string; body: st
   weight: { label: "Weight", filename: "blossom-weight-template.csv", body: "date,weight_kg,note\n2026-08-14,70.2,Optional note\n" },
   journal: { label: "Journal", filename: "blossom-journal-template.csv", body: "body_text\nA private note I want to bring into Blossom\n" },
 };
+
+function backupStatusLabel(lastBackupExportedAt: string | null): string {
+  if (!lastBackupExportedAt) return "You haven't exported a backup yet.";
+  const days = Math.floor((Date.now() - new Date(lastBackupExportedAt).getTime()) / 86400000);
+  if (days <= 0) return "Last backed up today.";
+  if (days === 1) return "Last backed up yesterday.";
+  return `Last backed up ${days} days ago.`;
+}
 
 function download(name: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));
@@ -82,6 +94,7 @@ function isRoute(value: string): value is MedicationRoute {
 
 export default function DataSettingsPage() {
   const router = useRouter();
+  const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const jsonInput = useRef<HTMLInputElement>(null);
   const csvInput = useRef<HTMLInputElement>(null);
   const [selection, setSelection] = useState<DataExportSelection>(DEFAULT_DATA_EXPORT_SELECTION);
@@ -110,6 +123,7 @@ export default function DataSettingsPage() {
       const data = await exportSelectedData(selection);
       if (kind === "json") {
         download(`blossom-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
+        await updateProfile({ lastBackupExportedAt: new Date().toISOString() });
       } else {
         const { buildDataExportPdf } = await import("@/lib/pdfExport");
         buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]).save(`blossom-export-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -221,6 +235,7 @@ export default function DataSettingsPage() {
           <button type="button" className={styles.primaryButton} disabled={generating !== null || selectedCount === 0} onClick={() => void makeExport("pdf")}>{generating === "pdf" ? "Preparing Blossom PDF…" : "Export Blossom PDF"}</button>
           <button type="button" className={styles.tertiaryButton} disabled={generating !== null || selectedCount === 0} onClick={() => void makeExport("json")}>{generating === "json" ? "Preparing backup…" : "Export backup JSON"}</button>
         </div>
+        {profile && <p className={styles.hint}>{backupStatusLabel(profile.lastBackupExportedAt)}</p>}
       </div>
 
       <div className={styles.field}>

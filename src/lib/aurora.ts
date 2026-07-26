@@ -26,7 +26,8 @@ export type AuroraSuggestionKind =
   | "journey"
   | "voice"
   | "presentation"
-  | "memory";
+  | "memory"
+  | "backup";
 
 export interface AuroraSuggestion {
   key: string;
@@ -41,7 +42,7 @@ export interface AuroraSuggestion {
 
 export interface AuroraContext {
   now: Date;
-  profile: Pick<Profile, "auroraMode" | "enabledModules" | "createdAt" | "onboardingCompletedAt">;
+  profile: Pick<Profile, "auroraMode" | "enabledModules" | "createdAt" | "onboardingCompletedAt" | "lastBackupExportedAt">;
   milestones: Milestone[];
   journeyEvents: JourneyEvent[];
   medications: Medication[];
@@ -493,6 +494,36 @@ function onThisDayMemory(context: AuroraContext): Candidate | null {
   };
 }
 
+// A quiet, occasional nudge to make a backup - never urgent, so it waits
+// until the account is at least a month old (no point nagging a brand new,
+// near-empty profile) and only fires once every BACKUP_COOLDOWN_DAYS.
+const BACKUP_NUDGE_MIN_ACCOUNT_AGE_DAYS = 30;
+const BACKUP_NUDGE_STALE_AFTER_DAYS = 90;
+const BACKUP_NUDGE_COOLDOWN_DAYS = 30;
+
+function backupReminder(context: AuroraContext): Candidate | null {
+  const accountAgeDays = Math.floor((context.now.getTime() - new Date(context.profile.createdAt).getTime()) / 86400000);
+  if (accountAgeDays < BACKUP_NUDGE_MIN_ACCOUNT_AGE_DAYS) return null;
+
+  const { lastBackupExportedAt } = context.profile;
+  const daysSinceBackup = lastBackupExportedAt
+    ? Math.floor((context.now.getTime() - new Date(lastBackupExportedAt).getTime()) / 86400000)
+    : null;
+  if (daysSinceBackup !== null && daysSinceBackup < BACKUP_NUDGE_STALE_AFTER_DAYS) return null;
+
+  return {
+    key: "backup_reminder",
+    kind: "backup",
+    eyebrow: "A quiet suggestion",
+    title: daysSinceBackup === null ? "You've never made a backup" : "It's been a while since your last backup",
+    message: "A quick export keeps a copy of your data just in case - entirely optional, and only ever created on this device.",
+    actionLabel: "Open Data controls",
+    href: "/settings/data",
+    priority: 15,
+    cooldownDays: BACKUP_NUDGE_COOLDOWN_DAYS,
+  };
+}
+
 export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion | null {
   const mode = context.profile.auroraMode;
   if (mode === "disabled" || mode === "quiet") return null;
@@ -510,6 +541,7 @@ export function selectAuroraSuggestion(context: AuroraContext): AuroraSuggestion
     presentationWantToTry(context),
     readyTimeCapsule(context),
     onThisDayMemory(context),
+    backupReminder(context),
   ]
     .filter((candidate): candidate is Candidate => candidate !== null)
     .filter(

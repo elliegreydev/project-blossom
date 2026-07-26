@@ -154,6 +154,10 @@ export interface Profile {
   weightReminderTime: string;
   calorieTrackingEnabled: boolean;
   calorieTarget: number | null;
+  // When a JSON backup export last completed on this device (see Settings >
+  // Data). Device-local, same treatment as timezone - a backup made from one
+  // device says nothing about whether another device has an up to date copy.
+  lastBackupExportedAt: string | null;
 }
 
 export type DatePrecision = "exact" | "approximate" | "none";
@@ -1715,6 +1719,7 @@ export const DEFAULT_PROFILE: Profile = {
   weightReminderTime: "10:00",
   calorieTrackingEnabled: false,
   calorieTarget: null,
+  lastBackupExportedAt: null,
 };
 
 export async function getOrCreateProfile(): Promise<Profile> {

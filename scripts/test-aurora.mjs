@@ -11,6 +11,9 @@ function context(overrides = {}) {
       enabledModules: ["medication", "appointments", "journal", "goals", "journey"],
       createdAt: "2026-06-01T12:00:00.000Z",
       onboardingCompletedAt: "2026-06-01T12:00:00.000Z",
+      // Recent enough that the base fixture doesn't also trigger the backup
+      // reminder nudge - tests that specifically want it override this.
+      lastBackupExportedAt: "2026-07-01T12:00:00.000Z",
     },
     milestones: [],
     journeyEvents: [],
@@ -229,5 +232,26 @@ assert.equal(
   false,
   "presentation copy must never frame this as inactivity"
 );
+
+// Backup reminder - never fires for a brand new account, fires when never
+// backed up (once past the minimum account age), and stops firing again
+// once a recent backup is recorded.
+// enabledModules: [] isolates the backup nudge from every other candidate
+// (they all gate on a specific module), since it's the lowest-priority
+// suggestion and would otherwise lose to almost anything else.
+const tooNewForBackupNudge = selectAuroraSuggestion(
+  context({ profile: { ...context().profile, enabledModules: [], createdAt: "2026-07-10T12:00:00.000Z", lastBackupExportedAt: null } })
+);
+assert.notEqual(tooNewForBackupNudge?.kind, "backup", "a brand new account should not be nudged to back up yet");
+
+const neverBackedUp = selectAuroraSuggestion(
+  context({ profile: { ...context().profile, enabledModules: [], lastBackupExportedAt: null } })
+);
+assert.equal(neverBackedUp?.kind, "backup", "an account past the minimum age that has never backed up should be nudged");
+
+const recentlyBackedUp = selectAuroraSuggestion(
+  context({ profile: { ...context().profile, enabledModules: [], lastBackupExportedAt: "2026-07-10T12:00:00.000Z" } })
+);
+assert.notEqual(recentlyBackedUp?.kind, "backup", "a recent backup should not still be nudged");
 
 console.log("Aurora rule tests passed");
