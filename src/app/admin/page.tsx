@@ -92,6 +92,12 @@ export default function AdminOverviewPage() {
             A retrospective record of what broke, the impact, and what changed as a result.
           </span>
         </Link>
+        <Link href="/admin/infra" className={styles.card}>
+          <span className={styles.cardTitle}>Infra & usage</span>
+          <span className={styles.cardDesc}>
+            Data volume and links to real Vercel/Supabase billing dashboards.
+          </span>
+        </Link>
         <Link href="/admin/resources" className={styles.card}>
           <span className={styles.cardTitle}>Support resources</span>
           <span className={styles.cardDesc}>
