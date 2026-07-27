@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Inter } from "next/font/google";
 import AccessibilityEffects from "@/components/AccessibilityEffects";
 import SyncCoordinator from "@/components/SyncCoordinator";
+import { SPLASH_SIZES, splashDims, splashMedia } from "@/lib/appleSplash";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -29,6 +30,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Blossom",
+    startupImage: SPLASH_SIZES.map((size) => ({
+      url: `/splash/${splashDims(size)}`,
+      media: splashMedia(size),
+    })),
   },
   formatDetection: { telephone: false },
 };

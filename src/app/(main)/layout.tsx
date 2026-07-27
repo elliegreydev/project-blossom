@@ -31,13 +31,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (!checkedOnboarding || !profile) {
     return (
       <main className={styles.loadingScreen} aria-live="polite" aria-label="Opening Blossom">
-        <div className={styles.loadingMark} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
+        <div className={styles.loadingMarkWrap}>
+          <div className={styles.loadingGlow} aria-hidden="true" />
+          <div className={styles.loadingMark} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
-        <p>Opening your space…</p>
+        <p className={styles.loadingWordmark}>Blossom</p>
+        <p className={styles.loadingStatus}>
+          Opening your space
+          <span className={styles.loadingDots} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </p>
       </main>
     );
   }
