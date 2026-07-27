@@ -11,9 +11,15 @@ import AppLockGate from "@/components/AppLockGate";
 import LocalReminderService from "@/components/LocalReminderService";
 import styles from "./layout.module.css";
 
+// Local Dexie reads resolve almost instantly, which made the loading
+// animation flash by unseen - this floor keeps it on screen long enough to
+// actually register as a moment, not a glitch.
+const MIN_LOADING_SCREEN_MS = 900;
+
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checkedOnboarding, setCheckedOnboarding] = useState(false);
+  const [minDurationElapsed, setMinDurationElapsed] = useState(false);
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
 
   useEffect(() => {
@@ -28,7 +34,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     void syncRegionResourcesCache();
   }, [router]);
 
-  if (!checkedOnboarding || !profile) {
+  useEffect(() => {
+    const timer = setTimeout(() => setMinDurationElapsed(true), MIN_LOADING_SCREEN_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!checkedOnboarding || !profile || !minDurationElapsed) {
     return (
       <main className={styles.loadingScreen} aria-live="polite" aria-label="Opening Blossom">
         <div className={styles.loadingMarkWrap}>
