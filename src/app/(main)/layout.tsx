@@ -14,7 +14,7 @@ import styles from "./layout.module.css";
 // Local Dexie reads resolve almost instantly, which made the loading
 // animation flash by unseen - this floor keeps it on screen long enough to
 // actually register as a moment, not a glitch.
-const MIN_LOADING_SCREEN_MS = 900;
+const MIN_LOADING_SCREEN_MS = 5000;
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
