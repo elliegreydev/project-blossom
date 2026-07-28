@@ -117,18 +117,25 @@ export default function TicketThreadPage({ params }: { params: Promise<{ ticketI
         )}
       </div>
 
-      <div className={styles.field}>
-        <textarea
-          className={styles.input}
-          style={{ minHeight: 80 }}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Reply…"
-        />
-        <button type="button" className={styles.primaryButton} style={{ width: "fit-content" }} disabled={sending || !draft.trim()} onClick={send}>
-          {sending ? "Sending…" : "Send"}
-        </button>
-      </div>
+      {ticket.status === "open" ? (
+        <div className={styles.field}>
+          <textarea
+            className={styles.input}
+            style={{ minHeight: 80 }}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Reply…"
+          />
+          <button type="button" className={styles.primaryButton} style={{ width: "fit-content" }} disabled={sending || !draft.trim()} onClick={send}>
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+      ) : (
+        <p className={styles.hint}>
+          This ticket has been marked resolved, so it&apos;s closed to new replies. If you still need
+          help, open a new ticket.
+        </p>
+      )}
     </div>
   );
 }
