@@ -84,7 +84,7 @@ export default function SettingsPage() {
       <div className={styles.title}>Settings</div>
 
       {(isBetaTester || isStaff) && (
-        <div className={styles.adminSection}>
+        <div className={styles.section}>
           <p className={styles.sectionLabel}>Beta</p>
           <div className={styles.group}>
             <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
@@ -97,61 +97,76 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className={styles.group}>
-        <Row href="/reminders" title="Reminders" meta="Everything coming up, in one place" />
-        <Row href="/search" title="Search" meta="Find anything you've added" />
-        <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
-        <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
-        <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
-        <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
-        <Row href="/settings/getting-started" title="Starting HRT safely" meta="Practical steps, not medical advice" />
-      </div>
-
-      <div className={styles.group}>
-        <Row href="/settings/notifications" title="Notifications" />
-        <Row
-          href="/settings/privacy"
-          title="Privacy & security"
-          meta={profile.appLockEnabled ? "App lock on" : undefined}
-        />
-        <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
-        <Row
-          href="/settings/safety-checkins"
-          title="Safety check-ins"
-          meta={profile.safetyCheckInsEnabled ? "On" : "Off - optional"}
-        />
-        <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
-        <Row href="/settings/bridge" title="Blossom Bridge" meta="Temporary links for people without an account" />
-        <Row href="/settings/support-map" title="Personal Support Map" meta="Private people, places and organisations" />
-      </div>
-
-      <div className={styles.group}>
-        <Row href="/settings/accessibility" title="Accessibility" />
-        <Row href="/settings/passport" title="Blossom Passport" meta="Build a document to share" />
-        <Row href="/settings/data" title="Data controls" />
-        <Row href="/settings/support" title="Help & support" />
-      </div>
-
-      <div className={styles.group}>
-        <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
-        <Row href="/about" title="About" meta="Who's building Blossom" />
-        <Row href="/blog" title="Blog" meta="Updates from the team" />
-        <Row href="/beta" title="Beta" />
-        <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
-        <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
-        <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />
-        <Row href="/legal/privacy" title="Privacy Policy" />
-        <Row href="/legal/terms" title="Terms of Service" />
-      </div>
-
-      {isStaff && (
-        <div className={styles.adminSection}>
-          <p className={styles.sectionLabel}>App management</p>
-          <div className={styles.group}>
-            <Row href="/admin" title="Admin tools" meta="Staff only" />
-          </div>
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>You</p>
+        <div className={styles.group}>
+          <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
+          <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
+          <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
+          <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
         </div>
-      )}
+      </div>
+
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>Stay on top of things</p>
+        <div className={styles.group}>
+          <Row href="/reminders" title="Reminders" meta="Everything coming up, in one place" />
+          <Row href="/search" title="Search" meta="Find anything you've added" />
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>Privacy & security</p>
+        <div className={styles.group}>
+          <Row href="/settings/notifications" title="Notifications" />
+          <Row
+            href="/settings/privacy"
+            title="Privacy & security"
+            meta={profile.appLockEnabled ? "App lock on" : undefined}
+          />
+          <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
+          <Row href="/settings/accessibility" title="Accessibility" />
+          <Row href="/settings/data" title="Data controls" />
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>Sharing & safety</p>
+        <div className={styles.group}>
+          <Row
+            href="/settings/safety-checkins"
+            title="Safety check-ins"
+            meta={profile.safetyCheckInsEnabled ? "On" : "Off - optional"}
+          />
+          <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
+          <Row href="/settings/bridge" title="Blossom Bridge" meta="Temporary links for people without an account" />
+          <Row href="/settings/support-map" title="Personal Support Map" meta="Private people, places and organisations" />
+          <Row href="/settings/passport" title="Blossom Passport" meta="Build a document to share" />
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>Guides & support</p>
+        <div className={styles.group}>
+          <Row href="/settings/getting-started" title="Starting HRT safely" meta="Practical steps, not medical advice" />
+          <Row href="/settings/support" title="Help & support" />
+          <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>About Blossom</p>
+        <div className={styles.group}>
+          <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
+          <Row href="/about" title="About" meta="Who's building Blossom" />
+          <Row href="/blog" title="Blog" meta="Updates from the team" />
+          <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
+          <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />
+          {!(isBetaTester || isStaff) && <Row href="/beta" title="Beta" meta="What beta testing looks like" />}
+          <Row href="/legal/privacy" title="Privacy Policy" />
+          <Row href="/legal/terms" title="Terms of Service" />
+        </div>
+      </div>
     </div>
   );
 }
