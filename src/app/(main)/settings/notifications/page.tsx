@@ -194,6 +194,60 @@ export default function NotificationsSettingsPage() {
         </div>
       )}
 
+      <div className={styles.toggleRow}>
+        <div className={styles.toggleText}>
+          <span className={styles.toggleTitle}>Morning check-in</span>
+          <span className={styles.toggleDesc}>
+            {profile.checkInMorningReminderEnabled ? `At ${profile.checkInMorningReminderTime}` : "Off"}
+          </span>
+        </div>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={() => updateProfile({ checkInMorningReminderEnabled: !profile.checkInMorningReminderEnabled })}
+        >
+          {profile.checkInMorningReminderEnabled ? "Turn off" : "Turn on"}
+        </button>
+      </div>
+      {profile.checkInMorningReminderEnabled && (
+        <div className={styles.field}>
+          <span className={styles.label}>Remind me at</span>
+          <input
+            type="time"
+            className={styles.input}
+            value={profile.checkInMorningReminderTime}
+            onChange={(e) => updateProfile({ checkInMorningReminderTime: e.target.value })}
+          />
+        </div>
+      )}
+
+      <div className={styles.toggleRow}>
+        <div className={styles.toggleText}>
+          <span className={styles.toggleTitle}>Evening check-in</span>
+          <span className={styles.toggleDesc}>
+            {profile.checkInEveningReminderEnabled ? `At ${profile.checkInEveningReminderTime}` : "Off"}
+          </span>
+        </div>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={() => updateProfile({ checkInEveningReminderEnabled: !profile.checkInEveningReminderEnabled })}
+        >
+          {profile.checkInEveningReminderEnabled ? "Turn off" : "Turn on"}
+        </button>
+      </div>
+      {profile.checkInEveningReminderEnabled && (
+        <div className={styles.field}>
+          <span className={styles.label}>Remind me at</span>
+          <input
+            type="time"
+            className={styles.input}
+            value={profile.checkInEveningReminderTime}
+            onChange={(e) => updateProfile({ checkInEveningReminderTime: e.target.value })}
+          />
+        </div>
+      )}
+
       <div className={styles.field}>
         <span className={styles.label}>Reminder text</span>
         <div className={styles.optionGrid}>

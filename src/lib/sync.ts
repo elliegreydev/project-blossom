@@ -9,6 +9,7 @@ import {
   emptyAppointmentBuilderData,
   type AuroraMode,
   type CheckIn,
+  type CheckInPeriod,
   type DatePrecision,
   type DoseStatus,
   type GoalStatus,
@@ -216,6 +217,13 @@ async function localPayload(
         quiet_hours_enabled: profile.quietHoursEnabled,
         quiet_hours_start: profile.quietHoursStart,
         quiet_hours_end: profile.quietHoursEnd,
+        // Synced (unlike weight/food tracking, which stays device-local) since
+        // the server-side reminder cron needs these to fire push notifications
+        // for a closed app - see dueCheckInReminders in reminders.ts.
+        check_in_morning_reminder_enabled: profile.checkInMorningReminderEnabled,
+        check_in_morning_reminder_time: profile.checkInMorningReminderTime,
+        check_in_evening_reminder_enabled: profile.checkInEveningReminderEnabled,
+        check_in_evening_reminder_time: profile.checkInEveningReminderTime,
         // Pushed but deliberately never restored on pull (see Profile.timezone
         // in db.ts) - each device should keep reflecting its own current zone.
         timezone: profile.timezone,
@@ -393,6 +401,7 @@ async function localPayload(
             stress: item.stress,
             comfort: item.comfort,
             note: item.note,
+            period: item.period,
             created_at: item.createdAt,
           }
         : null;
@@ -759,6 +768,10 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         quietHoursEnabled: Boolean(row.quiet_hours_enabled),
         quietHoursStart: nullableString(row.quiet_hours_start),
         quietHoursEnd: nullableString(row.quiet_hours_end),
+        checkInMorningReminderEnabled: Boolean(row.check_in_morning_reminder_enabled),
+        checkInMorningReminderTime: nullableString(row.check_in_morning_reminder_time) ?? "09:00",
+        checkInEveningReminderEnabled: Boolean(row.check_in_evening_reminder_enabled),
+        checkInEveningReminderTime: nullableString(row.check_in_evening_reminder_time) ?? "21:00",
         syncEnabled: true,
         createdAt: createdAt || local.createdAt,
         updatedAt: changedAt || local.updatedAt,
@@ -904,7 +917,6 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
       return;
     }
     case "check_in": {
-      const existing = await db.checkIns.get(id);
       await db.checkIns.put({
         id,
         mood: nullableNumber(row.mood),
@@ -912,7 +924,8 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         confidence: nullableNumber(row.confidence),
         stress: nullableNumber(row.stress),
         comfort: nullableNumber(row.comfort),
-        note: existing?.note ?? null,
+        note: nullableString(row.note),
+        period: nullableString(row.period) as CheckInPeriod | null,
         createdAt,
         updatedAt: changedAt,
       } satisfies CheckIn);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
-import { dueAppointmentReminders, dueMedicationReminders, isQuietHours } from "@/lib/reminders";
+import { dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, isQuietHours } from "@/lib/reminders";
 import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder } from "@/lib/db";
 
 // Triggered every few minutes by the VPS crontab (see docs/PROD_RELEASE.md-
@@ -51,7 +51,12 @@ export async function GET(request: Request) {
   const userIds = [...new Set(subscriptions.map((row) => row.user_id as string))];
   const [{ data: profiles }, { data: medications }, { data: medicationLogs }, { data: appointments }, { data: alreadyNotified }] =
     await Promise.all([
-      supabase.from("profiles").select("id, timezone, reminder_privacy, quiet_hours_enabled, quiet_hours_start, quiet_hours_end").in("id", userIds),
+      supabase
+        .from("profiles")
+        .select(
+          "id, timezone, reminder_privacy, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, check_in_morning_reminder_enabled, check_in_morning_reminder_time, check_in_evening_reminder_enabled, check_in_evening_reminder_time"
+        )
+        .in("id", userIds),
       supabase.from("medications").select("id, user_id, name, route, unit, frequency, active").in("user_id", userIds),
       supabase.from("medication_logs").select("id, user_id, medication_id, scheduled_time, status").in("user_id", userIds),
       supabase.from("appointments").select("id, user_id, title, appointment_at, reminder_settings").in("user_id", userIds),
@@ -130,6 +135,17 @@ export async function GET(request: Request) {
     const pending = [
       ...dueMedicationReminders(meds, logs, notified, now, timeZone),
       ...dueAppointmentReminders(appts, notified, now),
+      ...dueCheckInReminders(
+        {
+          morningEnabled: Boolean(profile?.check_in_morning_reminder_enabled),
+          morningTime: profile?.check_in_morning_reminder_time || "09:00",
+          eveningEnabled: Boolean(profile?.check_in_evening_reminder_enabled),
+          eveningTime: profile?.check_in_evening_reminder_time || "21:00",
+        },
+        notified,
+        now,
+        timeZone
+      ),
     ];
     if (pending.length === 0) continue;
 

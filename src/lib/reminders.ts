@@ -239,3 +239,63 @@ export function dueWeightReminders(
     detailedBody: "If it feels useful today, you can log a weight in Blossom.",
   }];
 }
+
+export interface CheckInReminderSettings {
+  morningEnabled: boolean;
+  morningTime: string;
+  eveningEnabled: boolean;
+  eveningTime: string;
+}
+
+// Two independent optional daily slots, timezone-aware so it works both in
+// LocalReminderService (timeZone omitted, runtime already is the user's own
+// local time) and the server cron (timeZone required, since the cron itself
+// runs in UTC). Re-nags a couple of times like medication/appointments,
+// rather than the single-shot weight reminder above.
+export function dueCheckInReminders(
+  settings: CheckInReminderSettings,
+  notified: NotifiedReminder[],
+  now: Date,
+  timeZone?: string
+): PendingReminder[] {
+  const notifiedByKey = new Map(notified.map((n) => [n.key, n]));
+  const { minuteOfDay: nowMinuteOfDay, dateKey } = timeZone
+    ? zonedNow(now, timeZone)
+    : { minuteOfDay: now.getHours() * 60 + now.getMinutes(), dateKey: localDateKey(now) };
+  const nowTime = now.getTime();
+
+  const slots: { enabled: boolean; time: string; period: "morning" | "evening"; title: string; body: string }[] = [
+    {
+      enabled: settings.morningEnabled,
+      time: settings.morningTime,
+      period: "morning",
+      title: "Morning check-in",
+      body: "A quiet moment to note how you're doing this morning.",
+    },
+    {
+      enabled: settings.eveningEnabled,
+      time: settings.eveningTime,
+      period: "evening",
+      title: "Evening check-in",
+      body: "A quiet moment to note how today went before bed.",
+    },
+  ];
+
+  const result: PendingReminder[] = [];
+  for (const slot of slots) {
+    if (!slot.enabled) continue;
+    const slotMinute = parseHHMM(slot.time);
+    const age = (nowMinuteOfDay - slotMinute) * 60 * 1000;
+    if (age < 0 || age > STILL_RELEVANT_MS) continue;
+    const key = `checkin-${slot.period}:${dateKey}`;
+    if (!shouldFire(notifiedByKey.get(key), nowTime)) continue;
+    result.push({
+      key,
+      discreetTitle: "A gentle reminder",
+      discreetBody: "There is something optional to check in with, if it feels useful.",
+      detailedTitle: slot.title,
+      detailedBody: slot.body,
+    });
+  }
+  return result;
+}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
-import { addCheckIn, updateCheckIn, type CheckIn } from "@/lib/db";
+import { addCheckIn, guessCheckInPeriod, updateCheckIn, type CheckIn, type CheckInPeriod } from "@/lib/db";
 
 const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; label: string }[] = [
   { key: "mood", label: "Mood" },
@@ -23,6 +23,7 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
     comfort: entry?.comfort ?? 0,
   }));
   const [note, setNote] = useState(entry?.note ?? "");
+  const [period, setPeriod] = useState<CheckInPeriod | null>(entry ? entry.period ?? null : guessCheckInPeriod());
   const [saving, setSaving] = useState(false);
 
   function setValue(key: string, v: number) {
@@ -38,6 +39,7 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
       stress: values.stress || null,
       comfort: values.comfort || null,
       note: note.trim() || null,
+      period,
     };
     if (entry) await updateCheckIn(entry.id, input);
     else await addCheckIn(input);
@@ -55,6 +57,22 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -6 }}>
           Every part is optional. Fill in only what feels right.
         </p>
+
+        <div className={styles.field}>
+          <span className={styles.label}>When</span>
+          <div className={styles.chipRow} role="group" aria-label="When">
+            {(["morning", "evening", null] as const).map((option) => (
+              <button
+                key={option ?? "anytime"}
+                type="button"
+                className={`${styles.chip} ${period === option ? styles.selected : ""}`}
+                onClick={() => setPeriod(option)}
+              >
+                {option === "morning" ? "Morning" : option === "evening" ? "Evening" : "Anytime"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {SCALES.map((scale) => (
           <div key={scale.key} className={styles.field}>

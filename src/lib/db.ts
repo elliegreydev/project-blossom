@@ -152,6 +152,13 @@ export interface Profile {
   weightReminderEnabled: boolean;
   weightReminderDay: number;
   weightReminderTime: string;
+  // Two independent optional daily reminders, since most people check in at
+  // roughly the same two moments (morning, before bed) rather than at
+  // random points in the day - see dueCheckInReminders in reminders.ts.
+  checkInMorningReminderEnabled: boolean;
+  checkInMorningReminderTime: string;
+  checkInEveningReminderEnabled: boolean;
+  checkInEveningReminderTime: string;
   calorieTrackingEnabled: boolean;
   calorieTarget: number | null;
   // When a JSON backup export last completed on this device (see Settings >
@@ -497,6 +504,8 @@ export interface SocialTransitionTask {
   updatedAt: string;
 }
 
+export type CheckInPeriod = "morning" | "evening";
+
 export interface CheckIn {
   id: string;
   mood: number | null;
@@ -505,8 +514,21 @@ export interface CheckIn {
   stress: number | null;
   comfort: number | null;
   note: string | null;
+  // Optional, guessed from time of day at creation but editable - not every
+  // check-in fits neatly into either, so this can stay unset.
+  period: CheckInPeriod | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// Simple time-of-day guess used to default a new check-in's period. Late
+// morning through afternoon deliberately falls in between rather than being
+// forced into either bucket.
+export function guessCheckInPeriod(now: Date = new Date()): CheckInPeriod | null {
+  const hour = now.getHours();
+  if (hour < 12) return "morning";
+  if (hour >= 18) return "evening";
+  return null;
 }
 
 // Goals -----------------------------------------------------------------------
@@ -1741,6 +1763,10 @@ export const DEFAULT_PROFILE: Profile = {
   weightReminderEnabled: false,
   weightReminderDay: 0,
   weightReminderTime: "10:00",
+  checkInMorningReminderEnabled: false,
+  checkInMorningReminderTime: "09:00",
+  checkInEveningReminderEnabled: false,
+  checkInEveningReminderTime: "21:00",
   calorieTrackingEnabled: false,
   calorieTarget: null,
   lastBackupExportedAt: null,
@@ -1790,6 +1816,10 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.weightReminderEnabled === undefined) backfill.weightReminderEnabled = false;
   if (existing.weightReminderDay === undefined) backfill.weightReminderDay = 0;
   if (existing.weightReminderTime === undefined) backfill.weightReminderTime = "10:00";
+  if (existing.checkInMorningReminderEnabled === undefined) backfill.checkInMorningReminderEnabled = false;
+  if (existing.checkInMorningReminderTime === undefined) backfill.checkInMorningReminderTime = "09:00";
+  if (existing.checkInEveningReminderEnabled === undefined) backfill.checkInEveningReminderEnabled = false;
+  if (existing.checkInEveningReminderTime === undefined) backfill.checkInEveningReminderTime = "21:00";
   if (existing.calorieTrackingEnabled === undefined) backfill.calorieTrackingEnabled = false;
   if (existing.calorieTarget === undefined) backfill.calorieTarget = null;
   if (Object.keys(backfill).length > 0) {
@@ -2394,7 +2424,7 @@ export async function addSocialTransitionStarterTasks(): Promise<void> {
 }
 
 export async function addCheckIn(
-  input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
+  input: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note" | "period">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
   const checkIn: CheckIn = { id: newId(), createdAt: changedAt, updatedAt: changedAt, ...input };
@@ -2482,7 +2512,7 @@ export async function updateMedicationLog(
 
 export async function updateCheckIn(
   id: string,
-  patch: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note">
+  patch: Pick<CheckIn, "mood" | "energy" | "confidence" | "stress" | "comfort" | "note" | "period">
 ): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.transaction("rw", db.checkIns, db.syncOutbox, async () => {

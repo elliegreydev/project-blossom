@@ -23,6 +23,12 @@ function dateLabel(iso: string): string {
   });
 }
 
+function timeLabel(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+const PERIOD_LABELS: Record<string, string> = { morning: "Morning", evening: "Evening" };
+
 const SCALE_LABELS: [keyof CheckIn, string][] = [
   ["mood", "Mood"],
   ["energy", "Energy"],
@@ -233,7 +239,10 @@ export default function JournalPage() {
               {visibleCheckIns.map((ci) => (
                 <div key={ci.id} className={styles.item}>
                   <div className={styles.itemRow}>
-                    <span className={styles.itemMeta}>{dateLabel(ci.createdAt)}</span>
+                    <span className={styles.itemMeta}>
+                      {dateLabel(ci.createdAt)} · {timeLabel(ci.createdAt)}
+                      {ci.period ? ` · ${PERIOD_LABELS[ci.period]}` : ""}
+                    </span>
                     <button className={styles.linkButton} onClick={() => setEditingCheckIn(ci)}>Edit</button>
                     <button className={styles.linkButton} onClick={() => stageRemoval(ci.id, "This check-in", () => deleteCheckIn(ci.id))}>
                       Remove
