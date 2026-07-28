@@ -314,8 +314,13 @@ export default function AccountPage() {
                   Future changes can then follow you between signed-in devices.
                 </p>
                 <ul className={styles.list}>
-                  <li>Milestones, medication, appointments, goals and check-in ratings can sync.</li>
-                  <li>Journal writing and check-in notes stay only on this device.</li>
+                  <li>
+                    Milestones, medication, appointments, goals, check-ins, journal entries, blood
+                    tests, voice practice notes, presentation and body/progress data, weight and
+                    calorie logs, budget entries, Intimacy &amp; wellbeing entries, safety
+                    check-ins, private links and your Personal Support Map can sync.
+                  </li>
+                  <li>Photos and voice recordings never sync, even with sync on.</li>
                   <li>You can pause sync without removing local data.</li>
                   <li>
                     Unlocks real reminders that reach you even when Blossom is closed - turn it
@@ -342,7 +347,9 @@ export default function AccountPage() {
         <aside className={styles.privacyNote}>
           <strong>Privacy note</strong>
           <p>
-            Synced records are protected by your account and database access rules. Journal and check-in writing remain local until Blossom has proper end-to-end encryption.
+            Synced records are protected by your account and database access rules, though not yet
+            fully end-to-end encrypted. Photos and voice recordings never sync, regardless of
+            account or sync status.
           </p>
         </aside>
       </div>

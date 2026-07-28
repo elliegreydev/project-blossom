@@ -30,6 +30,17 @@ const SYNCED_CATEGORIES = [
   "Appointments",
   "Check-ins",
   "Goals",
+  "Journal entries",
+  "Blood test results",
+  "Voice practice goals & session notes (not recordings)",
+  "Presentation entries (not photos)",
+  "Body/progress entries (not photos)",
+  "Intimacy & wellbeing entries",
+  "Weight & calorie entries",
+  "Budget entries & goals",
+  "Private links",
+  "Personal Support Map",
+  "Safety check-ins",
 ];
 
 export default function PrivacySettingsPage() {
@@ -183,23 +194,26 @@ export default function PrivacySettingsPage() {
         ) : (
           <>
             <p className={styles.hint}>
-              {signedIn && profile.syncEnabled
-                ? "You have sync turned on, so some of your data is stored on Blossom's servers so it's available across your devices. Here's exactly what: " +
-                  SYNCED_CATEGORIES.join(", ") + "."
-                : "Sync is off. Everything you've entered stays only on this device - nothing has been sent to Blossom's servers."}
+              {!signedIn
+                ? "You're not signed in, and nothing has been sent to Blossom's servers - staying signed out (or using the app without an account) keeps everything on this device only, always."
+                : profile.syncEnabled
+                  ? "You have sync turned on, so this data is stored on Blossom's servers so it's available across your devices. Here's exactly what: " +
+                    SYNCED_CATEGORIES.join(", ") + "."
+                  : "You're signed in but sync is off. Everything you've entered stays only on this device - nothing has been sent to Blossom's servers."}
             </p>
             <p className={styles.hint}>
-              These always stay on this device only, even with sync on:
-              journal entries, blood test results, voice practice recordings,
-              presentation and body/progress photos and notes, weight and food/calorie logs,
-              your saved private links, Personal Support Map, Intimacy &amp; wellbeing entries,
-              your app lock PIN or biometric, and your
-              accessibility settings.
+              Photos and voice recordings never sync, full stop - not while
+              signed out, not with sync on, no exception. That covers your
+              presentation photos, body/progress photos, and voice practice
+              recordings: they only ever exist on the device you took or
+              recorded them on. Your app lock PIN/biometric and accessibility
+              settings also always stay local, since they&apos;re per-device
+              settings rather than account data.
             </p>
             <div className={styles.field} style={{ gap: 7 }}>
               <span className={styles.label}>At a glance</span>
-              <span className={styles.hint}>Medication, appointments and goals: local by default, optional sync, never shared automatically.</span>
-              <span className={styles.hint}>Journal, Intimacy, Support Map and local recordings: this device only, even when sync is on.</span>
+              <span className={styles.hint}>Signed out, or sync off: everything stays on this device, no exceptions.</span>
+              <span className={styles.hint}>Signed in with sync on: your text/data content syncs so it follows you across devices - photos and voice recordings still never do.</span>
               <span className={styles.hint}>Exports: created on this device, and only include the sections you select.</span>
             </div>
           </>

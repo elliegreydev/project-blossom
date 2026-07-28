@@ -418,8 +418,8 @@ export interface Appointment {
 }
 
 // Wellbeing -------------------------------------------------------------------
-// Journal entries are never synced (see src/lib/sync.ts's SyncEntity list) -
-// they stay local-only until Blossom has real end-to-end encryption.
+// Journal entries sync like everything else in the account (plaintext over
+// TLS, encrypted at rest by Supabase - not full client-side E2E yet).
 
 export interface JournalEntry {
   id: string;
@@ -548,7 +548,8 @@ export interface BloodTestEntry {
 // Voice practice (v1.5) ---------------------------------------------------------
 // Practice goals + session logs only. No score, no "pass" threshold, no
 // automatic judgement, and no comparison to any reference voice - per the
-// locked spec. Not yet wired into account sync, local-only for now.
+// locked spec. Goals + session metadata sync; the recording Blob (below)
+// never does.
 
 export type VoicePracticeCategory =
   | "pitch"
@@ -575,9 +576,10 @@ export interface VoiceSession {
   comfortRating: number | null;
   note: string | null;
   // A raw Blob, same treatment as presentation/body photos: private,
-  // local-only, never synced, never in the JSON/PDF export (which strips it
-  // to a hasRecording flag instead). Only ever used for private playback -
-  // nothing in Blossom analyses it.
+  // local-only, NEVER synced (see sync.ts's voice_session case, which
+  // strips this field before push and never restores it on pull), never in
+  // the JSON/PDF export (which strips it to a hasRecording flag instead).
+  // Only ever used for private playback - nothing in Blossom analyses it.
   recording: Blob | null;
   // Optional, opt-in only (see capturePitchRange in lib/pitchDetection.ts) -
   // a range, not a single score, and never compared against any target or
@@ -639,9 +641,10 @@ export interface BodyEntry {
 }
 
 // Intimacy & wellbeing ---------------------------------------------------------
-// A deliberately private, non-judgemental log. It is local-only like journal
-// writing: no sync, no Home block, no reminders and no global search index.
-// The app never records partners, location or any kind of score.
+// A deliberately private, non-judgemental log. Syncs like journal writing
+// does (26-28 Jul 2026 planning), but stays out of any Home block, reminder,
+// or global search index. The app never records partners, location or any
+// kind of score.
 export type IntimacyDatePrecision = "exact" | "approximate";
 export type IntimacyFeeling = "good" | "mixed" | "unsure" | "not-good";
 
@@ -687,11 +690,9 @@ export interface CalorieEntry {
 }
 
 // Transition cost & budget tracker (v2) -------------------------------------------
-// Deliberately local-only, same treatment as journal entries - financial
-// records are sensitive, and there's no real need for this to sync even
-// though it technically could. No comparison anywhere in the UI: a goal's
-// progress is only ever measured against itself, never anyone else's pace
-// or amount.
+// Syncs like the rest of the account (26-28 Jul 2026 planning). No
+// comparison anywhere in the UI: a goal's progress is only ever measured
+// against itself, never anyone else's pace or amount.
 
 export type BudgetCategory = "hrt" | "surgery" | "legal" | "other";
 
@@ -728,8 +729,10 @@ export interface PrivateLink {
 // Personal support map ----------------------------------------------------------
 // This is a private directory rather than a literal map: precise coordinates,
 // public reviews and third-party map services would make a sensitive feature
-// needlessly exposing. Entries live only in this device's IndexedDB and are
-// intentionally absent from the sync queue and standard account export.
+// needlessly exposing. Syncs like the rest of the account (26-28 Jul 2026
+// planning, over this section's original design comment) but is deliberately
+// excluded from the staff support-case system - see support_map_entries in
+// supabase/full_sync_expansion.sql, which has no staff-read policy at all.
 
 export type SupportMapEntryType = "person" | "clinic" | "organisation" | "community" | "place" | "other";
 export type SupportMapLabel =
@@ -757,11 +760,12 @@ export interface SupportMapEntry {
 }
 
 // Safety check-ins ---------------------------------------------------------------
-// A user-started "check in with me by X" window. Deliberately not synced (see
-// SyncEntity below) and deliberately not a monitoring system: Blossom never
-// contacts anyone itself. If a check-in passes its dueAt without being
-// resolved, the UI treats it as missed and suggests - never claims to
-// guarantee - reaching out to the trusted contact configured in Profile.
+// A user-started "check in with me by X" window. Syncs like the rest of the
+// account (26-28 Jul 2026 planning), but is still deliberately NOT a
+// monitoring system: Blossom never contacts anyone itself. If a check-in
+// passes its dueAt without being resolved, the UI treats it as missed and
+// suggests - never claims to guarantee - reaching out to the trusted
+// contact configured in Profile.
 
 export type SafetyCheckInStatus = "pending" | "completed";
 
@@ -802,7 +806,21 @@ export type SyncEntity =
   | "appointment"
   | "check_in"
   | "goal"
-  | "aurora_nudge";
+  | "aurora_nudge"
+  | "journal_entry"
+  | "private_link"
+  | "blood_test_entry"
+  | "voice_goal"
+  | "voice_session"
+  | "presentation_entry"
+  | "body_entry"
+  | "intimacy_entry"
+  | "weight_entry"
+  | "calorie_entry"
+  | "budget_entry"
+  | "budget_goal"
+  | "support_map_entry"
+  | "safety_check_in";
 
 export interface SyncOutboxItem {
   id: string;
@@ -2232,15 +2250,27 @@ export async function deleteAppointment(id: string): Promise<void> {
 
 export async function addJournalEntry(bodyText: string): Promise<void> {
   const now = new Date().toISOString();
-  await db.journalEntries.add({ id: newId(), bodyText, createdAt: now, updatedAt: now });
+  const entry: JournalEntry = { id: newId(), bodyText, createdAt: now, updatedAt: now };
+  await db.transaction("rw", db.journalEntries, db.syncOutbox, async () => {
+    await db.journalEntries.add(entry);
+    await recordSyncChange("journal_entry", entry.id, "upsert", now);
+  });
 }
 
 export async function deleteJournalEntry(id: string): Promise<void> {
-  await db.journalEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.journalEntries, db.syncOutbox, async () => {
+    await db.journalEntries.delete(id);
+    await recordSyncChange("journal_entry", id, "delete", changedAt);
+  });
 }
 
 export async function updateJournalEntry(id: string, bodyText: string): Promise<void> {
-  await db.journalEntries.update(id, { bodyText, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.journalEntries, db.syncOutbox, async () => {
+    await db.journalEntries.update(id, { bodyText, updatedAt: changedAt });
+    await recordSyncChange("journal_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function addIntimacyEntry(
@@ -2248,7 +2278,10 @@ export async function addIntimacyEntry(
 ): Promise<IntimacyEntry> {
   const now = new Date().toISOString();
   const entry: IntimacyEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
-  await db.intimacyEntries.add(entry);
+  await db.transaction("rw", db.intimacyEntries, db.syncOutbox, async () => {
+    await db.intimacyEntries.add(entry);
+    await recordSyncChange("intimacy_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
@@ -2256,11 +2289,19 @@ export async function updateIntimacyEntry(
   id: string,
   patch: Partial<Omit<IntimacyEntry, "id" | "createdAt" | "updatedAt">>
 ): Promise<void> {
-  await db.intimacyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.intimacyEntries, db.syncOutbox, async () => {
+    await db.intimacyEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("intimacy_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteIntimacyEntry(id: string): Promise<void> {
-  await db.intimacyEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.intimacyEntries, db.syncOutbox, async () => {
+    await db.intimacyEntries.delete(id);
+    await recordSyncChange("intimacy_entry", id, "delete", changedAt);
+  });
 }
 
 export async function addEuphoriaEntry(
@@ -2595,30 +2636,37 @@ export async function snoozeReminder(key: string, minutes: number): Promise<void
 }
 
 // Private links -----------------------------------------------------------------
-// Deliberately not synced - these are per-device saved resources, not part
-// of the SyncEntity list.
 
 export async function addPrivateLink(
   input: Pick<PrivateLink, "label" | "url" | "note">
 ): Promise<void> {
-  await db.privateLinks.add({ id: newId(), createdAt: new Date().toISOString(), ...input });
+  const now = new Date().toISOString();
+  const link: PrivateLink = { id: newId(), createdAt: now, ...input };
+  await db.transaction("rw", db.privateLinks, db.syncOutbox, async () => {
+    await db.privateLinks.add(link);
+    await recordSyncChange("private_link", link.id, "upsert", now);
+  });
 }
 
 export async function deletePrivateLink(id: string): Promise<void> {
-  await db.privateLinks.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.privateLinks, db.syncOutbox, async () => {
+    await db.privateLinks.delete(id);
+    await recordSyncChange("private_link", id, "delete", changedAt);
+  });
 }
 
 // Personal support map ----------------------------------------------------------
-// These entries stay on this device. Do not add them to SyncEntity or use
-// recordSyncChange: private contacts and approximate locations should not
-// travel to another device simply because account sync is enabled.
 
 export async function addSupportMapEntry(
   input: Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">
 ): Promise<SupportMapEntry> {
   const now = new Date().toISOString();
   const entry: SupportMapEntry = { id: newId(), ...input, createdAt: now, updatedAt: now };
-  await db.supportMapEntries.add(entry);
+  await db.transaction("rw", db.supportMapEntries, db.syncOutbox, async () => {
+    await db.supportMapEntries.add(entry);
+    await recordSyncChange("support_map_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
@@ -2626,11 +2674,19 @@ export async function updateSupportMapEntry(
   id: string,
   patch: Partial<Omit<SupportMapEntry, "id" | "createdAt" | "updatedAt">>
 ): Promise<void> {
-  await db.supportMapEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.supportMapEntries, db.syncOutbox, async () => {
+    await db.supportMapEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("support_map_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteSupportMapEntry(id: string): Promise<void> {
-  await db.supportMapEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.supportMapEntries, db.syncOutbox, async () => {
+    await db.supportMapEntries.delete(id);
+    await recordSyncChange("support_map_entry", id, "delete", changedAt);
+  });
 }
 
 // Transition cost & budget tracker (v2) -------------------------------------------
@@ -2640,39 +2696,58 @@ export async function addBudgetEntry(
 ): Promise<BudgetEntry> {
   const now = new Date().toISOString();
   const entry: BudgetEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.budgetEntries.add(entry);
+  await db.transaction("rw", db.budgetEntries, db.syncOutbox, async () => {
+    await db.budgetEntries.add(entry);
+    await recordSyncChange("budget_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function updateBudgetEntry(id: string, patch: Partial<BudgetEntry>): Promise<void> {
-  await db.budgetEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.budgetEntries, db.syncOutbox, async () => {
+    await db.budgetEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("budget_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteBudgetEntry(id: string): Promise<void> {
-  await db.budgetEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.budgetEntries, db.syncOutbox, async () => {
+    await db.budgetEntries.delete(id);
+    await recordSyncChange("budget_entry", id, "delete", changedAt);
+  });
 }
 
 export async function addBudgetGoal(input: Pick<BudgetGoal, "label" | "targetAmount">): Promise<BudgetGoal> {
   const now = new Date().toISOString();
   const goal: BudgetGoal = { id: newId(), savedAmount: 0, createdAt: now, updatedAt: now, ...input };
-  await db.budgetGoals.add(goal);
+  await db.transaction("rw", db.budgetGoals, db.syncOutbox, async () => {
+    await db.budgetGoals.add(goal);
+    await recordSyncChange("budget_goal", goal.id, "upsert", now);
+  });
   return goal;
 }
 
 export async function addToBudgetGoalSaved(id: string, amount: number): Promise<void> {
   const goal = await db.budgetGoals.get(id);
   if (!goal) return;
-  await db.budgetGoals.update(id, { savedAmount: Math.max(0, goal.savedAmount + amount), updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.budgetGoals, db.syncOutbox, async () => {
+    await db.budgetGoals.update(id, { savedAmount: Math.max(0, goal.savedAmount + amount), updatedAt: changedAt });
+    await recordSyncChange("budget_goal", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteBudgetGoal(id: string): Promise<void> {
-  await db.budgetGoals.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.budgetGoals, db.syncOutbox, async () => {
+    await db.budgetGoals.delete(id);
+    await recordSyncChange("budget_goal", id, "delete", changedAt);
+  });
 }
 
 // Safety check-ins -----------------------------------------------------------
-// Deliberately not synced (see SafetyCheckIn's own comment) - writes go
-// straight to Dexie, never through recordSyncChange/the sync outbox, the
-// same device-local treatment as updateDeviceProfile below.
 
 export async function updateSafetyCheckInSettings(
   patch: Partial<Pick<Profile, "safetyCheckInsEnabled" | "trustedContactName" | "trustedContactMethod">>
@@ -2696,12 +2771,19 @@ export async function startSafetyCheckIn(hours: number): Promise<SafetyCheckIn> 
     status: "pending",
     snoozedOnce: false,
   };
-  await db.safetyCheckIns.add(checkIn);
+  await db.transaction("rw", db.safetyCheckIns, db.syncOutbox, async () => {
+    await db.safetyCheckIns.add(checkIn);
+    await recordSyncChange("safety_check_in", checkIn.id, "upsert", checkIn.startedAt);
+  });
   return checkIn;
 }
 
 export async function resolveSafetyCheckIn(id: string): Promise<void> {
-  await db.safetyCheckIns.update(id, { status: "completed" });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.safetyCheckIns, db.syncOutbox, async () => {
+    await db.safetyCheckIns.update(id, { status: "completed" });
+    await recordSyncChange("safety_check_in", id, "upsert", changedAt);
+  });
 }
 
 // Allowed once per check-in, so a missed one can't be pushed back
@@ -2709,9 +2791,13 @@ export async function resolveSafetyCheckIn(id: string): Promise<void> {
 export async function snoozeSafetyCheckIn(id: string, hours: number): Promise<void> {
   const existing = await db.safetyCheckIns.get(id);
   if (!existing || existing.snoozedOnce) return;
-  await db.safetyCheckIns.update(id, {
-    dueAt: new Date(Date.now() + hours * 60 * 60 * 1000).toISOString(),
-    snoozedOnce: true,
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.safetyCheckIns, db.syncOutbox, async () => {
+    await db.safetyCheckIns.update(id, {
+      dueAt: new Date(Date.now() + hours * 60 * 60 * 1000).toISOString(),
+      snoozedOnce: true,
+    });
+    await recordSyncChange("safety_check_in", id, "upsert", changedAt);
   });
 }
 
@@ -2722,38 +2808,65 @@ export async function addBloodTestEntry(
 ): Promise<BloodTestEntry> {
   const now = new Date().toISOString();
   const entry: BloodTestEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.bloodTestEntries.add(entry);
+  await db.transaction("rw", db.bloodTestEntries, db.syncOutbox, async () => {
+    await db.bloodTestEntries.add(entry);
+    await recordSyncChange("blood_test_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function updateBloodTestEntry(id: string, patch: Partial<BloodTestEntry>): Promise<void> {
-  await db.bloodTestEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.bloodTestEntries, db.syncOutbox, async () => {
+    await db.bloodTestEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("blood_test_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteBloodTestEntry(id: string): Promise<void> {
-  await db.bloodTestEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.bloodTestEntries, db.syncOutbox, async () => {
+    await db.bloodTestEntries.delete(id);
+    await recordSyncChange("blood_test_entry", id, "delete", changedAt);
+  });
 }
 
 // Voice practice ----------------------------------------------------------------
+// Goals + session metadata sync. The recording Blob never does - see
+// VoiceSession's own comment - so a session pushed to the server always has
+// its recording field stripped, and a session pulled from another device
+// always arrives with recording: null.
 
 export async function addVoiceGoal(
   input: Pick<VoiceGoal, "title" | "category" | "targetFrequency" | "targetDuration">
 ): Promise<VoiceGoal> {
   const now = new Date().toISOString();
   const goal: VoiceGoal = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.voiceGoals.add(goal);
+  await db.transaction("rw", db.voiceGoals, db.syncOutbox, async () => {
+    await db.voiceGoals.add(goal);
+    await recordSyncChange("voice_goal", goal.id, "upsert", now);
+  });
   return goal;
 }
 
 export async function updateVoiceGoal(id: string, patch: Partial<VoiceGoal>): Promise<void> {
-  await db.voiceGoals.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.voiceGoals, db.syncOutbox, async () => {
+    await db.voiceGoals.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("voice_goal", id, "upsert", changedAt);
+  });
 }
 
 export async function deleteVoiceGoal(id: string): Promise<void> {
-  await db.transaction("rw", db.voiceGoals, db.voiceSessions, async () => {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.voiceGoals, db.voiceSessions, db.syncOutbox, async () => {
     await db.voiceGoals.delete(id);
+    await recordSyncChange("voice_goal", id, "delete", changedAt);
     const sessions = await db.voiceSessions.where("goalId").equals(id).toArray();
     await db.voiceSessions.bulkDelete(sessions.map((s) => s.id));
+    for (const session of sessions) {
+      await recordSyncChange("voice_session", session.id, "delete", changedAt);
+    }
   });
 }
 
@@ -2761,53 +2874,86 @@ export async function addVoiceSession(
   input: Pick<VoiceSession, "goalId" | "sessionDuration" | "comfortRating" | "note" | "recording" | "pitchLowHz" | "pitchHighHz">
 ): Promise<VoiceSession> {
   const session: VoiceSession = { id: newId(), createdAt: new Date().toISOString(), ...input };
-  await db.voiceSessions.add(session);
+  await db.transaction("rw", db.voiceSessions, db.syncOutbox, async () => {
+    await db.voiceSessions.add(session);
+    await recordSyncChange("voice_session", session.id, "upsert", session.createdAt);
+  });
   return session;
 }
 
 export async function deleteVoiceSession(id: string): Promise<void> {
-  await db.voiceSessions.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.voiceSessions, db.syncOutbox, async () => {
+    await db.voiceSessions.delete(id);
+    await recordSyncChange("voice_session", id, "delete", changedAt);
+  });
 }
 
 // Presentation tracking ---------------------------------------------------------
+// Everything except the photo Blob syncs - see PresentationEntry's own
+// comment on why the photo itself never does.
 
 export async function addPresentationEntry(
   input: Pick<PresentationEntry, "date" | "category" | "note" | "photo" | "confidenceRating" | "wantToTry">
 ): Promise<PresentationEntry> {
   const now = new Date().toISOString();
   const entry: PresentationEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.presentationEntries.add(entry);
+  await db.transaction("rw", db.presentationEntries, db.syncOutbox, async () => {
+    await db.presentationEntries.add(entry);
+    await recordSyncChange("presentation_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function updatePresentationEntry(id: string, patch: Partial<PresentationEntry>): Promise<void> {
-  await db.presentationEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.presentationEntries, db.syncOutbox, async () => {
+    await db.presentationEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("presentation_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function deletePresentationEntry(id: string): Promise<void> {
-  await db.presentationEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.presentationEntries, db.syncOutbox, async () => {
+    await db.presentationEntries.delete(id);
+    await recordSyncChange("presentation_entry", id, "delete", changedAt);
+  });
 }
 
 // Body & progress tracking -------------------------------------------------------
+// Everything except the photo Blob syncs - see BodyEntry's own comment on
+// why the photo itself never does.
 
 export async function addBodyEntry(
   input: Pick<BodyEntry, "date" | "measurements" | "photo" | "note">
 ): Promise<BodyEntry> {
   const now = new Date().toISOString();
   const entry: BodyEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.bodyEntries.add(entry);
+  await db.transaction("rw", db.bodyEntries, db.syncOutbox, async () => {
+    await db.bodyEntries.add(entry);
+    await recordSyncChange("body_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function deleteBodyEntry(id: string): Promise<void> {
-  await db.bodyEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.bodyEntries, db.syncOutbox, async () => {
+    await db.bodyEntries.delete(id);
+    await recordSyncChange("body_entry", id, "delete", changedAt);
+  });
 }
 
 export async function updateBodyEntry(
   id: string,
   patch: Pick<BodyEntry, "date" | "measurements" | "photo" | "note">
 ): Promise<void> {
-  await db.bodyEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.bodyEntries, db.syncOutbox, async () => {
+    await db.bodyEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("body_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function addWeightEntry(
@@ -2815,19 +2961,30 @@ export async function addWeightEntry(
 ): Promise<WeightEntry> {
   const now = new Date().toISOString();
   const entry: WeightEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.weightEntries.add(entry);
+  await db.transaction("rw", db.weightEntries, db.syncOutbox, async () => {
+    await db.weightEntries.add(entry);
+    await recordSyncChange("weight_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function deleteWeightEntry(id: string): Promise<void> {
-  await db.weightEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.weightEntries, db.syncOutbox, async () => {
+    await db.weightEntries.delete(id);
+    await recordSyncChange("weight_entry", id, "delete", changedAt);
+  });
 }
 
 export async function updateWeightEntry(
   id: string,
   patch: Pick<WeightEntry, "date" | "weightGrams" | "note">
 ): Promise<void> {
-  await db.weightEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.weightEntries, db.syncOutbox, async () => {
+    await db.weightEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("weight_entry", id, "upsert", changedAt);
+  });
 }
 
 export async function addCalorieEntry(
@@ -2835,19 +2992,30 @@ export async function addCalorieEntry(
 ): Promise<CalorieEntry> {
   const now = new Date().toISOString();
   const entry: CalorieEntry = { id: newId(), createdAt: now, updatedAt: now, ...input };
-  await db.calorieEntries.add(entry);
+  await db.transaction("rw", db.calorieEntries, db.syncOutbox, async () => {
+    await db.calorieEntries.add(entry);
+    await recordSyncChange("calorie_entry", entry.id, "upsert", now);
+  });
   return entry;
 }
 
 export async function deleteCalorieEntry(id: string): Promise<void> {
-  await db.calorieEntries.delete(id);
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.calorieEntries, db.syncOutbox, async () => {
+    await db.calorieEntries.delete(id);
+    await recordSyncChange("calorie_entry", id, "delete", changedAt);
+  });
 }
 
 export async function updateCalorieEntry(
   id: string,
   patch: Pick<CalorieEntry, "date" | "label" | "calories" | "meal" | "note">
 ): Promise<void> {
-  await db.calorieEntries.update(id, { ...patch, updatedAt: new Date().toISOString() });
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.calorieEntries, db.syncOutbox, async () => {
+    await db.calorieEntries.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("calorie_entry", id, "upsert", changedAt);
+  });
 }
 
 // App lock (PIN) ------------------------------------------------------------------

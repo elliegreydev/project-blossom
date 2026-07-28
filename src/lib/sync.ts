@@ -23,6 +23,29 @@ import {
   type ReminderPrivacy,
   type SyncEntity,
   type SyncOutboxItem,
+  type JournalEntry,
+  type PrivateLink,
+  type BloodTestEntry,
+  type VoiceGoal,
+  type VoiceSession,
+  type VoicePracticeCategory,
+  type PresentationEntry,
+  type PresentationCategory,
+  type BodyEntry,
+  type BodyMeasurement,
+  type IntimacyEntry,
+  type IntimacyDatePrecision,
+  type IntimacyFeeling,
+  type WeightEntry,
+  type CalorieEntry,
+  type BudgetEntry,
+  type BudgetCategory,
+  type BudgetGoal,
+  type SupportMapEntry,
+  type SupportMapEntryType,
+  type SupportMapLabel,
+  type SafetyCheckIn,
+  type SafetyCheckInStatus,
 } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
@@ -43,6 +66,20 @@ const SYNC_ORDER: SyncEntity[] = [
   "check_in",
   "goal",
   "aurora_nudge",
+  "journal_entry",
+  "private_link",
+  "blood_test_entry",
+  "voice_goal",
+  "voice_session",
+  "presentation_entry",
+  "body_entry",
+  "intimacy_entry",
+  "weight_entry",
+  "calorie_entry",
+  "budget_entry",
+  "budget_goal",
+  "support_map_entry",
+  "safety_check_in",
 ];
 
 const TABLES: Record<SyncEntity, string> = {
@@ -59,6 +96,20 @@ const TABLES: Record<SyncEntity, string> = {
   check_in: "check_ins",
   goal: "goals",
   aurora_nudge: "aurora_interaction_log",
+  journal_entry: "journal_entries",
+  private_link: "private_links",
+  blood_test_entry: "blood_test_entries",
+  voice_goal: "voice_practice_goals",
+  voice_session: "voice_practice_sessions",
+  presentation_entry: "presentation_entries",
+  body_entry: "body_entries",
+  intimacy_entry: "intimacy_entries",
+  weight_entry: "weight_entries",
+  calorie_entry: "calorie_entries",
+  budget_entry: "budget_entries",
+  budget_goal: "budget_goals",
+  support_map_entry: "support_map_entries",
+  safety_check_in: "safety_check_ins",
 };
 
 export class LocalDataOwnershipError extends Error {
@@ -87,6 +138,14 @@ function nullableNumber(value: unknown): number | null {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function measurementsArray(value: unknown): BodyMeasurement[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+    .map((item) => ({ label: stringValue(item.label), value: stringValue(item.value) }))
+    .filter((item) => item.label);
 }
 
 function appointmentBuilderData(value: unknown): Appointment["builderData"] {
@@ -333,7 +392,7 @@ async function localPayload(
             confidence: item.confidence,
             stress: item.stress,
             comfort: item.comfort,
-            note: null,
+            note: item.note,
             created_at: item.createdAt,
           }
         : null;
@@ -362,6 +421,192 @@ async function localPayload(
             nudge_key: item.nudgeKey,
             last_shown_at: item.lastShownAt,
             dismissed_count: item.dismissedCount,
+          }
+        : null;
+    }
+    case "journal_entry": {
+      const item = await db.journalEntries.get(recordId);
+      return item ? { ...shared, id: item.id, body_text: item.bodyText, created_at: item.createdAt } : null;
+    }
+    case "private_link": {
+      const item = await db.privateLinks.get(recordId);
+      return item
+        ? { ...shared, id: item.id, label: item.label, url: item.url, note: item.note, created_at: item.createdAt }
+        : null;
+    }
+    case "blood_test_entry": {
+      const item = await db.bloodTestEntries.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            test_name: item.testName,
+            date: item.date,
+            value: item.value,
+            unit: item.unit,
+            lab_source: item.labSource,
+            reference_range_raw: item.referenceRangeRaw,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "voice_goal": {
+      const item = await db.voiceGoals.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            target_frequency: item.targetFrequency,
+            target_duration: item.targetDuration,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "voice_session": {
+      const item = await db.voiceSessions.get(recordId);
+      // recording is a raw Blob - deliberately never pushed, see VoiceSession's comment.
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            goal_id: item.goalId,
+            session_duration: item.sessionDuration,
+            comfort_rating: item.comfortRating,
+            note: item.note,
+            pitch_low_hz: item.pitchLowHz,
+            pitch_high_hz: item.pitchHighHz,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "presentation_entry": {
+      const item = await db.presentationEntries.get(recordId);
+      // photo is a raw Blob - deliberately never pushed, see PresentationEntry's comment.
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            date: item.date,
+            category: item.category,
+            note: item.note,
+            confidence_rating: item.confidenceRating,
+            want_to_try: item.wantToTry,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "body_entry": {
+      const item = await db.bodyEntries.get(recordId);
+      // photo is a raw Blob - deliberately never pushed, see BodyEntry's comment.
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            date: item.date,
+            measurements: item.measurements,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "intimacy_entry": {
+      const item = await db.intimacyEntries.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            date: item.date,
+            time: item.time,
+            date_precision: item.datePrecision,
+            label: item.label,
+            tags: item.tags,
+            protection_note: item.protectionNote,
+            feeling: item.feeling,
+            aftercare_note: item.aftercareNote,
+            private_note: item.privateNote,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "weight_entry": {
+      const item = await db.weightEntries.get(recordId);
+      return item
+        ? { ...shared, id: item.id, date: item.date, weight_grams: item.weightGrams, note: item.note, created_at: item.createdAt }
+        : null;
+    }
+    case "calorie_entry": {
+      const item = await db.calorieEntries.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            date: item.date,
+            label: item.label,
+            calories: item.calories,
+            meal: item.meal,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "budget_entry": {
+      const item = await db.budgetEntries.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            category: item.category,
+            description: item.description,
+            amount: item.amount,
+            date: item.date,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "budget_goal": {
+      const item = await db.budgetGoals.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            label: item.label,
+            target_amount: item.targetAmount,
+            saved_amount: item.savedAmount,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "support_map_entry": {
+      const item = await db.supportMapEntries.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            labels: item.labels,
+            contact: item.contact,
+            area: item.area,
+            note: item.note,
+            review_on: item.reviewOn,
+            is_favourite: item.isFavourite,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "safety_check_in": {
+      const item = await db.safetyCheckIns.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            started_at: item.startedAt,
+            due_at: item.dueAt,
+            status: item.status,
+            snoozed_once: item.snoozedOnce,
           }
         : null;
     }
@@ -438,6 +683,48 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
       return;
     case "aurora_nudge":
       await db.auroraNudges.delete(stringValue(row.nudge_key));
+      return;
+    case "journal_entry":
+      await db.journalEntries.delete(id);
+      return;
+    case "private_link":
+      await db.privateLinks.delete(id);
+      return;
+    case "blood_test_entry":
+      await db.bloodTestEntries.delete(id);
+      return;
+    case "voice_goal":
+      await db.voiceGoals.delete(id);
+      return;
+    case "voice_session":
+      await db.voiceSessions.delete(id);
+      return;
+    case "presentation_entry":
+      await db.presentationEntries.delete(id);
+      return;
+    case "body_entry":
+      await db.bodyEntries.delete(id);
+      return;
+    case "intimacy_entry":
+      await db.intimacyEntries.delete(id);
+      return;
+    case "weight_entry":
+      await db.weightEntries.delete(id);
+      return;
+    case "calorie_entry":
+      await db.calorieEntries.delete(id);
+      return;
+    case "budget_entry":
+      await db.budgetEntries.delete(id);
+      return;
+    case "budget_goal":
+      await db.budgetGoals.delete(id);
+      return;
+    case "support_map_entry":
+      await db.supportMapEntries.delete(id);
+      return;
+    case "safety_check_in":
+      await db.safetyCheckIns.delete(id);
   }
 }
 
@@ -650,6 +937,178 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         lastShownAt: stringValue(row.last_shown_at),
         dismissedCount: nullableNumber(row.dismissed_count) ?? 0,
       });
+      return;
+    case "journal_entry":
+      await db.journalEntries.put({
+        id,
+        bodyText: stringValue(row.body_text),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies JournalEntry);
+      return;
+    case "private_link":
+      await db.privateLinks.put({
+        id,
+        label: stringValue(row.label),
+        url: stringValue(row.url),
+        note: nullableString(row.note),
+        createdAt,
+      } satisfies PrivateLink);
+      return;
+    case "blood_test_entry":
+      await db.bloodTestEntries.put({
+        id,
+        testName: stringValue(row.test_name),
+        date: stringValue(row.date),
+        value: stringValue(row.value),
+        unit: nullableString(row.unit),
+        labSource: nullableString(row.lab_source),
+        referenceRangeRaw: nullableString(row.reference_range_raw),
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies BloodTestEntry);
+      return;
+    case "voice_goal":
+      await db.voiceGoals.put({
+        id,
+        title: stringValue(row.title),
+        category: stringValue(row.category) as VoicePracticeCategory,
+        targetFrequency: nullableString(row.target_frequency),
+        targetDuration: nullableString(row.target_duration),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies VoiceGoal);
+      return;
+    case "voice_session": {
+      const existing = await db.voiceSessions.get(id);
+      await db.voiceSessions.put({
+        id,
+        goalId: stringValue(row.goal_id),
+        sessionDuration: nullableString(row.session_duration),
+        comfortRating: nullableNumber(row.comfort_rating),
+        note: nullableString(row.note),
+        // Never restored from the server - see VoiceSession's own comment.
+        // A session that already has a local recording keeps it untouched.
+        recording: existing?.recording ?? null,
+        pitchLowHz: nullableNumber(row.pitch_low_hz),
+        pitchHighHz: nullableNumber(row.pitch_high_hz),
+        createdAt,
+      } satisfies VoiceSession);
+      return;
+    }
+    case "presentation_entry": {
+      const existing = await db.presentationEntries.get(id);
+      await db.presentationEntries.put({
+        id,
+        date: stringValue(row.date),
+        category: stringValue(row.category) as PresentationCategory,
+        note: nullableString(row.note),
+        // Never restored from the server - see PresentationEntry's own comment.
+        photo: existing?.photo ?? null,
+        confidenceRating: nullableNumber(row.confidence_rating),
+        wantToTry: row.want_to_try === true,
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies PresentationEntry);
+      return;
+    }
+    case "body_entry": {
+      const existing = await db.bodyEntries.get(id);
+      await db.bodyEntries.put({
+        id,
+        date: stringValue(row.date),
+        measurements: measurementsArray(row.measurements),
+        // Never restored from the server - see BodyEntry's own comment.
+        photo: existing?.photo ?? null,
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies BodyEntry);
+      return;
+    }
+    case "intimacy_entry":
+      await db.intimacyEntries.put({
+        id,
+        date: stringValue(row.date),
+        time: nullableString(row.time),
+        datePrecision: stringValue(row.date_precision) as IntimacyDatePrecision,
+        label: nullableString(row.label),
+        tags: stringArray(row.tags),
+        protectionNote: nullableString(row.protection_note),
+        feeling: nullableString(row.feeling) as IntimacyFeeling | null,
+        aftercareNote: nullableString(row.aftercare_note),
+        privateNote: nullableString(row.private_note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies IntimacyEntry);
+      return;
+    case "weight_entry":
+      await db.weightEntries.put({
+        id,
+        date: stringValue(row.date),
+        weightGrams: nullableNumber(row.weight_grams) ?? 0,
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies WeightEntry);
+      return;
+    case "calorie_entry":
+      await db.calorieEntries.put({
+        id,
+        date: stringValue(row.date),
+        label: stringValue(row.label),
+        calories: nullableNumber(row.calories) ?? 0,
+        meal: nullableString(row.meal),
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies CalorieEntry);
+      return;
+    case "budget_entry":
+      await db.budgetEntries.put({
+        id,
+        category: stringValue(row.category) as BudgetCategory,
+        description: nullableString(row.description),
+        amount: nullableNumber(row.amount) ?? 0,
+        date: stringValue(row.date),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies BudgetEntry);
+      return;
+    case "budget_goal":
+      await db.budgetGoals.put({
+        id,
+        label: stringValue(row.label),
+        targetAmount: nullableNumber(row.target_amount) ?? 0,
+        savedAmount: nullableNumber(row.saved_amount) ?? 0,
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies BudgetGoal);
+      return;
+    case "support_map_entry":
+      await db.supportMapEntries.put({
+        id,
+        name: stringValue(row.name),
+        type: stringValue(row.type) as SupportMapEntryType,
+        labels: stringArray(row.labels) as SupportMapLabel[],
+        contact: nullableString(row.contact),
+        area: nullableString(row.area),
+        note: nullableString(row.note),
+        reviewOn: nullableString(row.review_on),
+        isFavourite: row.is_favourite === true,
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies SupportMapEntry);
+      return;
+    case "safety_check_in":
+      await db.safetyCheckIns.put({
+        id,
+        startedAt: stringValue(row.started_at),
+        dueAt: stringValue(row.due_at),
+        status: stringValue(row.status) as SafetyCheckInStatus,
+        snoozedOnce: row.snoozed_once === true,
+      } satisfies SafetyCheckIn);
   }
 }
 
@@ -750,6 +1209,17 @@ async function enqueueFullSnapshot(): Promise<void> {
     ["appointment", await db.appointments.toArray()],
     ["check_in", await db.checkIns.toArray()],
     ["goal", await db.goals.toArray()],
+    ["journal_entry", await db.journalEntries.toArray()],
+    ["blood_test_entry", await db.bloodTestEntries.toArray()],
+    ["voice_goal", await db.voiceGoals.toArray()],
+    ["presentation_entry", await db.presentationEntries.toArray()],
+    ["body_entry", await db.bodyEntries.toArray()],
+    ["intimacy_entry", await db.intimacyEntries.toArray()],
+    ["weight_entry", await db.weightEntries.toArray()],
+    ["calorie_entry", await db.calorieEntries.toArray()],
+    ["budget_entry", await db.budgetEntries.toArray()],
+    ["budget_goal", await db.budgetGoals.toArray()],
+    ["support_map_entry", await db.supportMapEntries.toArray()],
   ];
   for (const [entity, records] of collections) {
     for (const record of records) {
@@ -758,6 +1228,15 @@ async function enqueueFullSnapshot(): Promise<void> {
   }
   for (const nudge of await db.auroraNudges.toArray()) {
     await recordSyncChange("aurora_nudge", nudge.nudgeKey, "upsert", nudge.lastShownAt);
+  }
+  for (const link of await db.privateLinks.toArray()) {
+    await recordSyncChange("private_link", link.id, "upsert", link.createdAt);
+  }
+  for (const session of await db.voiceSessions.toArray()) {
+    await recordSyncChange("voice_session", session.id, "upsert", session.createdAt);
+  }
+  for (const checkIn of await db.safetyCheckIns.toArray()) {
+    await recordSyncChange("safety_check_in", checkIn.id, "upsert", checkIn.startedAt);
   }
 }
 

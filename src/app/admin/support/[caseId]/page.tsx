@@ -155,9 +155,12 @@ export default function SupportCaseDetailPage({ params }: { params: Promise<{ ca
           </pre>
 
           <p className={styles.subtitle}>
-            Journal entries, check-in notes, and v1.5 tracking (blood tests, voice practice,
-            presentation, body/progress) never sync to the server, so they aren&apos;t shown here
-            regardless of case status - that data only ever exists on the person&apos;s own device.
+            Journal entries, blood tests, voice practice, presentation, body/progress, weight/calorie
+            logs, budget entries, Intimacy &amp; wellbeing entries, safety check-ins, private links, and
+            the Personal Support Map now sync to the server (since 28 Jul 2026), but are deliberately
+            not shown here regardless of case status - support access hasn&apos;t been extended to reach
+            them. Photos and voice recordings are the only remaining data that genuinely never syncs and
+            only ever exists on the person&apos;s own device.
           </p>
         </>
       )}

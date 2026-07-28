@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Beta draft - last updated 21 July 2026</p>
+          <p className={styles.updated}>Beta draft - last updated 28 July 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -52,17 +52,25 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>What stays on your device</h2>
             <p>
-              The following stays on the device where you create it and is not included in sync:
-              journal entries and written check-in notes; Aurora AI conversation history; gender-euphoria entries and Time Capsule
-              entries; photos; blood-test records; voice recordings and practice notes; body and
-              presentation tracking; weight entries, weight preferences and food/calorie logs;
-              social-transition plans and private contact notes; budget entries; Intimacy &amp; wellbeing entries;
-              safety check-ins and trusted-contact details; saved private links; your app lock, PIN,
-              biometric credential reference, accessibility choices, and Home layout choices.
+              The following never syncs and is never sent to Blossom&apos;s servers, no exceptions,
+              whether you&apos;re signed out, signed in, or have sync turned on: <strong>all photos</strong>
+              (presentation and body/progress tracking) and <strong>all voice recordings</strong> (voice
+              practice sessions). These only ever exist on the device you took or recorded them on.
+            </p>
+            <p>
+              The following also stays on the device where you create it: Aurora AI conversation
+              history; gender-euphoria entries and Time Capsule entries; social-transition plans; your
+              app lock, PIN, biometric credential reference, accessibility choices, and Home layout
+              choices.
             </p>
             <p>
               Blossom does not receive your biometric data. Your device handles that itself; Blossom
               only keeps a local reference that lets it ask the device to unlock the app.
+            </p>
+            <p>
+              If you use Blossom without signing in, or sign in but leave sync off, none of your data
+              is sent to Blossom&apos;s servers at all - everything above stays local, and so does
+              everything listed as syncable below.
             </p>
           </section>
 
@@ -73,12 +81,20 @@ export default function PrivacyPolicyPage() {
               between your signed-in devices. This can include your profile and preferences; journey
               milestones and timeline; medications, schedules, dose logs, medication supplies and care
               supplies; appointments, including appointment-builder details and private appointment
-              notes; numeric check-in ratings; goals; and the minimal Aurora state needed to avoid
-              repeating the same nudge.
+              notes; check-in ratings and notes; goals; the minimal Aurora state needed to avoid
+              repeating the same nudge; journal entries; blood-test records; voice practice goals and
+              session notes (never the recording itself); presentation and body/progress tracking data
+              such as category, rating and measurements (never the photo itself); weight and
+              food/calorie logs; budget entries and goals; Intimacy &amp; wellbeing entries; safety
+              check-ins; your saved private links; and your Personal Support Map (private contacts and
+              approximate locations you&apos;ve saved).
             </p>
             <p>
-              Written journal and check-in notes, Intimacy &amp; wellbeing entries, photos, blood tests, voice recordings, social plans,
-              budget data, safety contacts, and the other device-only categories above do not sync.
+              None of this is currently visible to Blossom staff through the support-access system
+              described below, even while synced - staff support access only reaches the smaller set
+              of categories it already covered before this list expanded. Photos, voice recordings,
+              Aurora AI conversation history, gender-euphoria/Time Capsule entries and social-transition
+              plans never sync at all, as described above.
             </p>
           </section>
 
@@ -133,8 +149,12 @@ export default function PrivacyPolicyPage() {
               If you ask for help with a synced account, a staff member may open a time-limited support
               case. While that case is open, authorised staff can see the synced profile, medication,
               appointment, goal and journey information needed to help. Each normal in-app access is
-              logged. Journal text, written check-in notes and device-only categories cannot be reached
-              through support access because they never sync.
+              logged. Journal text, blood-test records, voice practice notes, presentation and
+              body/progress tracking, weight and food/calorie logs, budget entries, Intimacy &amp;
+              wellbeing entries, safety check-ins, private links, and your Personal Support Map cannot
+              currently be reached through support access - not because they don&apos;t sync, but
+              because we have deliberately not extended staff access to reach them. Photos and voice
+              recordings cannot be reached either way, since they never sync at all.
             </p>
           </section>
 
