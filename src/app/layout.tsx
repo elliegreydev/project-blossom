@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Inter } from "next/font/google";
 import AccessibilityEffects from "@/components/AccessibilityEffects";
 import SyncCoordinator from "@/components/SyncCoordinator";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import { SPLASH_SIZES, splashDims, splashMedia } from "@/lib/appleSplash";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
     <html lang="en-GB" className={`${manrope.variable} ${inter.variable}`}>
       <body>
         <AccessibilityEffects />
+        <ServiceWorkerRegistrar />
         {children}
         <SyncCoordinator />
       </body>

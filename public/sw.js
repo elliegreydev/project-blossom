@@ -1,7 +1,19 @@
-// Minimal service worker, only for real (server-sent) push delivery to
+// Minimal service worker, mainly for real (server-sent) push delivery to
 // signed-in/synced accounts - see src/app/api/cron/send-reminders and
 // src/lib/push.ts. Foreground reminders (src/components/LocalReminderService)
-// don't need a service worker at all.
+// don't need a service worker at all. Registered unconditionally on every
+// visit (see ServiceWorkerRegistrar in the root layout) rather than only
+// when someone opts into push - an installed PWA with no active service
+// worker is a fragile install on Android, and skipWaiting/clients.claim
+// below make sure each deploy's new worker takes over immediately instead
+// of leaving an old one in control until every tab is closed and reopened.
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener("push", (event) => {
   let payload = {};
