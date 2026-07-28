@@ -43,13 +43,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return (
       <main className={styles.loadingScreen} aria-live="polite" aria-label="Opening Blossom">
         <div className={styles.loadingMarkWrap}>
-          <div className={styles.loadingGlow} aria-hidden="true" />
-          <div className={styles.loadingMark} aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-512.png" alt="" width={72} height={72} />
         </div>
         <p className={styles.loadingWordmark}>Blossom</p>
         <p className={styles.loadingStatus}>

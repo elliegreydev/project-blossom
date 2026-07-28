@@ -17,6 +17,12 @@
   margin-inline: auto;
 }
 
+/* Deliberately always this exact pink-to-lavender gradient, ignoring the
+   dark-mode override on --gradient-brand (which flattens it to a plain
+   surface colour) - this is Blossom's own launch-screen design, the
+   warmest and most "welcome" of the options considered, and it's meant to
+   read the same way regardless of the viewer's theme. A dark screen would
+   look broken if a hiccup ever showed blank again; this can't. */
 .loadingScreen {
   min-height: 100dvh;
   display: grid;
@@ -24,76 +30,31 @@
   justify-items: center;
   gap: 16px;
   padding: 24px;
-  color: var(--text-secondary);
-  background: var(--bg);
+  background: linear-gradient(160deg, var(--pink), var(--lavender));
   font-size: 14px;
 }
 
 .loadingMarkWrap {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 96px;
+  height: 96px;
   display: grid;
   place-items: center;
-}
-
-.loadingGlow {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--pink) 45%, transparent), transparent 70%);
-  animation: glowPulse 3.2s var(--ease-standard) infinite;
-}
-
-.loadingMark {
-  position: relative;
-  width: 44px;
-  height: 44px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 32px rgba(43, 31, 51, 0.18);
   animation: breathe 1.8s var(--ease-standard) infinite alternate;
 }
 
-.loadingMark span {
-  position: absolute;
-  width: 22px;
-  height: 30px;
-  border-radius: 70% 70% 45% 45%;
-  transform-origin: 50% 100%;
-  background: color-mix(in srgb, var(--pink) 72%, transparent);
-}
-
-.loadingMark span:nth-child(1) {
-  left: 11px;
-  top: -3px;
-}
-
-.loadingMark span:nth-child(2) {
-  right: -2px;
-  top: 8px;
-  transform: rotate(90deg);
-  background: color-mix(in srgb, var(--lavender) 72%, transparent);
-}
-
-.loadingMark span:nth-child(3) {
-  left: 11px;
-  bottom: -3px;
-  transform: rotate(180deg);
-  background: color-mix(in srgb, var(--sky) 72%, transparent);
-}
-
-.loadingMark span:nth-child(4) {
-  left: -2px;
-  top: 8px;
-  transform: rotate(-90deg);
-  background: color-mix(in srgb, var(--mint) 72%, transparent);
+.loadingMarkWrap img {
+  width: 72px;
+  height: 72px;
 }
 
 @keyframes breathe {
   from {
-    opacity: 0.58;
-    transform: scale(0.94);
+    opacity: 0.9;
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -101,23 +62,11 @@
   }
 }
 
-@keyframes glowPulse {
-  0%,
-  100% {
-    transform: scale(0.85);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.95;
-  }
-}
-
 .loadingWordmark {
   font-family: var(--font-manrope), var(--font-inter), sans-serif;
   font-weight: 700;
-  font-size: 17px;
-  color: var(--text-primary);
+  font-size: 18px;
+  color: var(--plum);
   margin: 0;
 }
 
@@ -126,6 +75,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
+  color: color-mix(in srgb, var(--plum) 65%, transparent);
 }
 
 .loadingDots {
@@ -163,8 +113,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loadingMark,
-  .loadingGlow,
+  .loadingMarkWrap,
   .loadingDots span {
     animation: none;
   }
