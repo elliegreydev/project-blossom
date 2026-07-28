@@ -34,21 +34,23 @@
   font-size: 14px;
 }
 
+/* icon-512.png already is the finished squircle tile (its own white
+   background, rounding and shadow are baked into the image) - no extra
+   frame needed around it, that's what created the "square inside a square"
+   look. */
 .loadingMarkWrap {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: 112px;
   display: grid;
   place-items: center;
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 12px 32px rgba(43, 31, 51, 0.18);
+  filter: drop-shadow(0 12px 28px rgba(43, 31, 51, 0.18));
   animation: breathe 1.8s var(--ease-standard) infinite alternate;
 }
 
 .loadingMarkWrap img {
-  width: 72px;
-  height: 72px;
+  width: 100%;
+  height: 100%;
 }
 
 @keyframes breathe {
