@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     title: "New team application",
     body: `${name} applied to join the team.`,
     tag: "staff-application",
-    url: "/admin/applications",
+    url: "https://project-blossom-staff.vercel.app/applications",
   });
 
   return NextResponse.json({ ok: true });

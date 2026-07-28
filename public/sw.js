@@ -49,6 +49,16 @@ self.addEventListener("notificationclick", (event) => {
 
   event.notification.close();
   const url = event.notification.data?.url || "/";
+  const isSameOrigin = url.startsWith("/") || url.startsWith(self.location.origin);
+
+  // Cross-origin targets (e.g. the staff app) can't reuse an existing client
+  // via navigate() - the Clients API only allows navigating same-origin
+  // clients - so just open a new window for those instead.
+  if (!isSameOrigin) {
+    event.waitUntil(self.clients.openWindow(url));
+    return;
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {

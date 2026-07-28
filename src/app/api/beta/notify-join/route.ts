@@ -22,7 +22,7 @@ export async function POST() {
     title: "New beta tester",
     body: `${user.email ?? "Someone"} just joined the beta.`,
     tag: "beta-join",
-    url: "/admin/beta",
+    url: "https://project-blossom-staff.vercel.app/beta",
   });
 
   return NextResponse.json({ ok: true, sent: result.sent });
