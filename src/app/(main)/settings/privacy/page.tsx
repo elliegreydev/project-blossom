@@ -16,10 +16,11 @@ import {
 } from "@/lib/db";
 import { isPlatformAuthenticatorAvailable, registerBiometricUnlock } from "@/lib/webauthn";
 import { createClient } from "@/lib/supabase/client";
+import { CATEGORY_LABELS, type TicketCategory } from "@/lib/ticketCategories";
 import styles from "@/components/settingsForm.module.css";
 
-interface OpenCase {
-  subject: string;
+interface ActiveGrant {
+  category: string;
   access_expires_at: string;
 }
 
@@ -52,7 +53,7 @@ export default function PrivacySettingsPage() {
 
   const [receiptLoading, setReceiptLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
-  const [openCase, setOpenCase] = useState<OpenCase | null>(null);
+  const [activeGrant, setActiveGrant] = useState<ActiveGrant | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
@@ -84,17 +85,21 @@ export default function PrivacySettingsPage() {
       if (cancelled) return;
       setSignedIn(true);
 
-      const [{ data: cases }, { data: subs }] = await Promise.all([
+      const [{ data: grants }, { data: subs }] = await Promise.all([
         supabase
-          .from("support_cases")
-          .select("subject,access_expires_at")
-          .eq("status", "open")
-          .order("created_at", { ascending: false })
+          .from("support_ticket_access_grants")
+          .select("access_expires_at,support_tickets(category)")
+          .not("verified_at", "is", null)
+          .is("revoked_at", null)
+          .gt("access_expires_at", new Date().toISOString())
+          .order("access_expires_at", { ascending: false })
           .limit(1),
         supabase.from("push_subscriptions").select("id").limit(1),
       ]);
       if (cancelled) return;
-      setOpenCase((cases?.[0] as OpenCase) ?? null);
+      const grantRow = grants?.[0];
+      const ticket = grantRow ? (Array.isArray(grantRow.support_tickets) ? grantRow.support_tickets[0] : grantRow.support_tickets) : null;
+      setActiveGrant(grantRow ? { category: ticket?.category ?? "your account", access_expires_at: grantRow.access_expires_at } : null);
       setPushEnabled(Boolean(subs && subs.length > 0));
       setReceiptLoading(false);
     }
@@ -226,17 +231,18 @@ export default function PrivacySettingsPage() {
           <p className={styles.hint}>Loading…</p>
         ) : !signedIn ? (
           <p className={styles.hint}>You&apos;re not signed in, so there&apos;s no synced account for staff to access.</p>
-        ) : openCase ? (
+        ) : activeGrant ? (
           <p className={styles.hint}>
-            A Blossom staff member currently has temporary access to help with
-            &ldquo;{openCase.subject}&rdquo;. This ends automatically by{" "}
-            {new Date(openCase.access_expires_at).toLocaleString("en-GB", {
+            A Blossom staff member currently has temporary access to help with your ticket
+            (&ldquo;{CATEGORY_LABELS[activeGrant.category as TicketCategory] ?? activeGrant.category}&rdquo;). This ends
+            automatically by{" "}
+            {new Date(activeGrant.access_expires_at).toLocaleString("en-GB", {
               day: "numeric",
               month: "short",
               hour: "2-digit",
               minute: "2-digit",
             })}
-            , or sooner if the case is closed first.
+            , or sooner if staff end it early.
           </p>
         ) : (
           <p className={styles.hint}>No one from the Blossom team currently has access to your account.</p>
