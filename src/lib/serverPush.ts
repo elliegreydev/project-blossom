@@ -62,6 +62,50 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload): 
   return { sent };
 }
 
+// Sends to Blossom STAFF, not main-app users - a subscription only works
+// with the VAPID key pair it was created under, and staff subscribe via the
+// separate Blossom Staff app's own service worker/keys, so this needs that
+// app's key pair and its staff_push_subscriptions table, not this app's.
+export async function sendPushToStaff(userIds: string[], payload: PushPayload): Promise<{ sent: number }> {
+  if (userIds.length === 0) return { sent: 0 };
+
+  const vapidPublicKey = process.env.STAFF_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.STAFF_VAPID_PRIVATE_KEY;
+  const vapidSubject = process.env.STAFF_VAPID_SUBJECT;
+  if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) return { sent: 0 };
+  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+
+  const supabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: subscriptions } = await supabase
+    .from("staff_push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .in("user_id", userIds);
+  if (!subscriptions || subscriptions.length === 0) return { sent: 0 };
+
+  const body = JSON.stringify({ title: payload.title, body: payload.body, tag: payload.tag, url: payload.url ?? "/" });
+  let sent = 0;
+  const deadEndpoints = new Set<string>();
+
+  for (const sub of subscriptions) {
+    try {
+      await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
+      sent++;
+    } catch (error) {
+      if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
+    }
+  }
+
+  if (deadEndpoints.size > 0) {
+    await supabase.from("staff_push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
+  }
+
+  return { sent };
+}
+
 // Every account currently flagged beta_tester = true. Revoked/never-tester
 // accounts are naturally excluded since this reads the live column, not a
 // cached list.

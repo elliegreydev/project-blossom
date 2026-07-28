@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { sendPushToUsers, staffUserIdsAtRank } from "@/lib/serverPush";
+import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: "could not submit" }, { status: 500 });
 
   const recipients = await staffUserIdsAtRank(ADMINISTRATOR_RANK);
-  await sendPushToUsers(recipients, {
+  await sendPushToStaff(recipients, {
     title: "New team application",
     body: `${name} applied to join the team.`,
     tag: "staff-application",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { sendPushToUsers, staffUserIdsAtRank } from "@/lib/serverPush";
+import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export async function POST() {
   if (isBetaTester !== true) return NextResponse.json({ error: "not a beta tester" }, { status: 403 });
 
   const staffIds = await staffUserIdsAtRank(0);
-  const result = await sendPushToUsers(staffIds, {
+  const result = await sendPushToStaff(staffIds, {
     title: "New beta tester",
     body: `${user.email ?? "Someone"} just joined the beta.`,
     tag: "beta-join",

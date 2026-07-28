@@ -150,6 +150,7 @@ export default function SettingsPage() {
         <div className={styles.group}>
           <Row href="/settings/getting-started" title="Starting HRT safely" meta="Practical steps, not medical advice" />
           <Row href="/settings/support" title="Help & support" />
+          <Row href="/tickets" title="Contact support" meta="Open a ticket, we'll get back to you here" />
           <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
         </div>
       </div>
