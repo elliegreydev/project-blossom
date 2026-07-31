@@ -183,6 +183,19 @@ assert.equal(
   "11:58 is hours away in America/New_York's local time at this NOW - the zone param must actually be used, not ignored"
 );
 
+// Regression: the cron calls dueMedicationReminders every few minutes with a
+// fresh `now` that carries its own random seconds/ms. The timezone branch of
+// scheduledSlotsToday used to bake that leftover sub-minute noise into the
+// slot's identity (`now.getTime() + diffMinutes * 60000`), so the same
+// overdue dose got a brand-new key - and therefore re-sent, bypassing all
+// dedup - on every single cron tick instead of respecting the re-nag gate.
+const driftMed = { ...med, frequency: { times: ["07:58"], days: null, intervalDays: null, anchorDate: null } };
+const run1 = dueMedicationReminders([driftMed], [], [], new Date("2026-07-16T12:00:02.405Z"), "America/New_York");
+const run2 = dueMedicationReminders([driftMed], [], [], new Date("2026-07-16T12:05:02.917Z"), "America/New_York");
+assert.equal(run1.length, 1);
+assert.equal(run2.length, 1);
+assert.equal(run1[0].key, run2[0].key, "the same overdue dose slot must produce an identical key across cron ticks with different sub-minute jitter, or dedup silently breaks");
+
 // Quiet hours - overnight window (22:00-07:00), local device time (no zone).
 function atLocalTime(hh, mm) {
   const d = new Date(NOW);

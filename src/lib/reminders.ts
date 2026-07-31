@@ -74,10 +74,14 @@ function scheduledSlotsToday(med: Medication, now: Date, timeZone?: string): str
     } else if (med.frequency.days && !med.frequency.days.includes(weekday)) {
       return [];
     }
+    // Floor to the whole minute before offsetting - otherwise now's leftover
+    // seconds/ms (which drift run to run) leak into the slot's identity,
+    // producing a new key on every cron tick and defeating dedup entirely.
+    const flooredNowMs = now.getTime() - (now.getTime() % 60_000);
     return med.frequency.times.map((t) => {
       const [h, m] = t.split(":").map(Number);
       const diffMinutes = h * 60 + m - nowMinuteOfDay;
-      return new Date(now.getTime() + diffMinutes * 60 * 1000).toISOString();
+      return new Date(flooredNowMs + diffMinutes * 60 * 1000).toISOString();
     });
   }
 
