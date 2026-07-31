@@ -12,10 +12,13 @@ export interface PendingReminder {
 // first few minutes - but not forever, so a dose from this morning doesn't
 // still nag at bedtime.
 const STILL_RELEVANT_MS = 6 * 60 * 60 * 1000;
-// Minimum gap between two notifications for the same slot.
-const RENAG_INTERVAL_MS = 45 * 60 * 1000;
+// Minimum gap between two notifications for the same slot. Exported so the
+// reminder cron can pass the same value into claim_reminder_notification()
+// (see supabase/atomic_reminder_claim.sql) - one source of truth for both
+// the client-side (Tier 1) and server-side (Tier 3) re-nag gate.
+export const RENAG_INTERVAL_MS = 45 * 60 * 1000;
 // Initial notification plus this many follow-ups, then it gives up.
-const MAX_NOTIFICATIONS = 3;
+export const MAX_NOTIFICATIONS = 3;
 
 // Local wall-clock hour/minute/weekday/date "as observed in timeZone",
 // without ever constructing a Date pinned to that zone (a well-known JS Date

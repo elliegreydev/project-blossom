@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
-import { dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, isQuietHours } from "@/lib/reminders";
+import { MAX_NOTIFICATIONS, RENAG_INTERVAL_MS, dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, isQuietHours } from "@/lib/reminders";
 import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder } from "@/lib/db";
 
 // Triggered every few minutes by the VPS crontab (see docs/PROD_RELEASE.md-
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   const userIds = [...new Set(subscriptions.map((row) => row.user_id as string))];
-  const [{ data: profiles }, { data: medications }, { data: medicationLogs }, { data: appointments }, { data: alreadyNotified }] =
+  const [{ data: profiles }, { data: medications }, { data: medicationLogs }, { data: appointments }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -60,34 +60,23 @@ export async function GET(request: Request) {
       supabase.from("medications").select("id, user_id, name, route, unit, frequency, active").in("user_id", userIds),
       supabase.from("medication_logs").select("id, user_id, medication_id, scheduled_time, status").in("user_id", userIds),
       supabase.from("appointments").select("id, user_id, title, appointment_at, reminder_settings").in("user_id", userIds),
-      supabase.from("push_notified_reminders").select("user_id, reminder_key, sent_at, notify_count, snoozed_until").in("user_id", userIds),
     ]);
-
-  const notifiedByUser = new Map<string, NotifiedReminder[]>();
-  const notifiedStateByCompositeKey = new Map<string, NotifiedReminder>();
-  for (const row of alreadyNotified ?? []) {
-    const state: NotifiedReminder = {
-      key: row.reminder_key,
-      firedAt: row.sent_at,
-      count: row.notify_count ?? 1,
-      snoozedUntil: row.snoozed_until,
-    };
-    const list = notifiedByUser.get(row.user_id) ?? [];
-    list.push(state);
-    notifiedByUser.set(row.user_id, list);
-    notifiedStateByCompositeKey.set(`${row.user_id}:${row.reminder_key}`, state);
-  }
 
   const now = new Date();
   let sent = 0;
-  const newlyNotified: { user_id: string; reminder_key: string; sent_at: string; notify_count: number; snoozed_until: null }[] = [];
   const deadEndpoints = new Set<string>();
+  const renagIntervalSeconds = Math.round(RENAG_INTERVAL_MS / 1000);
 
   for (const userId of userIds) {
     const profile = (profiles ?? []).find((p) => p.id === userId);
     const timeZone = profile?.timezone || "UTC";
     const detailed = profile?.reminder_privacy === "detailed";
-    const notified = notifiedByUser.get(userId) ?? [];
+    // Time-window eligibility only - no notified state passed in here.
+    // Whether a candidate is actually still eligible to send (re-nag gate,
+    // notification cap, snooze) is decided atomically per-reminder below via
+    // claim_reminder_notification, not from a snapshot read up front - see
+    // supabase/atomic_reminder_claim.sql for why.
+    const notified: NotifiedReminder[] = [];
 
     const meds: Medication[] = (medications ?? [])
       .filter((m) => m.user_id === userId)
@@ -158,6 +147,18 @@ export async function GET(request: Request) {
 
     const userSubs = subscriptions.filter((s) => s.user_id === userId);
     for (const reminder of pending) {
+      // Atomically claim this exact reminder before sending anything - if
+      // another (possibly overlapping) run already claimed it, this returns
+      // false and we skip it entirely, instead of trusting a snapshot read
+      // from the top of this run that could already be stale.
+      const { data: claimed, error: claimError } = await supabase.rpc("claim_reminder_notification", {
+        p_user_id: userId,
+        p_reminder_key: reminder.key,
+        p_max_notifications: MAX_NOTIFICATIONS,
+        p_renag_interval_seconds: renagIntervalSeconds,
+      });
+      if (claimError || !claimed) continue;
+
       const isMedication = reminder.key.startsWith("medication:");
       const payload = JSON.stringify({
         title: detailed ? reminder.detailedTitle : reminder.discreetTitle,
@@ -184,14 +185,9 @@ export async function GET(request: Request) {
           if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
         }
       }
-      const priorCount = notifiedStateByCompositeKey.get(`${userId}:${reminder.key}`)?.count ?? 0;
-      newlyNotified.push({ user_id: userId, reminder_key: reminder.key, sent_at: now.toISOString(), notify_count: priorCount + 1, snoozed_until: null });
     }
   }
 
-  if (newlyNotified.length > 0) {
-    await supabase.from("push_notified_reminders").upsert(newlyNotified, { onConflict: "user_id,reminder_key" });
-  }
   if (deadEndpoints.size > 0) {
     await supabase.from("push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
   }
