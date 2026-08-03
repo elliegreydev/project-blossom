@@ -52,3 +52,6 @@ android/build/
 android/app/build/
 android/*.aab
 android/*.apk
+
+# playwright browsers are machine-local, installed on demand
+/test-results/

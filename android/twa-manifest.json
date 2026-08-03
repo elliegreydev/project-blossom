@@ -4,14 +4,13 @@
   "name": "Project Blossom",
   "launcherName": "Blossom",
   "display": "standalone",
-  "orientation": "portrait",
-  "themeColor": "#fcfafc",
-  "themeColorDark": "#1b151f",
-  "navigationColor": "#fcfafc",
-  "navigationColorDark": "#1b151f",
-  "navigationDividerColor": "#fcfafc",
-  "navigationDividerColorDark": "#1b151f",
-  "backgroundColor": "#fcfafc",
+  "themeColor": "#FCFAFC",
+  "themeColorDark": "#1B151F",
+  "navigationColor": "#FCFAFC",
+  "navigationColorDark": "#1B151F",
+  "navigationDividerColor": "#FCFAFC",
+  "navigationDividerColorDark": "#1B151F",
+  "backgroundColor": "#FCFAFC",
   "enableNotifications": true,
   "startUrl": "/",
   "iconUrl": "https://projectblossom.net/icon-512.png",
@@ -22,7 +21,7 @@
     "alias": "blossom"
   },
   "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://projectblossom.net/manifest.webmanifest",
@@ -36,6 +35,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://projectblossom.net/",
   "minSdkVersion": 21,
+  "orientation": "portrait",
   "fingerprints": [
     {
       "name": "upload",
@@ -44,5 +44,6 @@
   ],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
+  "displayOverride": [],
   "appVersion": "1.0.0"
 }
