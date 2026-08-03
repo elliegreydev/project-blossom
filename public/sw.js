@@ -1,19 +1,138 @@
-// Minimal service worker, mainly for real (server-sent) push delivery to
-// signed-in/synced accounts - see src/app/api/cron/send-reminders and
-// src/lib/push.ts. Foreground reminders (src/components/LocalReminderService)
-// don't need a service worker at all. Registered unconditionally on every
-// visit (see ServiceWorkerRegistrar in the root layout) rather than only
-// when someone opts into push - an installed PWA with no active service
-// worker is a fragile install on Android, and skipWaiting/clients.claim
-// below make sure each deploy's new worker takes over immediately instead
-// of leaving an old one in control until every tab is closed and reopened.
-self.addEventListener("install", () => {
+// Service worker: real (server-sent) push delivery plus offline support.
+//
+// Push - see src/app/api/cron/send-reminders and src/lib/push.ts. Foreground
+// reminders (src/components/LocalReminderService) don't need a service worker
+// at all. Registered unconditionally on every visit (see ServiceWorkerRegistrar
+// in the root layout) rather than only when someone opts into push - an
+// installed PWA with no active service worker is a fragile install on Android,
+// and skipWaiting/clients.claim below make sure each deploy's new worker takes
+// over immediately instead of leaving an old one in control until every tab is
+// closed and reopened.
+//
+// Offline - Blossom is local-first: every entry lives in IndexedDB on the
+// device. Without the caching below the app still couldn't *open* without a
+// network, which is the wrong way round - someone's whole journal sitting on
+// their phone, unreachable on a train. Google Play also tests offline during
+// review.
+
+const VERSION = "v1";
+const SHELL_CACHE = `blossom-shell-${VERSION}`;
+const ASSET_CACHE = `blossom-assets-${VERSION}`;
+const SHELL_URL = "/";
+
+// Minimal last-resort page, only seen if even the cached shell is missing
+// (i.e. offline on the very first visit). Inline so it can't itself 404.
+const OFFLINE_FALLBACK = `<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blossom</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;text-align:center;
+    padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#fcfafc;color:#2b1f33}
+  @media (prefers-color-scheme:dark){body{background:#1b151f;color:#efeaf2}}
+  p{color:#6f6577;font-size:14px;line-height:1.6;max-width:30ch}
+  @media (prefers-color-scheme:dark){p{color:#a9a0b2}}
+</style></head>
+<body><div>
+  <h1 style="font-size:19px;margin:0 0 8px">You're offline</h1>
+  <p>Blossom needs to load once while you're connected. After that it works without a signal.</p>
+</div></body></html>`;
+
+self.addEventListener("install", (event) => {
+  // Warm the shell so a cold start with no network still boots the app.
+  event.waitUntil(
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.add(new Request(SHELL_URL, { cache: "reload" })))
+      .catch(() => {
+        // Installing offline is fine - the shell gets cached on the first
+        // successful navigation instead.
+      })
+  );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const keep = new Set([SHELL_CACHE, ASSET_CACHE]);
+      const names = await caches.keys();
+      await Promise.all(names.filter((n) => n.startsWith("blossom-") && !keep.has(n)).map((n) => caches.delete(n)));
+      await self.clients.claim();
+    })()
+  );
 });
+
+// Next.js fingerprints these, so a given URL's contents never change - safe to
+// serve straight from cache and cheap to keep.
+function isImmutableAsset(url) {
+  return url.pathname.startsWith("/_next/static/");
+}
+
+function isCacheableImage(url) {
+  return /^\/(icon|apple-icon|icon-192|icon-512|icon-maskable-512)[\w.-]*\.(png|svg|ico)$/.test(url.pathname);
+}
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // Cross-origin (Supabase, push endpoints) is never our business to cache.
+  if (url.origin !== self.location.origin) return;
+
+  // Never cache API responses. They're per-user, frequently sensitive, and a
+  // stale answer is worse than no answer. Same for anything auth-related.
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
+
+  // Next.js sends RSC payloads for client-side navigation; those can carry
+  // rendered user data, so they stay network-only too.
+  if (url.searchParams.has("_rsc")) return;
+
+  if (isImmutableAsset(url) || isCacheableImage(url)) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  if (request.mode === "navigate") {
+    event.respondWith(navigationHandler(request));
+  }
+});
+
+async function cacheFirst(request) {
+  const cache = await caches.open(ASSET_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  try {
+    const response = await fetch(request);
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  } catch (error) {
+    // A missing chunk offline is unrecoverable here; let it surface rather
+    // than pretending with an empty 200.
+    throw error;
+  }
+}
+
+// Network-first so a fresh deploy always wins while online, falling back
+// through the previously-cached shell to the inline page above.
+async function navigationHandler(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) cache.put(SHELL_URL, response.clone());
+    return response;
+  } catch {
+    const cachedShell = await cache.match(SHELL_URL);
+    if (cachedShell) return cachedShell;
+    return new Response(OFFLINE_FALLBACK, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+}
 
 self.addEventListener("push", (event) => {
   let payload = {};
