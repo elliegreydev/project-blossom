@@ -76,7 +76,11 @@ async function resolveByEmail(admin: Admin, email: string) {
   return null;
 }
 
-/** Attaches display names to rows that carry a user id, so HQ shows people not UUIDs. */
+/**
+ * Attaches display names to rows that carry a user id, so HQ shows people not
+ * UUIDs. Staff live in staff_profiles keyed by user_id; `profiles` is the app's
+ * end-user table and mostly won't contain them, so it's only a fallback.
+ */
 async function withNames<T extends Record<string, unknown>>(admin: Admin, rows: T[], fields: string[]) {
   const ids = new Set<string>();
   for (const row of rows) {
@@ -86,8 +90,15 @@ async function withNames<T extends Record<string, unknown>>(admin: Admin, rows: 
     }
   }
   if (!ids.size) return rows;
-  const { data: profiles } = await admin.from("profiles").select("id, display_name").in("id", [...ids]);
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
+  const idList = [...ids];
+  const [{ data: staff }, { data: profiles }] = await Promise.all([
+    admin.from("staff_profiles").select("user_id, display_name, email").in("user_id", idList),
+    admin.from("profiles").select("id, display_name").in("id", idList),
+  ]);
+  const nameById = new Map<string, string | null>();
+  for (const p of profiles ?? []) nameById.set(p.id, p.display_name);
+  // Staff names win over end-user ones for the same id.
+  for (const s of staff ?? []) nameById.set(s.user_id, s.display_name || s.email);
   return rows.map((row) => {
     const named: Record<string, unknown> = { ...row };
     for (const field of fields) {
@@ -180,7 +191,8 @@ async function readSection(admin: Admin, section: Section) {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(150);
-      return { items: await withNames(admin, data ?? [], ["actor_id", "user_id"]) };
+      // Rows already carry staff_email, but the name is friendlier to read.
+      return { items: await withNames(admin, data ?? [], ["staff_user_id"]) };
     }
     case "feedback": {
       const { data } = await admin.from("feedback_items").select("*").order("created_at", { ascending: false }).limit(200);
