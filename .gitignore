@@ -40,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# android TWA wrapper (Bubblewrap)
+# NEVER commit the signing keystore - it is the key that proves builds are
+# genuinely from us. Build outputs are regenerated, so they are noise.
+android/*.keystore
+android/*.jks
+android/*.keystore.md5
+android/.gradle/
+android/build/
+android/app/build/
+android/*.aab
+android/*.apk

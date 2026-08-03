@@ -1,0 +1,48 @@
+{
+  "packageId": "net.projectblossom.app",
+  "host": "projectblossom.net",
+  "name": "Project Blossom",
+  "launcherName": "Blossom",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#fcfafc",
+  "themeColorDark": "#1b151f",
+  "navigationColor": "#fcfafc",
+  "navigationColorDark": "#1b151f",
+  "navigationDividerColor": "#fcfafc",
+  "navigationDividerColorDark": "#1b151f",
+  "backgroundColor": "#fcfafc",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://projectblossom.net/icon-512.png",
+  "maskableIconUrl": "https://projectblossom.net/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "blossom"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://projectblossom.net/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://projectblossom.net/",
+  "minSdkVersion": 21,
+  "fingerprints": [
+    {
+      "name": "upload",
+      "value": "62:D7:15:BC:2F:A6:FD:A7:2D:00:C7:75:1B:37:D8:0E:FF:28:0F:14:5D:81:5F:8A:E7:59:75:B2:33:54:0C:0D"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appVersion": "1.0.0"
+}

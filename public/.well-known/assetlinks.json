@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.projectblossom.app",
+      "sha256_cert_fingerprints": [
+        "62:D7:15:BC:2F:A6:FD:A7:2D:00:C7:75:1B:37:D8:0E:FF:28:0F:14:5D:81:5F:8A:E7:59:75:B2:33:54:0C:0D"
+      ]
+    }
+  }
+]
