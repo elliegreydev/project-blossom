@@ -36,6 +36,8 @@ const READ_SECTIONS = [
   "onboarding",
   "activity",
   "feedback",
+  "messages",
+  "emails",
 ] as const;
 
 type Section = (typeof READ_SECTIONS)[number];
@@ -163,7 +165,11 @@ async function readSection(admin: Admin, section: Section) {
       return { items: data ?? [] };
     }
     case "docs": {
-      const { data } = await admin.from("staff_docs").select("*").order("created_at", { ascending: false }).limit(100);
+      const { data } = await admin
+        .from("staff_docs")
+        .select("id,title,category,body,updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(100);
       return { items: data ?? [] };
     }
     case "resources": {
@@ -196,6 +202,35 @@ async function readSection(admin: Admin, section: Section) {
     }
     case "feedback": {
       const { data } = await admin.from("feedback_items").select("*").order("created_at", { ascending: false }).limit(200);
+      return { items: data ?? [] };
+    }
+    case "messages": {
+      // Team channel only. Direct messages between staff are private
+      // conversations, so HQ gets counts and who's talking rather than bodies.
+      const [{ data: channel }, { data: dms }] = await Promise.all([
+        admin
+          .from("staff_chat_messages")
+          .select("id,channel,sender_name,sender_role,body,created_at")
+          .order("created_at", { ascending: false })
+          .limit(60),
+        admin.from("staff_dm_messages").select("sender_id,recipient_id,created_at,read_at").order("created_at", { ascending: false }).limit(500),
+      ]);
+      const dmRows = dms ?? [];
+      const pairs = new Map<string, { a: string; b: string; count: number; unread: number; latest: string }>();
+      for (const dm of dmRows) {
+        const [a, b] = [dm.sender_id, dm.recipient_id].sort();
+        const key = `${a}|${b}`;
+        const existing = pairs.get(key) ?? { a, b, count: 0, unread: 0, latest: dm.created_at };
+        existing.count += 1;
+        if (!dm.read_at) existing.unread += 1;
+        if (dm.created_at > existing.latest) existing.latest = dm.created_at;
+        pairs.set(key, existing);
+      }
+      const threads = await withNames(admin, [...pairs.values()], ["a", "b"]);
+      return { channel: (channel ?? []).reverse(), threads, dmTotal: dmRows.length };
+    }
+    case "emails": {
+      const { data } = await admin.from("staff_emails").select("email,role,added_at").order("added_at", { ascending: true });
       return { items: data ?? [] };
     }
   }
