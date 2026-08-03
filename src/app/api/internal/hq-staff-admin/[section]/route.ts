@@ -189,7 +189,7 @@ async function readSection(admin: Admin, section: Section) {
     }
     case "onboarding": {
       const { data } = await admin.from("staff_onboarding_progress").select("*").limit(300);
-      return { items: data ?? [] };
+      return { items: await withNames(admin, data ?? [], ["user_id"]) };
     }
     case "activity": {
       const { data } = await admin
