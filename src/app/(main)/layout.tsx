@@ -9,6 +9,7 @@ import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
 import AppLockGate from "@/components/AppLockGate";
 import LocalReminderService from "@/components/LocalReminderService";
+import WhatsNew from "@/components/WhatsNew";
 import styles from "./layout.module.css";
 
 // Local Dexie reads resolve almost instantly, which made the loading
@@ -62,6 +63,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const shell = (
     <div className={styles.shell}>
       <LocalReminderService />
+      <WhatsNew />
       <BottomNav />
       <main className={styles.content}>{children}</main>
       <QuickAdd />

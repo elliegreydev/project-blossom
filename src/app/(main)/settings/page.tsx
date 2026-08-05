@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
 import { useUnreadBetaChat } from "@/components/useUnreadBetaChat";
+import { APP_VERSION } from "@/lib/changelog";
 import styles from "./settings.module.css";
 
 const CHEVRON = (
@@ -167,6 +168,8 @@ export default function SettingsPage() {
           <Row href="/legal/privacy" title="Privacy Policy" />
           <Row href="/legal/terms" title="Terms of Service" />
         </div>
+
+        <p className={styles.versionStamp}>Blossom v{APP_VERSION}</p>
       </div>
     </div>
   );
