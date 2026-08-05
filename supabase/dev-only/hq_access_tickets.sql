@@ -8,6 +8,17 @@
 -- HQ_DEV_ACCESS_SECRET and returns 404 when it is absent, and only dev
 -- carries that variable, so production never reaches this table at all.
 --
+-- It lives in supabase/dev-only/ so it stays out of production by
+-- construction, not by remembering. scripts/migrate.mjs --all does a
+-- non-recursive readdirSync("supabase") and keeps only names ending in .sql,
+-- so it sees "dev-only" as a directory and skips it. That matters because
+-- migrate.mjs reads SUPABASE_DB_URL from .env.local, which is the PRODUCTION
+-- project: a routine --all run would otherwise create this dev-only table in
+-- production and contradict the paragraph above.
+--
+-- Apply it by hand, against dev only:
+--   node scripts/migrate-tolerant.mjs .env.dev.local supabase/dev-only/hq_access_tickets.sql
+--
 -- No public policies: the route talks to it with the service role, and
 -- nothing in the client ever touches it.
 

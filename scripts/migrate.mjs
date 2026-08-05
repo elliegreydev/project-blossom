@@ -4,6 +4,10 @@
 //
 //   node scripts/migrate.mjs supabase/schema.sql   # one file
 //   node scripts/migrate.mjs --all                 # every supabase/*.sql
+//
+// --all is deliberately non-recursive: anything under supabase/dev-only/ is
+// meant for the dev database only and must never be swept into production by
+// an --all run, so it is kept in a subdirectory this readdir cannot reach.
 import { existsSync, readFileSync, readdirSync } from "fs";
 import path from "path";
 import pg from "pg";
