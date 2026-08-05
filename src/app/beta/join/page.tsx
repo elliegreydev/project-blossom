@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { isHqDevEntry } from "@/lib/devAccess";
+import HqSignInNotice from "@/components/HqSignInNotice";
 import styles from "../../account/account.module.css";
 
 export default function BetaJoinPage() {
@@ -90,6 +92,10 @@ export default function BetaJoinPage() {
 
   if (checkingSession) return null;
 
+  // Dev only. False on production, where the email code sign-in below stays
+  // exactly as it has always been.
+  const hqOnlySignIn = isHqDevEntry();
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -109,6 +115,8 @@ export default function BetaJoinPage() {
               Open beta chat
             </Link>
           </section>
+        ) : !user && hqOnlySignIn ? (
+          <HqSignInNotice purpose="beta" />
         ) : !user ? (
           pendingEmail ? (
             <section className={styles.card}>

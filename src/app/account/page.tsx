@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
+import { isHqDevEntry } from "@/lib/devAccess";
+import HqSignInNotice from "@/components/HqSignInNotice";
 import { createClient } from "@/lib/supabase/client";
 import {
   enableSync,
@@ -177,6 +179,9 @@ export default function AccountPage() {
 
   const ownershipConflict = Boolean(user && syncState?.ownerId && syncState.ownerId !== user.id);
   const syncing = Boolean(syncState?.syncing || working);
+  // Dev only. False on production, where the email code sign-in below stays
+  // exactly as it has always been.
+  const hqOnlySignIn = isHqDevEntry();
 
   return (
     <main className={styles.page}>
@@ -189,7 +194,9 @@ export default function AccountPage() {
           <p>Signing in is optional. It never uploads your local Blossom data by itself.</p>
         </header>
 
-        {!user && pendingEmail ? (
+        {!user && hqOnlySignIn ? (
+          <HqSignInNotice purpose="account" />
+        ) : !user && pendingEmail ? (
           <section className={styles.card}>
             <div className={styles.cardHeading}>
               <div className={styles.icon} aria-hidden="true">#</div>
