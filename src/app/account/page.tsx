@@ -303,6 +303,17 @@ export default function AccountPage() {
                   {formatSyncTime(syncState?.lastSyncedAt)}
                   {pendingCount ? ` · ${pendingCount} change${pendingCount === 1 ? "" : "s"} waiting` : " · Everything caught up"}
                 </p>
+                {/* Sync keeps whichever version was saved most recently. When
+                    that means something written on this device got replaced,
+                    say so - finding your own words quietly changed later is
+                    worse than being told. */}
+                {Boolean(syncState?.lastOverwrittenCount) && (
+                  <p className={styles.syncMeta}>
+                    Last sync replaced {syncState!.lastOverwrittenCount} item
+                    {syncState!.lastOverwrittenCount === 1 ? "" : "s"} on this device with a newer
+                    version from somewhere else.
+                  </p>
+                )}
                 <div className={styles.actions}>
                   <button type="button" className={styles.primaryButton} onClick={retrySync} disabled={syncing}>
                     {syncing ? "Syncing…" : "Sync now"}

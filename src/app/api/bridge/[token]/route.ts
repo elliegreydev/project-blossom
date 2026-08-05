@@ -64,31 +64,36 @@ export async function POST(_request: Request, { params }: { params: Promise<{ to
   const categories: string[] = link.categories;
   const result: Record<string, unknown> = {};
 
+  // Deleting anything in Blossom is a SOFT delete - the row stays with
+  // deleted_at set so sync can tell other devices about it. Every query below
+  // therefore excludes deleted rows, or a share link keeps showing entries
+  // the owner has already removed. Someone deleting a medication is quite
+  // likely doing it *because* they don't want it shared.
   if (categories.includes("profile")) {
     const { data } = await supabase.from("profiles").select("display_name,pronouns,hrt_status,region").eq("id", ownerId).maybeSingle();
     result.profile = data;
   }
   if (categories.includes("journey")) {
     const [{ data: m }, { data: e }] = await Promise.all([
-      supabase.from("milestones").select("title,category,event_date,note").eq("user_id", ownerId),
-      supabase.from("journey_events").select("title,category,event_date,note").eq("user_id", ownerId),
+      supabase.from("milestones").select("title,category,event_date,note").eq("user_id", ownerId).is("deleted_at", null),
+      supabase.from("journey_events").select("title,category,event_date,note").eq("user_id", ownerId).is("deleted_at", null),
     ]);
     result.journey = [...(m ?? []), ...(e ?? [])];
   }
   if (categories.includes("medications")) {
-    const { data } = await supabase.from("medications").select("name,route,unit,active").eq("user_id", ownerId);
+    const { data } = await supabase.from("medications").select("name,route,unit,active").eq("user_id", ownerId).is("deleted_at", null);
     result.medications = data ?? [];
   }
   if (categories.includes("appointments")) {
-    const { data } = await supabase.from("appointments").select("title,appointment_at,location").eq("user_id", ownerId).order("appointment_at", { ascending: false });
+    const { data } = await supabase.from("appointments").select("title,appointment_at,location").eq("user_id", ownerId).is("deleted_at", null).order("appointment_at", { ascending: false });
     result.appointments = data ?? [];
   }
   if (categories.includes("checkins")) {
-    const { data } = await supabase.from("check_ins").select("mood,energy,confidence,stress,comfort,created_at").eq("user_id", ownerId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("check_ins").select("mood,energy,confidence,stress,comfort,created_at").eq("user_id", ownerId).is("deleted_at", null).order("created_at", { ascending: false });
     result.checkins = data ?? [];
   }
   if (categories.includes("goals")) {
-    const { data } = await supabase.from("goals").select("title,status,category").eq("user_id", ownerId);
+    const { data } = await supabase.from("goals").select("title,status,category").eq("user_id", ownerId).is("deleted_at", null);
     result.goals = data ?? [];
   }
 
