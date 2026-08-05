@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
-import { MAX_NOTIFICATIONS, RENAG_INTERVAL_MS, dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, isQuietHours } from "@/lib/reminders";
-import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder } from "@/lib/db";
+import { MAX_NOTIFICATIONS, RENAG_INTERVAL_MS, dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, dueSafetyCheckInReminders, isQuietHours } from "@/lib/reminders";
+import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder, type SafetyCheckIn } from "@/lib/db";
 
 // Triggered every few minutes by the VPS crontab (see docs/PROD_RELEASE.md-
 // style ops notes) with `Authorization: Bearer <CRON_SECRET>`. Only reaches
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   const userIds = [...new Set(subscriptions.map((row) => row.user_id as string))];
-  const [{ data: profiles }, { data: medications }, { data: medicationLogs }, { data: appointments }] =
+  const [{ data: profiles }, { data: medications }, { data: medicationLogs }, { data: appointments }, { data: safetyCheckIns }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -60,6 +60,16 @@ export async function GET(request: Request) {
       supabase.from("medications").select("id, user_id, name, route, unit, frequency, active").in("user_id", userIds),
       supabase.from("medication_logs").select("id, user_id, medication_id, scheduled_time, status").in("user_id", userIds),
       supabase.from("appointments").select("id, user_id, title, appointment_at, reminder_settings").in("user_id", userIds),
+      // Safety check-ins used to be client-only, which meant the one reminder
+      // that matters most - "you missed your check-in, want to reach out to
+      // your trusted contact?" - never arrived unless the app happened to be
+      // open. Someone setting one before meeting a stranger got nothing.
+      supabase
+        .from("safety_check_ins")
+        .select("id, user_id, started_at, due_at, status, snoozed_once")
+        .in("user_id", userIds)
+        .eq("status", "pending")
+        .is("deleted_at", null),
     ]);
 
   const now = new Date();
@@ -121,9 +131,21 @@ export async function GET(request: Request) {
         };
       });
 
+    const safety: SafetyCheckIn[] = (safetyCheckIns ?? [])
+      .filter((s) => s.user_id === userId)
+      .map((s) => ({
+        id: s.id,
+        startedAt: s.started_at,
+        dueAt: s.due_at,
+        status: s.status,
+        snoozedOnce: s.snoozed_once,
+        updatedAt: "",
+      }));
+
     const pending = [
       ...dueMedicationReminders(meds, logs, notified, now, timeZone),
       ...dueAppointmentReminders(appts, notified, now),
+      ...dueSafetyCheckInReminders(safety, notified, now),
       ...dueCheckInReminders(
         {
           morningEnabled: Boolean(profile?.check_in_morning_reminder_enabled),

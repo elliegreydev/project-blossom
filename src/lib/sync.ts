@@ -120,6 +120,24 @@ export class LocalDataOwnershipError extends Error {
   }
 }
 
+// How many times a single change is retried before it's parked. It stays in
+// the outbox (nothing is discarded) but stops blocking everything queued
+// behind it.
+const MAX_PUSH_ATTEMPTS = 5;
+
+export class SyncItemsStuckError extends Error {
+  readonly count: number;
+  constructor(count: number) {
+    super(
+      count === 1
+        ? "One change couldn't be saved to your account. Everything else is synced."
+        : `${count} changes couldn't be saved to your account. Everything else is synced.`
+    );
+    this.name = "SyncItemsStuckError";
+    this.count = count;
+  }
+}
+
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -212,6 +230,10 @@ async function localPayload(
         reminder_privacy: profile.reminderPrivacy,
         gentle_mode: profile.gentleMode,
         sensitive_modules_locked: profile.sensitiveModulesLocked,
+        // Only the *intent* to lock. appLockPinHash is never uploaded - each
+        // device sets its own PIN, so a new device knows to ask for one
+        // rather than opening straight into someone's journal.
+        app_lock_enabled: profile.appLockEnabled,
         age_confirmed_at: profile.ageConfirmedAt,
         onboarding_completed_at: profile.onboardingCompletedAt,
         quiet_hours_enabled: profile.quietHoursEnabled,
@@ -763,6 +785,11 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         reminderPrivacy: stringValue(row.reminder_privacy) as ReminderPrivacy,
         gentleMode: row.gentle_mode === true,
         sensitiveModulesLocked: Boolean(row.sensitive_modules_locked),
+        // Never clears a lock that exists on this device: if either the
+        // account or this device wants it locked, it stays locked. Stops a
+        // stale profile row from a device where the lock was off silently
+        // unlocking one where it's on.
+        appLockEnabled: Boolean(row.app_lock_enabled) || Boolean(local.appLockEnabled),
         ageConfirmedAt: nullableString(row.age_confirmed_at),
         onboardingCompletedAt: nullableString(row.onboarding_completed_at),
         quietHoursEnabled: Boolean(row.quiet_hours_enabled),
@@ -1132,9 +1159,10 @@ async function pullEntity(
   since: string,
   cutoff: string,
   clockOffsetMs: number
-): Promise<void> {
+): Promise<number> {
   const pageSize = 500;
   let from = 0;
+  let overwritten = 0;
 
   while (true) {
     const base = client
@@ -1161,12 +1189,19 @@ async function pullEntity(
       if (!shouldApplyRemoteChange(pendingAt, remoteChangedAt)) continue;
 
       await applyRemote(entity, row);
-      if (pending) await db.syncOutbox.delete(pending.id);
+      if (pending) {
+        // An edit made here lost to a newer one from another device and has
+        // just been replaced. Counted so we can say so, rather than the
+        // person quietly finding their words changed later.
+        overwritten++;
+        await db.syncOutbox.delete(pending.id);
+      }
     }
 
     if (rows.length < pageSize) break;
     from += pageSize;
   }
+  return overwritten;
 }
 
 async function pullAll(
@@ -1175,10 +1210,12 @@ async function pullAll(
   since: string,
   cutoff: string,
   clockOffsetMs: number
-): Promise<void> {
+): Promise<number> {
+  let overwritten = 0;
   for (const entity of SYNC_ORDER) {
-    await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
+    overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
   }
+  return overwritten;
 }
 
 async function pushOutbox(
@@ -1191,7 +1228,21 @@ async function pushOutbox(
     (a, b) => (priority.get(a.entity) ?? 99) - (priority.get(b.entity) ?? 99)
   );
 
+  let firstError: unknown = null;
+  let stuck = 0;
+
   for (const item of items) {
+    // A record the server keeps refusing (a constraint it violates, a parent
+    // deleted on another device) used to abort the whole loop and sit at the
+    // front of the queue forever, so nothing behind it ever uploaded. Park it
+    // instead and carry on - the rest of someone's journal is more important
+    // than this one row, and it stays in the outbox rather than being thrown
+    // away.
+    if (item.attempts >= MAX_PUSH_ATTEMPTS) {
+      stuck++;
+      continue;
+    }
+
     try {
       await pushChange(client, userId, item, clockOffsetMs);
       await db.syncOutbox.delete(item.id);
@@ -1201,9 +1252,19 @@ async function pushOutbox(
         attempts: item.attempts + 1,
         lastError: message,
       });
-      throw error;
+      if (item.attempts + 1 >= MAX_PUSH_ATTEMPTS) stuck++;
+      // Remember the first failure but keep going, so one bad record can't
+      // hold up everything else.
+      if (firstError === null) firstError = error;
     }
   }
+
+  // Surfaced rather than swallowed: the user should know some changes aren't
+  // reaching the server, even though the rest of the sync worked.
+  if (stuck > 0) {
+    throw new SyncItemsStuckError(stuck);
+  }
+  if (firstError !== null) throw firstError;
 }
 
 async function enqueueFullSnapshot(): Promise<void> {
@@ -1267,15 +1328,16 @@ async function performSync(userId: string): Promise<void> {
     const firstCutoff = await serverClock(client);
     const clockOffsetMs = new Date(firstCutoff).getTime() - Date.now();
     const since = state.lastPulledAt ?? "1970-01-01T00:00:00.000Z";
-    await pullAll(client, userId, since, firstCutoff, clockOffsetMs);
+    let overwritten = await pullAll(client, userId, since, firstCutoff, clockOffsetMs);
     await pushOutbox(client, userId, clockOffsetMs);
 
     const secondCutoff = await serverClock(client);
-    await pullAll(client, userId, since, secondCutoff, clockOffsetMs);
+    overwritten += await pullAll(client, userId, since, secondCutoff, clockOffsetMs);
     await db.syncMeta.update("sync", {
       lastPulledAt: secondCutoff,
       lastSyncedAt: secondCutoff,
       lastError: null,
+      lastOverwrittenCount: overwritten,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Blossom couldn't sync just now.";

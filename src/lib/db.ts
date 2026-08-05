@@ -862,6 +862,12 @@ export interface SyncState {
   lastSyncedAt: string | null;
   lastError: string | null;
   syncing: boolean;
+  // Sync is last-write-wins, so an edit made on this device can lose to a
+  // newer one from another device and be replaced. That used to happen
+  // silently. Counted here so the account screen can say it out loud - losing
+  // a journal entry without being told is the kind of thing that makes people
+  // stop trusting an app.
+  lastOverwrittenCount: number;
 }
 
 export interface CachedRegionResource {
@@ -1899,7 +1905,14 @@ export async function recordSyncChange(
 
 export async function getOrCreateSyncState(): Promise<SyncState> {
   const existing = await db.syncMeta.get("sync");
-  if (existing) return existing;
+  if (existing) {
+    // Added after this record already existed on devices in the wild.
+    if (existing.lastOverwrittenCount === undefined) {
+      await db.syncMeta.update("sync", { lastOverwrittenCount: 0 });
+      return { ...existing, lastOverwrittenCount: 0 };
+    }
+    return existing;
+  }
   const state: SyncState = {
     key: "sync",
     ownerId: null,
@@ -1908,6 +1921,7 @@ export async function getOrCreateSyncState(): Promise<SyncState> {
     lastSyncedAt: null,
     lastError: null,
     syncing: false,
+    lastOverwrittenCount: 0,
   };
   await db.syncMeta.add(state);
   return state;
@@ -3073,9 +3087,23 @@ export async function disableAppLock(): Promise<void> {
 
 export async function verifyAppLockPin(pin: string): Promise<boolean> {
   const profile = await db.profiles.get(LOCAL_PROFILE_ID);
-  if (!profile?.appLockPinHash) return true;
+  // Fail closed. This used to return true when no hash was stored, which was
+  // safe only because the lock was purely local and the two always moved
+  // together. Now that the *intent* to lock syncs between devices, a profile
+  // can legitimately arrive saying "locked" with no hash on this device - and
+  // unlocking on any PIN there would hand over the whole journal. Callers
+  // should check needsLocalPinSetup() and offer to set one instead.
+  if (!profile?.appLockPinHash) return false;
   const hash = await hashPin(pin);
   return hash === profile.appLockPinHash;
+}
+
+// True when the account wants the app locked but this particular device has
+// no PIN yet - i.e. someone signed in somewhere new. The PIN hash deliberately
+// never leaves the device it was set on, so each device sets its own.
+export async function needsLocalPinSetup(): Promise<boolean> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  return Boolean(profile?.appLockEnabled) && !profile?.appLockPinHash;
 }
 
 // Face ID / Touch ID / Windows Hello / Android biometric, as a faster
