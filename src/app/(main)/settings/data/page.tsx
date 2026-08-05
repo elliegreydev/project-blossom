@@ -25,6 +25,7 @@ import {
 } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 import sheetStyles from "@/components/Sheet.module.css";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const EXPORT_SECTIONS: { key: DataExportSection; title: string; desc: string; sensitive?: boolean }[] = [
   { key: "profile", title: "Profile basics", desc: "Name, pronouns and preferences." },
@@ -122,11 +123,11 @@ export default function DataSettingsPage() {
     try {
       const data = await exportSelectedData(selection);
       if (kind === "json") {
-        download(`blossom-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
+        download(`blossom-backup-${todayLocalDateKey()}.json`, JSON.stringify(data, null, 2), "application/json");
         await updateProfile({ lastBackupExportedAt: new Date().toISOString() });
       } else {
         const { buildDataExportPdf } = await import("@/lib/pdfExport");
-        buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]).save(`blossom-export-${new Date().toISOString().slice(0, 10)}.pdf`);
+        buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]).save(`blossom-export-${todayLocalDateKey()}.pdf`);
       }
       setMessage(kind === "pdf" ? "Your Blossom PDF is ready." : "Your Blossom backup is ready.");
     } catch {

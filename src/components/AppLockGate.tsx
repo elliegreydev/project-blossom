@@ -5,6 +5,7 @@ import { needsLocalPinSetup } from "@/lib/db";
 import PinEntry from "./PinEntry";
 import PinSetupSheet from "./PinSetupSheet";
 import styles from "./AppLockGate.module.css";
+import { readSessionFlag, writeSessionFlag } from "@/lib/sessionFlag";
 
 const SESSION_KEY = "blossom_unlocked";
 
@@ -21,7 +22,7 @@ export default function AppLockGate({ children }: { children: React.ReactNode })
       const setupNeeded = await needsLocalPinSetup();
       if (!live) return;
       setNeedsSetup(setupNeeded);
-      setUnlocked(!setupNeeded && sessionStorage.getItem(SESSION_KEY) === "1");
+      setUnlocked(!setupNeeded && readSessionFlag(SESSION_KEY));
     })();
     return () => {
       live = false;
@@ -41,7 +42,7 @@ export default function AppLockGate({ children }: { children: React.ReactNode })
             void needsLocalPinSetup().then((still) => {
               setNeedsSetup(still);
               if (!still) {
-                sessionStorage.setItem(SESSION_KEY, "1");
+                writeSessionFlag(SESSION_KEY);
                 setUnlocked(true);
               }
             });
@@ -56,7 +57,7 @@ export default function AppLockGate({ children }: { children: React.ReactNode })
       <PinEntry
         title="Welcome back"
         onSuccess={() => {
-          sessionStorage.setItem(SESSION_KEY, "1");
+          writeSessionFlag(SESSION_KEY);
           setUnlocked(true);
         }}
       />

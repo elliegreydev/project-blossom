@@ -14,6 +14,7 @@ import { db, deleteJournalEntry, deleteCheckIn, deleteEuphoriaEntry, type CheckI
 import TrendChart from "@/components/TrendChart";
 import styles from "@/components/feature.module.css";
 import local from "./journal.module.css";
+import { todayLocalDateKey } from "@/lib/dates";
 
 function dateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -130,7 +131,7 @@ export default function JournalPage() {
     return { key, label, values, average };
   }).filter((group) => group.values.length > 0);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalDateKey();
   const visibleMoments = visibleEuphoriaEntries.filter((entry) => !entry.reopenAt || entry.reopenAt <= today);
   const capsules = visibleEuphoriaEntries.filter((entry) => entry.reopenAt);
 

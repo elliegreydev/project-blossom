@@ -5,6 +5,7 @@ import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import PhotoThumbnail from "./PhotoThumbnail";
 import { addPresentationEntry, updatePresentationEntry, type PresentationCategory, type PresentationEntry } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const CATEGORIES: { key: PresentationCategory; label: string }[] = [
   { key: "outfit", label: "Outfit" },
@@ -42,7 +43,7 @@ export default function AddPresentationEntrySheet({
       await updatePresentationEntry(entry.id, patch);
     } else {
       await addPresentationEntry({
-        date: new Date().toISOString().slice(0, 10),
+        date: todayLocalDateKey(),
         category,
         note: note.trim() || null,
         photo,

@@ -7,6 +7,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { db, LOCAL_PROFILE_ID, type ModuleKey } from "@/lib/db";
 import styles from "./search.module.css";
 import feature from "@/components/feature.module.css";
+import { readSessionFlag } from "@/lib/sessionFlag";
 
 // Same session key as SensitiveModuleGate - search must never surface a
 // match from a locked module, since even a snippet would leak that
@@ -40,7 +41,7 @@ export default function SearchPage() {
   const [sensitiveUnlocked, setSensitiveUnlocked] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setSensitiveUnlocked(sessionStorage.getItem(SESSION_KEY) === "1");
+    setSensitiveUnlocked(readSessionFlag(SESSION_KEY));
   }, []);
 
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));

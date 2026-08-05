@@ -14,6 +14,7 @@ import {
 } from "@/lib/db";
 import feature from "@/components/feature.module.css";
 import styles from "./support-map.module.css";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const TYPES: { key: "all" | SupportMapEntryType; label: string }[] = [
   { key: "all", label: "All" },
@@ -74,7 +75,7 @@ export default function PersonalSupportMapPage() {
   }, [entries, label, search, type]);
 
   if (entries === undefined) return null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalDateKey();
 
   return (
     <div className={feature.screen}>

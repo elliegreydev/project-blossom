@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { logDose, INJECTION_SITE_LABELS, type DoseStatus, type InjectionSite, type Medication, type MedicationLog } from "@/lib/db";
+import { localDateKey } from "@/lib/dates";
 
 const STATUSES: Array<{ key: DoseStatus; label: string }> = [
   { key: "taken", label: "Taken" },
@@ -25,7 +26,7 @@ export default function ManualDoseSheet({
   const dialogRef = useSheetDialog(onClose);
   const now = new Date();
   const [medicationId, setMedicationId] = useState(medications[0]?.id ?? "");
-  const [date, setDate] = useState(now.toISOString().slice(0, 10));
+  const [date, setDate] = useState(localDateKey(now));
   const [time, setTime] = useState(now.toTimeString().slice(0, 5));
   const [status, setStatus] = useState<DoseStatus>("taken");
   const [note, setNote] = useState("");

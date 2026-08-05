@@ -4,10 +4,11 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addBodyEntry, updateBodyEntry, type BodyEntry, type BodyMeasurement } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 export default function AddBodyEntrySheet({ entry, onClose }: { entry?: BodyEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [date, setDate] = useState(entry?.date ?? (() => todayLocalDateKey()));
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>(entry?.measurements.length ? entry.measurements : [{ label: "", value: "" }]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [note, setNote] = useState(entry?.note ?? "");

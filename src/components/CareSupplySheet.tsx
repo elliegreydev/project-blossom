@@ -13,6 +13,7 @@ import {
   type CareSupply,
   type CareSupplyAdjustment,
 } from "@/lib/db";
+import { localDateKey } from "@/lib/dates";
 
 const CARE_SUPPLY_WARNING_DAYS = 7;
 
@@ -111,7 +112,7 @@ export default function CareSupplySheet({
   const warningDateKey = (() => {
     const d = new Date();
     d.setDate(d.getDate() + CARE_SUPPLY_WARNING_DAYS);
-    return d.toISOString().slice(0, 10);
+    return localDateKey(d);
   })();
   const wouldNeedAttention = Boolean(
     supply &&

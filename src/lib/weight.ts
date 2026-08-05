@@ -39,8 +39,6 @@ export function formatWeight(grams: number, unit: Exclude<WeightUnit, "auto">): 
   return `${stone} st ${pounds} lb`;
 }
 
-export function todayKey(date = new Date()): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
+export { localDateKey as todayKey } from "./dates";
 
 export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

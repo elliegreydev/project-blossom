@@ -14,6 +14,7 @@ import {
   type ModuleKey,
 } from "@/lib/db";
 import styles from "@/components/feature.module.css";
+import { localDateKey } from "@/lib/dates";
 
 function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -50,7 +51,7 @@ export default function RemindersPage() {
     return null;
 
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = localDateKey(now);
   const enabled = (key: ModuleKey) => profile.enabledModules.includes(key);
 
   const dueDoses = enabled("medication")

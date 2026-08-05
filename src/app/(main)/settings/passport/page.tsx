@@ -8,6 +8,7 @@ import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import type { PassportPurpose, PassportSections } from "@/lib/pdfExport";
 import styles from "@/components/settingsForm.module.css";
 import sheetStyles from "@/components/Sheet.module.css";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const PURPOSES: { key: PassportPurpose; title: string; desc: string }[] = [
   { key: "doctor", title: "Doctor / clinical appointment", desc: "Identity, HRT status and current medications" },
@@ -69,13 +70,13 @@ export default function PassportPage() {
       if (confirming === "pdf") {
         const { buildPassportPdf } = await import("@/lib/pdfExport");
         const doc = buildPassportPdf(data);
-        doc.save(`blossom-passport-${new Date().toISOString().slice(0, 10)}.pdf`);
+        doc.save(`blossom-passport-${todayLocalDateKey()}.pdf`);
       } else {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `blossom-passport-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `blossom-passport-${todayLocalDateKey()}.json`;
         a.click();
         URL.revokeObjectURL(url);
       }

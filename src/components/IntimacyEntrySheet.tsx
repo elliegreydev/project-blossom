@@ -10,6 +10,7 @@ import {
   type IntimacyEntry,
   type IntimacyFeeling,
 } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const FEELINGS: { key: IntimacyFeeling; label: string }[] = [
   { key: "good", label: "Good" },
@@ -21,7 +22,7 @@ const FEELINGS: { key: IntimacyFeeling; label: string }[] = [
 const QUICK_LABELS = ["Intimate time", "Solo time", "Date night", "Something else"];
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalDateKey();
 }
 
 export default function IntimacyEntrySheet({ entry, onClose }: { entry?: IntimacyEntry | null; onClose: () => void }) {

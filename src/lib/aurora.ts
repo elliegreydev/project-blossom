@@ -17,6 +17,7 @@ import type {
   VoiceGoal,
   VoiceSession,
 } from "./db";
+import { localDateKey } from "@/lib/dates";
 
 export type AuroraSuggestionKind =
   | "appointment"
@@ -159,7 +160,7 @@ function careSupplyNeedsReview(supply: CareSupply, now: Date): boolean {
   if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
   const warningDate = new Date(now);
   warningDate.setDate(warningDate.getDate() + 7);
-  const warningDateKey = warningDate.toISOString().slice(0, 10);
+  const warningDateKey = localDateKey(warningDate);
   return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some(
     (date) => date !== null && date <= warningDateKey
   );
@@ -187,9 +188,6 @@ function supplyNeedsAttention(context: AuroraContext): Candidate | null {
   };
 }
 
-function localDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 function daysBetweenDateKeys(fromDateKey: string, toDateKey: string): number {
   const [fromYear, fromMonth, fromDay] = fromDateKey.split("-").map(Number);
@@ -417,7 +415,7 @@ function presentationWantToTry(context: AuroraContext): Candidate | null {
 // opened, it shouldn't keep resurfacing the same capsule.
 function readyTimeCapsule(context: AuroraContext): Candidate | null {
   if (!context.profile.enabledModules.includes("journal")) return null;
-  const today = context.now.toISOString().slice(0, 10);
+  const today = localDateKey(context.now);
   const ready = context.euphoriaEntries
     .filter((entry) => entry.reopenAt && entry.reopenAt <= today)
     .sort((a, b) => (a.reopenAt as string).localeCompare(b.reopenAt as string))[0];
