@@ -79,7 +79,7 @@ export default function PersonalSupportMapPage() {
 
   return (
     <div className={feature.screen}>
-      <ScreenHeader title="Personal Support Map" backHref="/settings" />
+      <ScreenHeader title="Personal Support Map" backHref="/track" />
       <p className={feature.pageSubtitle} style={{ marginTop: -10 }}>
         A private place for people, places and organisations that matter to you. It stays only on this device.
       </p>

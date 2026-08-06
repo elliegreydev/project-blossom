@@ -64,7 +64,7 @@ export default function GettingStartedPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Starting HRT safely" backHref="/settings" />
+      <ScreenHeader title="Starting HRT safely" backHref="/track" />
       <p className={styles.pageSubtitle} style={{ marginTop: -10 }}>
         A few practical things worth having in place when you're starting a regimen - prescribed or
         self-directed. This is logistics, never medical advice: Blossom doesn&apos;t give dosing guidance

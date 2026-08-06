@@ -90,7 +90,7 @@ export default function PassportPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Blossom Passport" backHref="/settings" />
+      <ScreenHeader title="Blossom Passport" backHref="/track" />
       <p className={styles.hint}>
         A short document you choose the contents of, meant to leave the house - to hand to a
         doctor, bring to a legal appointment, or share with work. Journal entries, blood tests,

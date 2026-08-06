@@ -119,7 +119,7 @@ export default function BlossomBridgePage() {
 
   return (
     <div className={formStyles.screen}>
-      <ScreenHeader title="Blossom Bridge" backHref="/settings" />
+      <ScreenHeader title="Blossom Bridge" backHref="/track" />
       <p className={formStyles.hint}>
         Temporary, read-only links for someone without a Blossom account - a doctor, a family
         member, anyone. They never need to sign in. Only the categories you pick are ever visible,

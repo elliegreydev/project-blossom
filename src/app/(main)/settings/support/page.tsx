@@ -26,7 +26,7 @@ export default function SupportSettingsPage() {
 
   return (
     <div className={formStyles.screen}>
-      <ScreenHeader title="Help & support" backHref="/settings" />
+      <ScreenHeader title="Help & support" backHref="/settings/about" />
 
       <div className={styles.emergencyBanner}>
         If you&apos;re in immediate danger, please contact your local emergency

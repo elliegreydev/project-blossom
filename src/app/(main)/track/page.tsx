@@ -141,6 +141,85 @@ const TRACKERS: {
   },
 ];
 
+/* These five used to be filed in Settings, which is nobody's first guess for
+   "show my endo what I've been tracking". They're things you use, so they sit
+   with the other things you use. */
+const SHARING: { href: string; title: string; desc: string; tint: string; icon: React.ReactNode }[] = [
+  {
+    href: "/settings/circle",
+    title: "Trusted Circle",
+    desc: "Share specific data with specific people",
+    tint: "var(--lavender)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="9" cy="9" r="3.2" />
+        <path d="M3.5 19c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8" />
+        <path d="M16 6.4a3 3 0 0 1 0 5.6M17.5 14.6c1.9.6 3 2.2 3 4.4" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings/bridge",
+    title: "Blossom Bridge",
+    desc: "Temporary links for people without an account",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M10.5 13.5a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 0 0-5.7-5.7l-1.3 1.3" />
+        <path d="M13.5 10.5a4 4 0 0 0-5.7 0l-2.3 2.3a4 4 0 0 0 5.7 5.7l1.3-1.3" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings/safety-checkins",
+    title: "Safety check-ins",
+    desc: "Someone hears from you, or hears that you're quiet",
+    tint: "var(--mint)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 21s7-3.8 7-9.4V6.2L12 3.4 5 6.2v5.4C5 17.2 12 21 12 21Z" />
+        <path d="m9.2 11.6 2 2 3.6-3.8" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings/support-map",
+    title: "Personal Support Map",
+    desc: "Private people, places and organisations",
+    tint: "var(--pink)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M9 4.2 3.8 6.4v13.4L9 17.6l6 2.2 5.2-2.2V4.2L15 6.4Z" />
+        <path d="M9 4.2v13.4M15 6.4v13.4" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings/passport",
+    title: "Blossom Passport",
+    desc: "Build a document to share",
+    tint: "var(--lavender)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <rect x="5" y="3.2" width="14" height="17.6" rx="2.4" />
+        <path d="M9 8.4h6M9 12h6M9 15.6h3.5" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings/getting-started",
+    title: "Starting HRT safely",
+    desc: "Practical steps, not medical advice",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="8.4" />
+        <path d="m14.8 9.2-1.6 4-4 1.6 1.6-4Z" />
+      </svg>
+    ),
+  },
+];
+
 export default function TrackPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   if (!profile) return null;
@@ -174,6 +253,19 @@ export default function TrackPage() {
       {pinned.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>My spaces</h2><Link href="/settings/modules">Edit</Link></div><div className={styles.cards}>{pinned.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
       {recent.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>Recently used</h2></div><div className={styles.cards}>{recent.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
       <section className={styles.group}><div className={styles.groupHeading}><h2>{pinned.length || recent.length ? "All tools" : "Your spaces"}</h2>{visible.length > 3 && <Link href="/settings/modules">Choose what appears</Link>}</div><div className={styles.cards}>{visible.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>
+
+      <section className={styles.group}>
+        <div className={styles.groupHeading}><h2>Sharing &amp; support</h2></div>
+        <div className={styles.cards}>
+          {SHARING.map((tool) => (
+            <Link key={tool.href} href={tool.href} className={styles.card}>
+              <div className={styles.cardIcon} style={{ background: `color-mix(in srgb, ${tool.tint} 30%, var(--bg))` }}>{tool.icon}</div>
+              <div className={styles.cardText}><div className={styles.cardTitle}>{tool.title}</div><div className={styles.cardDesc}>{tool.desc}</div></div>
+              <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
