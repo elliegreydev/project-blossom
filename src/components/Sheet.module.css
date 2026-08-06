@@ -199,3 +199,13 @@
     padding-inline: 24px;
   }
 }
+
+/* Shown when a sheet reopens onto text that was never saved - see
+   src/lib/drafts.ts. Deliberately understated: it's a reassurance, not an
+   alert about something going wrong. */
+.draftNote {
+  margin: -2px 0 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
