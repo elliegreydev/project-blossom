@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addCheckIn, guessCheckInPeriod, updateCheckIn, type CheckIn, type CheckInPeriod } from "@/lib/db";
+import { readDraft, writeDraft, clearDraft, draftKey } from "@/lib/drafts";
 
 const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; label: string }[] = [
   { key: "mood", label: "Mood" },
@@ -22,7 +23,18 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
     stress: entry?.stress ?? 0,
     comfort: entry?.comfort ?? 0,
   }));
-  const [note, setNote] = useState(entry?.note ?? "");
+  const noteKey = draftKey("checkin", entry?.id);
+  const savedNote = entry?.note ?? "";
+  // The scales are one tap each and cheap to redo; the note is the part that
+  // takes effort, so it's the part worth keeping. See src/lib/drafts.ts.
+  const [note, setNote] = useState(() => readDraft(noteKey) ?? savedNote);
+  const [noteRestored] = useState(() => readDraft(noteKey) !== null);
+
+  function editNote(value: string) {
+    setNote(value);
+    if (value !== savedNote) writeDraft(noteKey, value);
+    else clearDraft(noteKey);
+  }
   const [period, setPeriod] = useState<CheckInPeriod | null>(entry ? entry.period ?? null : guessCheckInPeriod());
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +55,7 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
     };
     if (entry) await updateCheckIn(entry.id, input);
     else await addCheckIn(input);
+    clearDraft(noteKey);
     setSaving(false);
     onClose();
   }
@@ -95,11 +108,12 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
 
         <div className={styles.field}>
           <span className={styles.label}>Note (optional)</span>
+          {noteRestored && <p className={styles.draftNote}>Your note from last time is still here.</p>}
           <textarea
             aria-label="Check-in note"
             className={styles.textarea}
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => editNote(e.target.value)}
             placeholder="Anything you'd like to remember about today"
           />
         </div>

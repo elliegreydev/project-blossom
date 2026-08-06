@@ -1,3 +1,4 @@
+import { clearAllDrafts } from "@/lib/drafts";
 import Dexie, { type EntityTable } from "dexie";
 // Type-only import - erased at compile time, so this doesn't create a real
 // runtime circular dependency even though regionResources.ts imports the
@@ -3508,5 +3509,8 @@ export async function deleteAllData(): Promise<void> {
   if (typeof window !== "undefined") {
     window.localStorage.removeItem("blossom:aurora-ai-history:v1");
     window.localStorage.removeItem("blossom:aurora-ai-consent:v1");
+    // Unsaved drafts hold the same words the entry would have, so they're
+    // part of "everything" too - see src/lib/drafts.ts.
+    clearAllDrafts();
   }
 }
