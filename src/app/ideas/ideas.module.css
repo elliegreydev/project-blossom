@@ -256,7 +256,7 @@
 }
 
 .confirmationTitle {
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 18px;
   color: var(--text-primary);

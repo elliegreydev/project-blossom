@@ -1,0 +1,148 @@
+.screen {
+  padding: max(20px, var(--safe-top)) 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: -2px 2px 4px;
+}
+
+/* Theme cards ------------------------------------------------------------ */
+.themeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.themeCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.themeCard[aria-pressed="true"] {
+  border-color: var(--nav-active);
+  box-shadow: inset 0 0 0 1px var(--nav-active);
+}
+
+.themeText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.themeName {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.themeDesc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* A little live sample of the theme, so the names mean something */
+.swatch {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+}
+
+.swatchTop {
+  flex: 1.6;
+  display: flex;
+  align-items: flex-end;
+  padding: 5px;
+  gap: 3px;
+}
+
+.swatchDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.swatchBottom {
+  flex: 1;
+}
+
+.check {
+  flex: none;
+  font-size: 15px;
+  color: var(--nav-active);
+}
+
+/* Appearance -------------------------------------------------------------- */
+.segmented {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.segment {
+  flex: 1;
+  padding: 11px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.segment[aria-pressed="true"] {
+  background: var(--bg);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--plum) 12%, transparent);
+}
+
+.footnote {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 2px 40px;
+}

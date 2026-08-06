@@ -4,7 +4,7 @@
 .tab, .activeTab, .choice, .choiceActive { min-height: 42px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-raised); color: var(--text-secondary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .activeTab, .choiceActive { border-color: var(--lavender); background: color-mix(in srgb, var(--lavender) 15%, var(--bg-raised)); color: var(--text-primary); }
 .section { display: flex; flex-direction: column; gap: 12px; }
-.section h2 { margin: 0; color: var(--text-primary); font-family: var(--font-manrope); font-size: 17px; }
+.section h2 { margin: 0; color: var(--text-primary); font-family: var(--font-display); font-size: 17px; }
 .presets, .toolList, .blockList { display: flex; flex-direction: column; gap: 10px; }
 .preset, .tool, .toolActive { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-raised); color: var(--text-primary); text-align: left; font: inherit; cursor: pointer; }
 .preset strong, .tool, .toolActive { font-size: 15px; font-weight: 650; }

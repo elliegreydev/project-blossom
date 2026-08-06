@@ -28,7 +28,7 @@
 .hero h1 {
   margin: 0;
   color: var(--text-primary);
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-size: clamp(28px, 7vw, 38px);
   line-height: 1.1;
 }
@@ -71,7 +71,7 @@
 
 .summaryLink strong {
   color: var(--text-primary);
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-size: 22px;
   line-height: 1.15;
 }
@@ -143,7 +143,7 @@
 .stageHeader h2 {
   margin: 0;
   color: var(--text-primary);
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-size: 20px;
 }
 
