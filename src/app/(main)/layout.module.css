@@ -6,7 +6,13 @@
 .content {
   width: 100%;
   min-width: 0;
-  padding-bottom: calc(88px + max(8px, var(--safe-bottom)));
+  /* Has to clear the quick-add button, not just the nav bar. That button is
+     fixed at bottom: 72px + safe-bottom and is 56px tall, so its top edge sits
+     136px up - anything padded to less than that ends up underneath it. It was
+     88px, which left the last 48px of every page sitting under the button; on
+     Data controls that hid a checkbox completely. 152px is the button plus a
+     little breathing room. Keep this in step with QuickAdd.module.css. */
+  padding-bottom: calc(152px + max(8px, var(--safe-bottom)));
   min-height: 100dvh;
   background: var(--bg);
 }

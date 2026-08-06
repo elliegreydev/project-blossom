@@ -257,6 +257,7 @@ export default function SearchPage() {
     <div className={styles.screen}>
       <ScreenHeader title="Search" backHref="/" />
       <input
+        aria-label="Search Blossom"
         className={styles.searchBox}
         type="text"
         value={query}

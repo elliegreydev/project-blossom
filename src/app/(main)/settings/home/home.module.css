@@ -22,7 +22,10 @@
 .toggle span, .toggleOn span { display: block; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform var(--duration-fast) var(--ease-standard); }
 .toggleOn { background: var(--lavender); }
 .toggleOn span { transform: translateX(16px); }
-.move, .width, .widthActive { min-width: 34px; min-height: 34px; border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; }
+/* 44px is the minimum comfortable tap target on both iOS and Android.
+   These were 34px, which is fiddly for anyone whose hands aren't steady -
+   and reordering your home screen shouldn't need precision. */
+.move, .width, .widthActive { min-width: 44px; min-height: 44px; border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; }
 .move:disabled { opacity: .35; cursor: default; }
 .width, .widthActive { padding: 6px 9px; font-size: 12px; }
 .widthActive { border-color: var(--lavender); color: var(--text-primary); }
