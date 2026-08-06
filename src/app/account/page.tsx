@@ -36,6 +36,10 @@ export default function AccountPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const syncState = useLiveQuery(() => db.syncMeta.get("sync"));
   const pendingCount = useLiveQuery(() => db.syncOutbox.count(), []);
+  // Anything that has failed at least once. Without this the screen could say
+  // "1 change waiting" for weeks with no hint of what was wrong - which is how
+  // a sync problem stays invisible until someone notices data missing.
+  const failedItems = useLiveQuery(() => db.syncOutbox.filter((i) => i.attempts > 0).toArray(), []);
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState("");
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -359,7 +363,36 @@ export default function AccountPage() {
 
         {message && <p className={styles.success} role="status">{message}</p>}
         {(error || syncState?.lastError) && (
-          <p className={styles.error} role="alert">{error ?? "Sync paused after a problem. Your local data is safe; try again when you’re ready."}</p>
+          <div className={styles.error} role="alert">
+            <p>{error ?? "Sync paused after a problem. Your local data is safe; try again when you’re ready."}</p>
+            {/* The real message, not a paraphrase of it. This screen is the
+                only place a sync failure is ever visible, so swallowing the
+                text meant nobody - including us - could tell what broke. */}
+            {!error && syncState?.lastError && (
+              <p className={styles.errorDetail}>{syncState.lastError}</p>
+            )}
+          </div>
+        )}
+
+        {failedItems && failedItems.length > 0 && (
+          <details className={styles.diagnostics}>
+            <summary>
+              {failedItems.length} change{failedItems.length === 1 ? "" : "s"} the server refused
+            </summary>
+            <p className={styles.diagnosticsIntro}>
+              Nothing here has been lost - it&rsquo;s still saved on this device and will be retried.
+              If you&rsquo;re reporting a problem, this is the useful part.
+            </p>
+            <ul>
+              {failedItems.map((item) => (
+                <li key={item.id}>
+                  <code>{item.entity}</code> &middot; {item.attempts} attempt
+                  {item.attempts === 1 ? "" : "s"}
+                  {item.lastError ? <span className={styles.itemError}>{item.lastError}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
 
         <aside className={styles.privacyNote}>

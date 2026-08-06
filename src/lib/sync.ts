@@ -1209,18 +1209,55 @@ async function pullEntity(
   return overwritten;
 }
 
+export class SyncPullFailedError extends Error {
+  readonly entities: SyncEntity[];
+  constructor(entities: SyncEntity[], cause: unknown) {
+    const label = entities.join(", ");
+    super(
+      `Blossom couldn't download ${entities.length === 1 ? "one category" : `${entities.length} categories`} (${label}). ` +
+        (cause instanceof Error ? cause.message : "Unknown error.")
+    );
+    this.name = "SyncPullFailedError";
+    this.entities = entities;
+  }
+}
+
+interface PullResult {
+  overwritten: number;
+  failed: SyncEntity[];
+  firstError: unknown;
+}
+
+/**
+ * One entity failing used to throw straight out of here - which meant the
+ * pushOutbox call that follows never ran, so a single unreadable table stopped
+ * every other category on the device from *uploading* too. Nothing would ever
+ * reach the server again, silently, until someone noticed data missing.
+ *
+ * Now each entity is isolated: a failure is recorded and the rest carry on.
+ * The caller still gets told, but only after everything that could work has.
+ */
 async function pullAll(
   client: SupabaseClient,
   userId: string,
   since: string,
   cutoff: string,
   clockOffsetMs: number
-): Promise<number> {
+): Promise<PullResult> {
   let overwritten = 0;
+  const failed: SyncEntity[] = [];
+  let firstError: unknown = null;
+
   for (const entity of SYNC_ORDER) {
-    overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
+    try {
+      overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
+    } catch (error) {
+      failed.push(entity);
+      if (firstError === null) firstError = error;
+    }
   }
-  return overwritten;
+
+  return { overwritten, failed, firstError };
 }
 
 async function pushOutbox(
@@ -1333,17 +1370,35 @@ async function performSync(userId: string): Promise<void> {
     const firstCutoff = await serverClock(client);
     const clockOffsetMs = new Date(firstCutoff).getTime() - Date.now();
     const since = state.lastPulledAt ?? "1970-01-01T00:00:00.000Z";
-    let overwritten = await pullAll(client, userId, since, firstCutoff, clockOffsetMs);
-    await pushOutbox(client, userId, clockOffsetMs);
+    const firstPull = await pullAll(client, userId, since, firstCutoff, clockOffsetMs);
+
+    // Deliberately not gated on the pull succeeding. Uploading is the half
+    // that protects someone's data; it should happen even on a day when
+    // downloading is broken.
+    let pushError: unknown = null;
+    try {
+      await pushOutbox(client, userId, clockOffsetMs);
+    } catch (error) {
+      pushError = error;
+    }
 
     const secondCutoff = await serverClock(client);
-    overwritten += await pullAll(client, userId, since, secondCutoff, clockOffsetMs);
+    const secondPull = await pullAll(client, userId, since, secondCutoff, clockOffsetMs);
+    const overwritten = firstPull.overwritten + secondPull.overwritten;
+    const failed = secondPull.failed;
+
+    // Only advance the watermark when every category came down. Moving it past
+    // an entity that failed would skip those rows forever - they'd never be
+    // requested again, and the gap would look like data that simply vanished.
     await db.syncMeta.update("sync", {
-      lastPulledAt: secondCutoff,
+      ...(failed.length === 0 ? { lastPulledAt: secondCutoff } : {}),
       lastSyncedAt: secondCutoff,
       lastError: null,
       lastOverwrittenCount: overwritten,
     });
+
+    if (failed.length > 0) throw new SyncPullFailedError(failed, secondPull.firstError);
+    if (pushError !== null) throw pushError;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Blossom couldn't sync just now.";
     await db.syncMeta.update("sync", { lastError: message });

@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "0.2.1";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.1",
+    date: "2026-08-06",
+    title: "Sync tells you what went wrong",
+    items: [
+      { tag: "improved", text: "If something can't be saved to your account, Account & sync now shows exactly what the server said and which records are waiting, instead of a vague apology." },
+      { tag: "fix", text: "One category failing to download no longer stops everything else on your device from uploading." },
+      { tag: "fix", text: "Blossom now updates itself properly in the background, so a device can't keep running an old version for weeks." },
+    ],
+  },
   {
     version: "0.2.0",
     date: "2026-08-06",
