@@ -15,7 +15,7 @@
 // their phone, unreachable on a train. Google Play also tests offline during
 // review.
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `blossom-shell-${VERSION}`;
 const ASSET_CACHE = `blossom-assets-${VERSION}`;
 const SHELL_URL = "/";
@@ -58,8 +58,39 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const keep = new Set([SHELL_CACHE, ASSET_CACHE]);
       const names = await caches.keys();
-      await Promise.all(names.filter((n) => n.startsWith("blossom-") && !keep.has(n)).map((n) => caches.delete(n)));
+      const stale = names.filter((n) => n.startsWith("blossom-") && !keep.has(n));
+      await Promise.all(stale.map((n) => caches.delete(n)));
       await self.clients.claim();
+
+      // A page that was already open keeps running whatever JavaScript it
+      // loaded, possibly weeks old, while this worker serves it the new
+      // deploy's chunks. UpdatePrompt handles that from inside the app - but
+      // it only exists in builds that already have it, so it can't rescue
+      // anyone still on an older one. This can: the browser re-fetches sw.js
+      // independently of the page.
+      //
+      // Only backgrounded pages are reloaded. Someone with the app in front of
+      // them might be mid-sentence in a journal entry, and older builds have no
+      // draft saving to catch it (see src/lib/drafts.ts) - so we never pull the
+      // floor out from under a visible window. They get the new build when they
+      // come back to it, or on their next navigation.
+      //
+      // `stale.length` guards a first install: on a brand new device there is
+      // no old build to escape and a reload would be pure noise.
+      if (stale.length === 0) return;
+
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      await Promise.all(
+        clients.map(async (client) => {
+          if (client.visibilityState === "visible") return;
+          try {
+            await client.navigate(client.url);
+          } catch {
+            // Cross-origin or otherwise not navigable - nothing to do, and it
+            // must not stop the other clients being updated.
+          }
+        })
+      );
     })()
   );
 });
