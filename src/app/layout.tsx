@@ -3,6 +3,7 @@ import { Manrope, Inter } from "next/font/google";
 import AccessibilityEffects from "@/components/AccessibilityEffects";
 import SyncCoordinator from "@/components/SyncCoordinator";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import ThemeSync from "@/components/ThemeSync";
 import { SPLASH_SIZES, splashDims, splashMedia } from "@/lib/appleSplash";
 import "./globals.css";
 
@@ -54,9 +55,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-GB" className={`${manrope.variable} ${inter.variable}`}>
+      <head>
+        {/*
+          Applies the saved theme before anything paints. Reading it from
+          Dexie would be async, and the app would flash Classic-light for a
+          frame or two on every open - which is exactly the jolt someone
+          using a dark or discreet theme doesn't want. The database stays the
+          source of truth; localStorage is only a cache for this moment.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var d=document.documentElement," +
+              "t=localStorage.getItem('blossom-theme')," +
+              "a=localStorage.getItem('blossom-appearance');" +
+              "if(t)d.dataset.theme=t;" +
+              "if(a){d.dataset.appearance=a;d.style.colorScheme=a==='system'?'light dark':a;}" +
+              "}catch(e){}",
+          }}
+        />
+      </head>
       <body>
         <AccessibilityEffects />
         <ServiceWorkerRegistrar />
+        <ThemeSync />
         {children}
         <SyncCoordinator />
       </body>

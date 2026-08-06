@@ -7,6 +7,7 @@ import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
 import { useUnreadBetaChat } from "@/components/useUnreadBetaChat";
 import { APP_VERSION } from "@/lib/changelog";
+import { THEMES } from "@/lib/themes";
 import styles from "./settings.module.css";
 
 const CHEVRON = (
@@ -47,6 +48,8 @@ const AURORA_LABELS: Record<string, string> = {
   supportive: "Supportive",
   disabled: "Disabled",
 };
+
+const THEME_LABELS: Record<string, string> = Object.fromEntries(THEMES.map((t) => [t.id, t.name]));
 
 export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
@@ -103,6 +106,7 @@ export default function SettingsPage() {
         <div className={styles.group}>
           <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
           <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
+          <Row href="/settings/appearance" title="Appearance" meta={THEME_LABELS[profile.theme] ?? "Classic"} />
           <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
           <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
         </div>

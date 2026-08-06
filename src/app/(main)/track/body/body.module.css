@@ -148,7 +148,7 @@
 .primaryNumber {
   margin-top: 3px;
   color: var(--text-primary);
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-size: 25px;
   line-height: 1.1;
 }

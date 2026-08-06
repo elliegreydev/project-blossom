@@ -48,6 +48,7 @@ import {
   type SafetyCheckIn,
   type SafetyCheckInStatus,
 } from "@/lib/db";
+import { isAppearance, isThemeId } from "@/lib/themes";
 import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
 
@@ -228,6 +229,8 @@ async function localPayload(
         enabled_modules: profile.enabledModules,
         aurora_mode: profile.auroraMode,
         reminder_privacy: profile.reminderPrivacy,
+        theme: profile.theme,
+        appearance: profile.appearance,
         gentle_mode: profile.gentleMode,
         sensitive_modules_locked: profile.sensitiveModulesLocked,
         // Only the *intent* to lock. appLockPinHash is never uploaded - each
@@ -783,6 +786,8 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         enabledModules: stringArray(row.enabled_modules) as ModuleKey[],
         auroraMode: stringValue(row.aurora_mode) as AuroraMode,
         reminderPrivacy: stringValue(row.reminder_privacy) as ReminderPrivacy,
+        theme: isThemeId(row.theme) ? row.theme : local.theme,
+        appearance: isAppearance(row.appearance) ? row.appearance : local.appearance,
         gentleMode: row.gentle_mode === true,
         sensitiveModulesLocked: Boolean(row.sensitive_modules_locked),
         // Never clears a lock that exists on this device: if either the

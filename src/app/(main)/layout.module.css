@@ -71,7 +71,7 @@
 }
 
 .loadingWordmark {
-  font-family: var(--font-manrope), var(--font-inter), sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 18px;
   color: var(--plum);

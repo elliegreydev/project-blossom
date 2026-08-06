@@ -24,6 +24,11 @@
   --status-attention: var(--pink);
   --status-info: var(--sky);
 
+  /* Headings. Themeable, because a lot of each theme's character is in the
+     type - Quiet Ink is a serif, Low Profile deliberately uses the plain
+     system face. Body text stays Inter throughout for readability. */
+  --font-display: var(--font-manrope), var(--font-inter), sans-serif;
+
   /* Shape */
   --radius: 15px;
   --radius-sm: 10px;
@@ -44,18 +49,156 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
+/* ---------------------------------------------------------------------------
+   Themes.
+   Two independent choices: data-theme picks the palette, data-appearance
+   picks light/dark/system. Every theme reassigns the same handful of brand
+   and surface tokens, so all ~670 existing var(--token) references across the
+   app re-theme without any component being touched.
+
+   The dark rules are written twice on purpose - once for "the phone is dark
+   and the user hasn't overridden it", once for "the user explicitly chose
+   dark". Combining them into one selector list would let a forced-light
+   choice be overridden by the phone.
+   See src/lib/themes.ts for the list and how it's applied.
+--------------------------------------------------------------------------- */
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-appearance="light"]) {
+      --bg: #1b151f;
+      --bg-raised: #241c29;
+      --border: #342a3a;
+      --text-primary: #f1ecf3;
+      --text-secondary: #b8aec0;
+      --text-muted: #a398aa;
+      --nav-active: var(--lavender);
+      --focus-ring: var(--lavender);
+  }
+}
+
+:root[data-appearance="dark"] {
     --bg: #1b151f;
     --bg-raised: #241c29;
     --border: #342a3a;
-
     --text-primary: #f1ecf3;
     --text-secondary: #b8aec0;
     --text-muted: #a398aa;
     --nav-active: var(--lavender);
     --focus-ring: var(--lavender);
+}
+
+:root[data-theme="quiet-ink"] {
+    --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --pink: #c4737e; --lavender: #9b8aa6; --sky: #8fa3b8; --mint: #7c8b6f;
+    --plum: #1b1a1f;
+    --bg: #f7f4ef; --bg-raised: #ffffff; --border: #e3dcd1;
+    --text-primary: #1b1a1f; --text-secondary: #6e6960; --text-muted: #857f74;
+    --nav-active: #1b1a1f; --focus-ring: #c4737e;
+    --gradient-brand: linear-gradient(135deg, #c4737e, #9b8aa6);
+    --radius: 13px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="quiet-ink"]:not([data-appearance="light"]) {
+      --pink: #d08a94; --lavender: #b0a0bc; --sky: #a3b6ca; --mint: #90a183;
+      --bg: #16151a; --bg-raised: #1e1d23; --border: #2b2a31;
+      --text-primary: #ede7dc; --text-secondary: #a79e92; --text-muted: #8e877c;
+      --nav-active: #d08a94; --focus-ring: #d08a94;
+      --gradient-brand: linear-gradient(135deg, #d08a94, #b0a0bc);
   }
+}
+
+:root[data-theme="quiet-ink"][data-appearance="dark"] {
+    --pink: #d08a94; --lavender: #b0a0bc; --sky: #a3b6ca; --mint: #90a183;
+    --bg: #16151a; --bg-raised: #1e1d23; --border: #2b2a31;
+    --text-primary: #ede7dc; --text-secondary: #a79e92; --text-muted: #8e877c;
+    --nav-active: #d08a94; --focus-ring: #d08a94;
+    --gradient-brand: linear-gradient(135deg, #d08a94, #b0a0bc);
+}
+
+:root[data-theme="low-profile"] {
+    --font-display: var(--font-inter), system-ui, sans-serif;
+    --pink: #5a7184; --lavender: #6e7c88; --sky: #5a7184; --mint: #6b8478;
+    --plum: #2f3337;
+    --bg: #f4f5f6; --bg-raised: #ffffff; --border: #dfe2e5;
+    --text-primary: #2f3337; --text-secondary: #5c6469; --text-muted: #767d82;
+    --nav-active: #2f3337; --focus-ring: #5a7184;
+    --gradient-brand: linear-gradient(135deg, #5a7184, #6e7c88);
+    --radius: 11px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="low-profile"]:not([data-appearance="light"]) {
+      --pink: #7c97ab; --lavender: #8a97a3; --sky: #7c97ab; --mint: #85998d;
+      --bg: #191b1d; --bg-raised: #212427; --border: #2c3033;
+      --text-primary: #dcdfe2; --text-secondary: #a2a9ae; --text-muted: #8b9297;
+      --nav-active: #7c97ab; --focus-ring: #7c97ab;
+      --gradient-brand: linear-gradient(135deg, #7c97ab, #8a97a3);
+  }
+}
+
+:root[data-theme="low-profile"][data-appearance="dark"] {
+    --pink: #7c97ab; --lavender: #8a97a3; --sky: #7c97ab; --mint: #85998d;
+    --bg: #191b1d; --bg-raised: #212427; --border: #2c3033;
+    --text-primary: #dcdfe2; --text-secondary: #a2a9ae; --text-muted: #8b9297;
+    --nav-active: #7c97ab; --focus-ring: #7c97ab;
+    --gradient-brand: linear-gradient(135deg, #7c97ab, #8a97a3);
+}
+
+:root[data-theme="softbound"] {
+    --pink: #e8b4b8; --lavender: #c4a8c0; --sky: #9fb6c4; --mint: #6b7f5e;
+    --plum: #3a3238;
+    --bg: #fbf7f0; --bg-raised: #fffdf9; --border: #eadccb;
+    --text-primary: #3a3238; --text-secondary: #6f625f; --text-muted: #857773;
+    --nav-active: #c08552; --focus-ring: #c08552;
+    --gradient-brand: linear-gradient(135deg, #e8b4b8, #c08552);
+    --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="softbound"]:not([data-appearance="light"]) {
+      --pink: #e0a0a6; --lavender: #c0a6bc; --sky: #a3b8c6; --mint: #8fa37e;
+      --bg: #1f1a1d; --bg-raised: #282124; --border: #352c30;
+      --text-primary: #f0e6da; --text-secondary: #b3a49c; --text-muted: #9a8b84;
+      --nav-active: #d9a06e; --focus-ring: #d9a06e;
+      --gradient-brand: linear-gradient(135deg, #e0a0a6, #d9a06e);
+  }
+}
+
+:root[data-theme="softbound"][data-appearance="dark"] {
+    --pink: #e0a0a6; --lavender: #c0a6bc; --sky: #a3b8c6; --mint: #8fa37e;
+    --bg: #1f1a1d; --bg-raised: #282124; --border: #352c30;
+    --text-primary: #f0e6da; --text-secondary: #b3a49c; --text-muted: #9a8b84;
+    --nav-active: #d9a06e; --focus-ring: #d9a06e;
+    --gradient-brand: linear-gradient(135deg, #e0a0a6, #d9a06e);
+}
+
+:root[data-theme="in-bloom"] {
+    --pink: #ff5c8a; --lavender: #b44bd8; --sky: #34d1e0; --mint: #8fbf1f;
+    --plum: #2d1b4e;
+    --bg: #fff8f0; --bg-raised: #ffffff; --border: #f0ddd2;
+    --text-primary: #2d1b4e; --text-secondary: #5e4a7a; --text-muted: #7a689a;
+    --nav-active: #ff5c8a; --focus-ring: #b44bd8;
+    --gradient-brand: linear-gradient(135deg, #ff5c8a, #b44bd8);
+    --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="in-bloom"]:not([data-appearance="light"]) {
+      --pink: #ff5c8a; --lavender: #b44bd8; --sky: #34d1e0; --mint: #b8e62d;
+      --bg: #191033; --bg-raised: #241847; --border: #34245f;
+      --text-primary: #fff8f0; --text-secondary: #beacd9; --text-muted: #a895c8;
+      --nav-active: #34d1e0; --focus-ring: #34d1e0;
+      --gradient-brand: linear-gradient(135deg, #ff5c8a, #b44bd8);
+  }
+}
+
+:root[data-theme="in-bloom"][data-appearance="dark"] {
+    --pink: #ff5c8a; --lavender: #b44bd8; --sky: #34d1e0; --mint: #b8e62d;
+    --bg: #191033; --bg-raised: #241847; --border: #34245f;
+    --text-primary: #fff8f0; --text-secondary: #beacd9; --text-muted: #a895c8;
+    --nav-active: #34d1e0; --focus-ring: #34d1e0;
+    --gradient-brand: linear-gradient(135deg, #ff5c8a, #b44bd8);
 }
 
 * {
@@ -90,7 +233,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-manrope), var(--font-inter), sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.01em;
 }

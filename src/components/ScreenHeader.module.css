@@ -35,7 +35,7 @@
 
 .title {
   min-width: 0;
-  font-family: var(--font-manrope);
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(24px, 3vw, 30px);
   color: var(--text-primary);

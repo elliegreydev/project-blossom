@@ -5,6 +5,7 @@ import Dexie, { type EntityTable } from "dexie";
 // `db` value from this file.
 import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
+import { DEFAULT_APPEARANCE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -75,6 +76,10 @@ export interface Profile {
   enabledModules: ModuleKey[];
   auroraMode: AuroraMode;
   reminderPrivacy: ReminderPrivacy;
+  // Which palette, and light/dark/system. Kept separate so someone can have
+  // any theme in either appearance - see src/lib/themes.ts.
+  theme: ThemeId;
+  appearance: Appearance;
   // A deliberately quieter presentation for people who find tracking or
   // progress information stressful. It never changes the underlying records.
   gentleMode: boolean;
@@ -1732,6 +1737,8 @@ export const DEFAULT_PROFILE: Profile = {
   enabledModules: ["medication", "appointments", "journal", "goals", "journey"],
   auroraMode: "gentle",
   reminderPrivacy: "discreet",
+  theme: DEFAULT_THEME,
+  appearance: DEFAULT_APPEARANCE,
   gentleMode: false,
   lowEnergyMode: false,
   homePhoneLayout: defaultHomeLayout(),
@@ -1792,6 +1799,10 @@ export async function getOrCreateProfile(): Promise<Profile> {
   const backfill: Partial<Profile> = {};
   if (existing.appLockEnabled === undefined) backfill.appLockEnabled = false;
   if (existing.appLockPinHash === undefined) backfill.appLockPinHash = null;
+  // Existing users keep the look they already know - Classic is the current
+  // design, so nobody wakes up to a different app.
+  if (!isThemeId(existing.theme)) backfill.theme = DEFAULT_THEME;
+  if (!isAppearance(existing.appearance)) backfill.appearance = DEFAULT_APPEARANCE;
   if (existing.webauthnCredentialId === undefined) backfill.webauthnCredentialId = null;
   if (existing.reduceMotion === undefined) backfill.reduceMotion = false;
   if (existing.textSize === undefined) backfill.textSize = "normal";
