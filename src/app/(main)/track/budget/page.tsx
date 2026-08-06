@@ -114,6 +114,7 @@ export default function BudgetPage() {
                       value={savingsAmount}
                       onChange={(e) => setSavingsAmount(e.target.value)}
                       placeholder="Amount"
+                      aria-label={`Amount to add to ${goal.label}`}
                       autoFocus
                     />
                     <button type="button" className={styles.doseButton} onClick={() => addSavings(goal.id)}>Add</button>
@@ -138,6 +139,7 @@ export default function BudgetPage() {
               value={newGoalLabel}
               onChange={(e) => setNewGoalLabel(e.target.value)}
               placeholder="e.g. Surgery fund"
+              aria-label="New savings goal name"
             />
             <input
               className={styles.itemBody}
@@ -147,6 +149,7 @@ export default function BudgetPage() {
               value={newGoalTarget}
               onChange={(e) => setNewGoalTarget(e.target.value)}
               placeholder="Target"
+              aria-label="Target amount for the new goal"
             />
             <button type="button" className={styles.doseButton} disabled={addingGoal} onClick={createGoal}>
               {addingGoal ? "Adding…" : "+ Add goal"}

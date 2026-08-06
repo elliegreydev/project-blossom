@@ -47,14 +47,17 @@ export function zonedNow(now: Date, timeZone: string): { minuteOfDay: number; we
   };
 }
 
+
+// A deliberate copy of localDateKey from ./dates. This module keeps ZERO
+// runtime imports so scripts/test-reminders.mjs can run it under plain node
+// with no bundler, which is why it can't just import the shared helper. If
+// you change the shared one, change this too - they must agree.
 function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // Mirrors db.ts's daysBetweenDateKeys/isDueByInterval. Duplicated rather than
-// imported so this module has no runtime dependency on db.ts - only
-// type-only imports, which keeps it independently testable via plain node
-// (scripts/test-reminders.mjs).
+// imported for the same reason as above.
 function isDueByInterval(anchorDate: string, intervalDays: number, todayDateKey: string): boolean {
   if (intervalDays <= 0) return false;
   const [fy, fm, fd] = anchorDate.split("-").map(Number);

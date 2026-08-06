@@ -189,8 +189,9 @@ export default function TrustedCirclePage() {
       )}
 
       <div className={formStyles.field}>
-        <span className={formStyles.label}>Share with someone</span>
+        <label className={formStyles.label} htmlFor="circle-share-email">Share with someone</label>
         <input
+          id="circle-share-email"
           className={formStyles.input}
           type="email"
           value={email}

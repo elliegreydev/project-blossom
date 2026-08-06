@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { updatePresentationEntry } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 export default function MarkTriedSheet({
   entryId,
@@ -20,7 +21,7 @@ export default function MarkTriedSheet({
     setSaving(true);
     await updatePresentationEntry(entryId, {
       wantToTry: false,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayLocalDateKey(),
       confidenceRating,
     });
     setSaving(false);

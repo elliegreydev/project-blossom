@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addEuphoriaEntry, updateEuphoriaEntry, type EuphoriaEntry, type EuphoriaMomentKind } from "@/lib/db";
+import { localDateKey, todayLocalDateKey } from "@/lib/dates";
 
 const MOMENT_KINDS: Array<{ key: EuphoriaMomentKind; label: string }> = [
   { key: "affirming-interaction", label: "Affirming moment" },
@@ -21,7 +22,7 @@ type CapsuleChoice = "none" | "one-month" | "three-months" | "one-year" | "custo
 function addMonths(months: number): string {
   const date = new Date();
   date.setMonth(date.getMonth() + months);
-  return date.toISOString().slice(0, 10);
+  return localDateKey(date);
 }
 
 export default function EuphoriaEntrySheet({ entry, onClose }: { entry?: EuphoriaEntry | null; onClose: () => void }) {
@@ -110,7 +111,7 @@ export default function EuphoriaEntrySheet({ entry, onClose }: { entry?: Euphori
             ))}
           </div>
           {capsuleChoice === "custom" && (
-            <input type="date" min={new Date().toISOString().slice(0, 10)} className={styles.input} value={customDate} onChange={(event) => setCustomDate(event.target.value)} />
+            <input type="date" min={todayLocalDateKey()} className={styles.input} value={customDate} onChange={(event) => setCustomDate(event.target.value)} />
           )}
         </div>
 

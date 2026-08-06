@@ -7,6 +7,7 @@ import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import PinEntry from "./PinEntry";
 import styles from "./AppLockGate.module.css";
 import local from "./SensitiveModuleGate.module.css";
+import { readSessionFlag, writeSessionFlag } from "@/lib/sessionFlag";
 
 // Separate from AppLockGate's session key - unlocking the whole app and
 // unlocking sensitive modules are different steps, per Settings > Privacy &
@@ -18,7 +19,7 @@ export default function SensitiveModuleGate({ children }: { children: React.Reac
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setUnlocked(sessionStorage.getItem(SESSION_KEY) === "1");
+    setUnlocked(readSessionFlag(SESSION_KEY));
   }, []);
 
   if (!profile || unlocked === null) return null;
@@ -33,7 +34,7 @@ export default function SensitiveModuleGate({ children }: { children: React.Reac
       <PinEntry
         title="This area is locked"
         onSuccess={() => {
-          sessionStorage.setItem(SESSION_KEY, "1");
+          writeSessionFlag(SESSION_KEY);
           setUnlocked(true);
         }}
       />

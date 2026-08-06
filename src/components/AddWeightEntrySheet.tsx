@@ -5,11 +5,12 @@ import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addWeightEntry, updateWeightEntry, type Profile, type WeightEntry } from "@/lib/db";
 import { gramsFromWeight, resolvedWeightUnit, weightFromGrams, weightUnitLabel } from "@/lib/weight";
+import { todayLocalDateKey } from "@/lib/dates";
 
 export default function AddWeightEntrySheet({ profile, entry, onClose }: { profile: Profile; entry?: WeightEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
   const unit = useMemo(() => resolvedWeightUnit(profile.weightUnit, profile.region), [profile.region, profile.weightUnit]);
-  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [date, setDate] = useState(entry?.date ?? (() => todayLocalDateKey()));
   const [value, setValue] = useState(entry ? String(weightFromGrams(entry.weightGrams, unit)) : "");
   const [note, setNote] = useState(entry?.note ?? "");
   const [saving, setSaving] = useState(false);

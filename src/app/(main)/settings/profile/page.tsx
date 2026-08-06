@@ -41,8 +41,9 @@ export default function ProfileSettingsPage() {
       <ScreenHeader title="Profile & preferences" backHref="/settings" />
 
       <div className={styles.field}>
-        <span className={styles.label}>Chosen or display name</span>
+        <label className={styles.label} htmlFor="profile-display-name">Chosen or display name</label>
         <input
+          id="profile-display-name"
           className={styles.input}
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -52,8 +53,9 @@ export default function ProfileSettingsPage() {
       </div>
 
       <div className={styles.field}>
-        <span className={styles.label}>Pronouns</span>
+        <label className={styles.label} htmlFor="profile-pronouns">Pronouns</label>
         <input
+          id="profile-pronouns"
           className={styles.input}
           value={pronouns}
           onChange={(e) => setPronouns(e.target.value)}
@@ -63,8 +65,9 @@ export default function ProfileSettingsPage() {
       </div>
 
       <div className={styles.field}>
-        <span className={styles.label}>Country</span>
+        <label className={styles.label} htmlFor="profile-country">Country</label>
         <select
+          id="profile-country"
           className={styles.select}
           value={profile.region ?? ""}
           onChange={(e) =>
@@ -82,7 +85,7 @@ export default function ProfileSettingsPage() {
 
       {profile.region && SUBREGIONS[profile.region as keyof typeof SUBREGIONS] && (
         <div className={styles.field}>
-          <span className={styles.label}>
+          <label className={styles.label} htmlFor="profile-subregion">
             {profile.region === "United States"
               ? "State"
               : profile.region === "Canada"
@@ -90,8 +93,9 @@ export default function ProfileSettingsPage() {
                 : profile.region === "Australia"
                   ? "State or territory"
                   : "Nation"}
-          </span>
+          </label>
           <select
+            id="profile-subregion"
             className={styles.select}
             value={profile.subregion ?? ""}
             onChange={(e) => updateProfile({ subregion: e.target.value || null })}

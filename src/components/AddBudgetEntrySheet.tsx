@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addBudgetEntry, updateBudgetEntry, type BudgetCategory, type BudgetEntry } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const CATEGORIES: { key: BudgetCategory; label: string }[] = [
   { key: "hrt", label: "HRT" },
@@ -13,7 +14,7 @@ const CATEGORIES: { key: BudgetCategory; label: string }[] = [
 ];
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalDateKey();
 }
 
 export default function AddBudgetEntrySheet({

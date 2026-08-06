@@ -25,6 +25,7 @@ import {
 } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 import sheetStyles from "@/components/Sheet.module.css";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const EXPORT_SECTIONS: { key: DataExportSection; title: string; desc: string; sensitive?: boolean }[] = [
   { key: "profile", title: "Profile basics", desc: "Name, pronouns and preferences." },
@@ -122,11 +123,11 @@ export default function DataSettingsPage() {
     try {
       const data = await exportSelectedData(selection);
       if (kind === "json") {
-        download(`blossom-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
+        download(`blossom-backup-${todayLocalDateKey()}.json`, JSON.stringify(data, null, 2), "application/json");
         await updateProfile({ lastBackupExportedAt: new Date().toISOString() });
       } else {
         const { buildDataExportPdf } = await import("@/lib/pdfExport");
-        buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]).save(`blossom-export-${new Date().toISOString().slice(0, 10)}.pdf`);
+        buildDataExportPdf(data as unknown as Parameters<typeof buildDataExportPdf>[0]).save(`blossom-export-${todayLocalDateKey()}.pdf`);
       }
       setMessage(kind === "pdf" ? "Your Blossom PDF is ready." : "Your Blossom backup is ready.");
     } catch {
@@ -269,7 +270,7 @@ export default function DataSettingsPage() {
         <button type="button" className={styles.dangerButton} onClick={() => setConfirmOpen(true)}>Delete all data</button>
       </div>
 
-      {confirmOpen && <div className={sheetStyles.backdrop} onClick={() => setConfirmOpen(false)}><div className={sheetStyles.sheet} onClick={(event) => event.stopPropagation()}><div className={sheetStyles.grabber} /><h2 className={sheetStyles.title}>Delete this device&apos;s Blossom data?</h2><p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>This permanently removes this device&apos;s Blossom records, including private entries. Download a backup first if you may need anything later. Type DELETE to confirm.</p><input className={sheetStyles.input} value={confirmText} onChange={(event) => setConfirmText(event.target.value)} placeholder="DELETE" /><div className={sheetStyles.actions}><button type="button" className={sheetStyles.tertiaryButton} onClick={() => setConfirmOpen(false)}>Cancel</button><button type="button" className={sheetStyles.primaryButton} style={{ background: "var(--pink)", color: "var(--plum)" }} disabled={confirmText !== "DELETE" || deleting} onClick={() => void handleDelete}>{deleting ? "Deleting…" : "Delete everything"}</button></div></div></div>}
+      {confirmOpen && <div className={sheetStyles.backdrop} onClick={() => setConfirmOpen(false)}><div className={sheetStyles.sheet} onClick={(event) => event.stopPropagation()}><div className={sheetStyles.grabber} /><h2 className={sheetStyles.title}>Delete this device&apos;s Blossom data?</h2><p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>This permanently removes this device&apos;s Blossom records, including private entries. Download a backup first if you may need anything later. Type DELETE to confirm.</p><input aria-label="Type DELETE to confirm" className={sheetStyles.input} value={confirmText} onChange={(event) => setConfirmText(event.target.value)} placeholder="DELETE" /><div className={sheetStyles.actions}><button type="button" className={sheetStyles.tertiaryButton} onClick={() => setConfirmOpen(false)}>Cancel</button><button type="button" className={sheetStyles.primaryButton} style={{ background: "var(--pink)", color: "var(--plum)" }} disabled={confirmText !== "DELETE" || deleting} onClick={() => void handleDelete()}>{deleting ? "Deleting…" : "Delete everything"}</button></div></div></div>}
     </div>
   );
 }

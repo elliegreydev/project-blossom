@@ -3,6 +3,7 @@ import Dexie, { type EntityTable } from "dexie";
 // runtime circular dependency even though regionResources.ts imports the
 // `db` value from this file.
 import type { ResourceCategory } from "./regionResources";
+import { localDateKey, todayLocalDateKey } from "@/lib/dates";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -2136,7 +2137,7 @@ export function careSupplyNeedsAttention(supply: CareSupply, today = new Date())
   if (supply.lowQuantity !== null && supply.quantity <= supply.lowQuantity) return true;
   const warningKey = new Date(today);
   warningKey.setDate(warningKey.getDate() + CARE_SUPPLY_WARNING_DAYS);
-  const warningDateKey = warningKey.toISOString().slice(0, 10);
+  const warningDateKey = localDateKey(warningKey);
   return [supply.renewalDate, supply.deliveryDate, supply.expiryDate].some((date) => date !== null && date <= warningDateKey);
 }
 
@@ -2576,7 +2577,7 @@ export async function completeGoal(id: string, asMilestone: boolean): Promise<vo
       title: goal.title,
       templateKey: null,
       category: goal.category,
-      eventDate: new Date().toISOString().slice(0, 10),
+      eventDate: todayLocalDateKey(),
       datePrecision: "exact",
       note: null,
     });
@@ -2591,9 +2592,6 @@ export async function completeGoal(id: string, asMilestone: boolean): Promise<vo
 
 // Given a medication's schedule, list the dose slots expected today as ISO
 // datetimes. Empty when the med has no schedule or isn't scheduled for today.
-function localDateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 function daysBetweenDateKeys(fromDateKey: string, toDateKey: string): number {
   const [fy, fm, fd] = fromDateKey.split("-").map(Number);
@@ -3451,6 +3449,8 @@ export async function deleteAllData(): Promise<void> {
       db.weightEntries,
       db.calorieEntries,
       db.notifiedReminders,
+      db.cachedRegionResources,
+      db.cachedLegalContextNotes,
       db.syncOutbox,
       db.syncMeta,
     ],
@@ -3488,6 +3488,13 @@ export async function deleteAllData(): Promise<void> {
         db.weightEntries.clear(),
         db.calorieEntries.clear(),
         db.notifiedReminders.clear(),
+        // The cached resource lists are public content, but they're keyed by
+        // country, subregion and city - so leaving them behind means a wiped
+        // device still says someone here was reading trans healthcare and
+        // legal information for a named place. That's the exact trace this
+        // wipe exists to remove.
+        db.cachedRegionResources.clear(),
+        db.cachedLegalContextNotes.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

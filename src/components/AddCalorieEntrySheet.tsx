@@ -4,12 +4,13 @@ import { useState } from "react";
 import styles from "./Sheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addCalorieEntry, updateCalorieEntry, type CalorieEntry } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack", "Drink", "Other"];
 
 export default function AddCalorieEntrySheet({ entry, onClose }: { entry?: CalorieEntry | null; onClose: () => void }) {
   const dialogRef = useSheetDialog(onClose);
-  const [date, setDate] = useState(entry?.date ?? (() => new Date().toISOString().slice(0, 10)));
+  const [date, setDate] = useState(entry?.date ?? (() => todayLocalDateKey()));
   const [label, setLabel] = useState(entry?.label ?? "");
   const [calories, setCalories] = useState(entry ? String(entry.calories) : "");
   const [meal, setMeal] = useState<string | null>(entry?.meal ?? null);

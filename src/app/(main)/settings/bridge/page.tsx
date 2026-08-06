@@ -149,8 +149,8 @@ export default function BlossomBridgePage() {
             </button>
           ))}
         </div>
-        <span className={formStyles.label} style={{ marginTop: 8 }}>Label (optional, just for you)</span>
-        <input className={formStyles.input} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. For Dr. Patel" />
+        <label className={formStyles.label} htmlFor="bridge-label" style={{ marginTop: 8 }}>Label (optional, just for you)</label>
+        <input id="bridge-label" className={formStyles.input} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. For Dr. Patel" />
         <button
           type="button"
           className={formStyles.primaryButton}
