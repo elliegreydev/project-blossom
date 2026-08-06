@@ -85,6 +85,22 @@
   flex-shrink: 0;
 }
 
+/* One-line signpost for the tools that used to be filed here. Not a row, so it
+   doesn't undo the point of moving them out. */
+.note {
+  margin: 2px 4px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.note a {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Quiet build stamp at the foot of Settings - so the version is always
    findable, not just in the moment the What's new popup appears. */
 .versionStamp {

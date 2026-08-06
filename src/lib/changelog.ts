@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.1.2";
+export const APP_VERSION = "0.2.0";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,19 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.0",
+    date: "2026-08-06",
+    title: "Choose how Blossom looks, and a tidier Settings",
+    items: [
+      { tag: "new", text: "Five themes to pick from, in Settings › Appearance." },
+      { tag: "new", text: "A light and dark choice that's yours, separate from your phone's. Leave it on Automatic if you'd rather it follow along." },
+      { tag: "improved", text: "Settings had grown to twenty-seven rows. It's eleven now, and nothing has been taken away." },
+      { tag: "improved", text: "Trusted Circle, Blossom Bridge, safety check-ins, your support map, Passport and the HRT guide have moved to Track, with your other tools." },
+      { tag: "improved", text: "Everything about the project - the blog, the roadmap, help, legal - now sits behind one About Blossom row." },
+      { tag: "improved", text: "Settings shows how many people can currently see some of your data, so it's never something you have to go looking for." },
+    ],
+  },
   {
     version: "0.1.2",
     date: "2026-08-06",

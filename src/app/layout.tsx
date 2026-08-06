@@ -54,7 +54,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB" className={`${manrope.variable} ${inter.variable}`}>
+    // The boot script below stamps data-theme/data-appearance on <html> before
+    // React hydrates - that's the point, it stops a light flash. React can't
+    // know about it, so the mismatch is expected and suppressed here.
+    <html lang="en-GB" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
         {/*
           Applies the saved theme before anything paints. Reading it from

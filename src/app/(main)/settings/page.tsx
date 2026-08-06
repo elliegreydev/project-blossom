@@ -28,20 +28,6 @@ function Row({ href, title, meta }: { href: string; title: string; meta?: string
   );
 }
 
-const DISCORD_INVITE_URL = "https://discord.gg/jD3yS2HN7s";
-
-function ExternalRow({ href, title, meta }: { href: string; title: string; meta?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={styles.row}>
-      <div className={styles.rowText}>
-        <span className={styles.rowTitle}>{title}</span>
-        {meta && <span className={styles.rowMeta}>{meta}</span>}
-      </div>
-      {CHEVRON}
-    </a>
-  );
-}
-
 const AURORA_LABELS: Record<string, string> = {
   quiet: "Quiet",
   gentle: "Gentle",
@@ -55,6 +41,7 @@ export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [isStaff, setIsStaff] = useState(false);
   const [isBetaTester, setIsBetaTester] = useState(false);
+  const [activeShares, setActiveShares] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +60,32 @@ export default function SettingsPage() {
       setIsBetaTester(betaData === true);
     }
 
+    /* The sharing tools live in Track now, so Settings carries the count instead -
+       "who can see my data" should never be something you have to go looking for. */
+    async function countActiveShares() {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return;
+
+      const nowIso = new Date().toISOString();
+      const [{ count: grants }, { count: links }] = await Promise.all([
+        supabase
+          .from("trusted_circle_grants")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_id", uid)
+          .eq("status", "active"),
+        supabase
+          .from("bridge_links")
+          .select("id", { count: "exact", head: true })
+          .is("revoked_at", null)
+          .gt("expires_at", nowIso),
+      ]);
+      if (cancelled) return;
+      setActiveShares((grants ?? 0) + (links ?? 0));
+    }
+
     void checkStaffAccess();
+    void countActiveShares();
     return () => {
       cancelled = true;
     };
@@ -82,6 +94,13 @@ export default function SettingsPage() {
   const hasUnreadBetaChat = useUnreadBetaChat(isBetaTester || isStaff);
 
   if (!profile) return null;
+
+  const privacyMeta = [
+    profile.appLockEnabled ? "App lock on" : null,
+    activeShares ? `${activeShares} active ${activeShares === 1 ? "share" : "shares"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className={styles.screen}>
@@ -94,7 +113,7 @@ export default function SettingsPage() {
             <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
             <Row
               href="/beta"
-              title="🧪 You're a beta tester"
+              title="You're a beta tester"
               meta={hasUnreadBetaChat ? "New message · What's new, beta chat, report a bug" : "What's new, beta chat, report a bug"}
             />
           </div>
@@ -105,72 +124,31 @@ export default function SettingsPage() {
         <p className={styles.sectionLabel}>You</p>
         <div className={styles.group}>
           <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
-          <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
           <Row href="/settings/appearance" title="Appearance" meta={THEME_LABELS[profile.theme] ?? "Classic"} />
-          <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
+          <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
           <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
+          <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
         </div>
       </div>
 
       <div className={styles.section}>
-        <p className={styles.sectionLabel}>Stay on top of things</p>
-        <div className={styles.group}>
-          <Row href="/reminders" title="Reminders" meta="Everything coming up, in one place" />
-          <Row href="/search" title="Search" meta="Find anything you've added" />
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>Privacy & security</p>
+        <p className={styles.sectionLabel}>Privacy & your data</p>
         <div className={styles.group}>
           <Row href="/settings/notifications" title="Notifications" />
-          <Row
-            href="/settings/privacy"
-            title="Privacy & security"
-            meta={profile.appLockEnabled ? "App lock on" : undefined}
-          />
-          <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
+          <Row href="/settings/privacy" title="Privacy & security" meta={privacyMeta || undefined} />
           <Row href="/settings/accessibility" title="Accessibility" />
-          <Row href="/settings/data" title="Data controls" />
+          <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
+          <Row href="/settings/data" title="Data controls" meta="Export, import, delete" />
         </div>
+        <p className={styles.note}>
+          Trusted Circle, Bridge, your support map, Passport and safety check-ins now live in{" "}
+          <Link href="/track">Track</Link>.
+        </p>
       </div>
 
       <div className={styles.section}>
-        <p className={styles.sectionLabel}>Sharing & safety</p>
         <div className={styles.group}>
-          <Row
-            href="/settings/safety-checkins"
-            title="Safety check-ins"
-            meta={profile.safetyCheckInsEnabled ? "On" : "Off - optional"}
-          />
-          <Row href="/settings/circle" title="Trusted Circle" meta="Share specific data with specific people" />
-          <Row href="/settings/bridge" title="Blossom Bridge" meta="Temporary links for people without an account" />
-          <Row href="/settings/support-map" title="Personal Support Map" meta="Private people, places and organisations" />
-          <Row href="/settings/passport" title="Blossom Passport" meta="Build a document to share" />
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>Guides & support</p>
-        <div className={styles.group}>
-          <Row href="/settings/getting-started" title="Starting HRT safely" meta="Practical steps, not medical advice" />
-          <Row href="/settings/support" title="Help & support" />
-          <Row href="/tickets" title="Contact support" meta="Open a ticket, we'll get back to you here" />
-          <Row href="/ideas" title="Ideas & bug reports" meta="Suggest a feature or tell us what's broken" />
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>About Blossom</p>
-        <div className={styles.group}>
-          <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
-          <Row href="/about" title="About" meta="Who's building Blossom" />
-          <Row href="/blog" title="Blog" meta="Updates from the team" />
-          <Row href="/roadmap" title="Blossom roadmap" meta="What's here and what's next" />
-          <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />
-          {!(isBetaTester || isStaff) && <Row href="/beta" title="Beta" meta="What beta testing looks like" />}
-          <Row href="/legal/privacy" title="Privacy Policy" />
-          <Row href="/legal/terms" title="Terms of Service" />
+          <Row href="/settings/about" title="About Blossom" meta="Help, the roadmap, the team, legal" />
         </div>
 
         <p className={styles.versionStamp}>Blossom v{APP_VERSION}</p>
