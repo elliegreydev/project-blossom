@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.2.1";
+export const APP_VERSION = "0.2.2";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.2",
+    date: "2026-08-07",
+    title: "Opens straight away now",
+    items: [
+      { tag: "improved", text: "Blossom used to hold its opening screen for five seconds every time. It now opens as fast as your phone can manage - usually instantly - and only shows the loading screen if something is genuinely taking a moment." },
+      { tag: "fix", text: "The buttons at the top of Home are proper icons now. Two of them were characters some Android phones don't have, so they could show as empty boxes with nothing to read." },
+    ],
+  },
   {
     version: "0.2.1",
     date: "2026-08-06",

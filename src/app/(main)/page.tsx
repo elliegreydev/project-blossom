@@ -61,6 +61,42 @@ function todayLabel(date: Date): string {
   return date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 }
 
+/* These three were text glyphs: a bell emoji, U+2315 (a telephone recorder,
+   not a magnifier) and U+2318 (the Mac Command key, standing in for "account").
+   Two of them are missing from common Android fonts, and the labels beside
+   them are hidden below 600px - so on a phone the button could be an empty
+   box with nothing to read. Real icons, in the same stroked style as Track. */
+const HEADER_ICON_PROPS = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+const HEADER_ICONS = {
+  reminders: (
+    <svg {...HEADER_ICON_PROPS}>
+      <path d="M18 8.5a6 6 0 1 0-12 0c0 4.2-1.2 5.7-2 6.6-.4.4-.1 1.1.5 1.1h15c.6 0 .9-.7.5-1.1-.8-.9-2-2.4-2-6.6Z" />
+      <path d="M10.4 19.5a2 2 0 0 0 3.2 0" />
+    </svg>
+  ),
+  search: (
+    <svg {...HEADER_ICON_PROPS}>
+      <circle cx="10.8" cy="10.8" r="6.8" />
+      <path d="m15.8 15.8 4.2 4.2" />
+    </svg>
+  ),
+  account: (
+    <svg {...HEADER_ICON_PROPS}>
+      <circle cx="12" cy="8.2" r="3.6" />
+      <path d="M5.4 20a6.6 6.6 0 0 1 13.2 0" />
+    </svg>
+  ),
+};
+
 export default function HomePage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const milestones = useLiveQuery(() => db.milestones.toArray(), []);
@@ -170,7 +206,7 @@ export default function HomePage() {
 
   const name = profile.displayName || "there";
   return <div className={styles.screen} data-density={selectedLayout.density}>
-    <header className={styles.hero}><div><div className={styles.eyebrow}>{todayLabel(now)}</div><h1 className={styles.greeting}>Hi {name} 🌸</h1></div><div className={styles.heroActions}><Link href="/reminders" className={styles.accountLink} aria-label="Reminders">🔔<span>Reminders</span></Link><Link href="/search" className={styles.accountLink} aria-label="Search">⌕<span>Search</span></Link><Link href="/account" className={styles.accountLink}>⌘<span>Account &amp; sync</span></Link><div className={styles.petals} data-blossom-decoration aria-hidden="true"><span /><span /><span /></div></div></header>
+    <header className={styles.hero}><div><div className={styles.eyebrow}>{todayLabel(now)}</div><h1 className={styles.greeting}>Hi {name} 🌸</h1></div><div className={styles.heroActions}><Link href="/reminders" className={styles.accountLink} aria-label="Reminders">{HEADER_ICONS.reminders}<span>Reminders</span></Link><Link href="/search" className={styles.accountLink} aria-label="Search">{HEADER_ICONS.search}<span>Search</span></Link><Link href="/account" className={styles.accountLink} aria-label="Account &amp; sync">{HEADER_ICONS.account}<span>Account &amp; sync</span></Link><div className={styles.petals} data-blossom-decoration aria-hidden="true"><span /><span /><span /></div></div></header>
     <AppNotice />
     <div className={styles.homeBlocks}>{orderedBlocks.map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
     <Link href="/crisis-support" className={styles.supportLink}>Need support right now?</Link>
