@@ -128,6 +128,12 @@ export interface Profile {
   // device should keep reflecting its own current zone, not whichever device
   // last synced.
   timezone: string | null;
+  // A device timezone that has been *detected* but not yet applied. Changing
+  // `timezone` moves every medication reminder, so an aeroplane landing must
+  // not do it silently - this parks the new zone until the person has been
+  // shown what it would do and picked. Device-local, never synced: it is a
+  // question for this device, not a fact about the account.
+  pendingTimezone: string | null;
   // Safety check-ins (see the SafetyCheckIn table below). Off by default -
   // this is opt-in, never something a user finds already running. The
   // trusted contact's name and how to reach them are device-local, same
@@ -701,6 +707,32 @@ export interface WeightEntry {
   updatedAt: string;
 }
 
+/**
+ * A trip. Device-local and never synced, same treatment as weight and calorie
+ * tracking: a list of where someone is going and when is not something
+ * Blossom's server needs, and for some people it's the most sensitive thing
+ * in the app. See src/lib/travel.ts for the timezone arithmetic.
+ */
+export interface Trip {
+  id: string;
+  /** Free text, so anywhere is allowed - not only the six countries we hold
+   *  verified resources for. */
+  destinationLabel: string;
+  /** Set only when the destination matches a country we have resources for,
+   *  which is what unlocks the local support and legal sections. */
+  destinationCountry: string | null;
+  destinationSubregion: string | null;
+  /** IANA zone, optional - someone may only want the checklist. */
+  destinationTimezone: string | null;
+  startDate: string;
+  endDate: string;
+  /** Checklist keys ticked off, from TRAVEL_CHECKLIST. */
+  completedSteps: string[];
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WeightBaseline {
   sourceEntryId: string | null;
   date: string;
@@ -933,6 +965,7 @@ type BlossomDb = Dexie & {
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
   weightEntries: EntityTable<WeightEntry, "id">;
+  trips: EntityTable<Trip, "id">;
   calorieEntries: EntityTable<CalorieEntry, "id">;
   notifiedReminders: EntityTable<NotifiedReminder, "key">;
   cachedRegionResources: EntityTable<CachedRegionResource, "id">;
@@ -1709,6 +1742,46 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+
+  instance.version(28).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    trips: "id, startDate, endDate",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -1764,6 +1837,7 @@ export const DEFAULT_PROFILE: Profile = {
   accessibilityProfile: "custom",
   notificationsEnabled: false,
   timezone: null,
+  pendingTimezone: null,
   safetyCheckInsEnabled: false,
   trustedContactName: null,
   trustedContactMethod: null,
@@ -1854,8 +1928,49 @@ export async function syncDeviceTimezone(): Promise<void> {
   if (typeof Intl === "undefined") return;
   const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const profile = await db.profiles.get(LOCAL_PROFILE_ID);
-  if (!detected || profile?.timezone === detected) return;
-  await updateProfile({ timezone: detected });
+  if (!detected || !profile) return;
+
+  // First run on a device: nothing to compare against and no schedule to
+  // disturb, so adopt it quietly.
+  if (!profile.timezone) {
+    await updateProfile({ timezone: detected, pendingTimezone: null });
+    return;
+  }
+
+  if (profile.timezone === detected) {
+    // Back home, or never left. Any parked question is moot.
+    if (profile.pendingTimezone) await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: null });
+    return;
+  }
+
+  // Somewhere new. Park it - applying it here would move every medication
+  // reminder by the offset without anyone being told. See Travel Mode.
+  if (profile.pendingTimezone !== detected) {
+    await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: detected });
+  }
+}
+
+/**
+ * Resolve a parked timezone once the person has chosen.
+ *
+ * "local"  - adopt the new zone, so times keep their clock face (08:00 stays
+ *            08:00, now in the new place).
+ * "home"   - keep the old zone, so times keep their real interval (an 08:00
+ *            London dose fires at midnight local).
+ *
+ * pendingTimezone is cleared either way; the question has been answered and
+ * shouldn't be asked again for the same zone.
+ */
+export async function resolvePendingTimezone(choice: "local" | "home"): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile?.pendingTimezone) return;
+  if (choice === "local") {
+    await updateProfile({ timezone: profile.pendingTimezone, pendingTimezone: null });
+  } else {
+    // Only the parked question changes, so this doesn't need to reach the
+    // server - the stored timezone it already has is still correct.
+    await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: null });
+  }
 }
 
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {
@@ -3010,6 +3125,36 @@ export async function updateBodyEntry(
   });
 }
 
+/* Trips. Device-local, so no outbox writes here - see the Trip interface for
+   why a list of destinations doesn't go to the server. */
+
+export async function addTrip(
+  input: Pick<Trip, "destinationLabel" | "destinationCountry" | "destinationSubregion" | "destinationTimezone" | "startDate" | "endDate" | "note">
+): Promise<Trip> {
+  const now = new Date().toISOString();
+  const trip: Trip = { id: newId(), completedSteps: [], createdAt: now, updatedAt: now, ...input };
+  await db.trips.add(trip);
+  return trip;
+}
+
+export async function updateTrip(id: string, patch: Partial<Omit<Trip, "id" | "createdAt">>): Promise<void> {
+  await db.trips.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteTrip(id: string): Promise<void> {
+  await db.trips.delete(id);
+}
+
+export async function toggleTripStep(id: string, stepKey: string): Promise<void> {
+  const trip = await db.trips.get(id);
+  if (!trip) return;
+  const done = trip.completedSteps.includes(stepKey);
+  await db.trips.update(id, {
+    completedSteps: done ? trip.completedSteps.filter((k) => k !== stepKey) : [...trip.completedSteps, stepKey],
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function addWeightEntry(
   input: Pick<WeightEntry, "date" | "weightGrams" | "note">
 ): Promise<WeightEntry> {
@@ -3507,6 +3652,7 @@ export async function deleteAllData(): Promise<void> {
         // wipe exists to remove.
         db.cachedRegionResources.clear(),
         db.cachedLegalContextNotes.clear(),
+        db.trips.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

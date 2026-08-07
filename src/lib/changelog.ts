@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.2.2";
+export const APP_VERSION = "0.3.0";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.3.0",
+    date: "2026-08-07",
+    title: "Travel Mode",
+    items: [
+      { tag: "fix", text: "Blossom used to quietly move your reminders when you changed timezone. Fly London to Los Angeles and an 8am dose became 8am there - an eight hour shift, with nothing said. It now asks first, and shows you exactly what each choice does to your actual dose times." },
+      { tag: "new", text: "Plan a trip: somewhere for the practical bits. A checklist for what to pack, what the time difference does to your schedule, and local support where we have information we've checked." },
+      { tag: "new", text: "Trips live in Track. They stay on your device and are never uploaded." },
+    ],
+  },
   {
     version: "0.2.2",
     date: "2026-08-07",

@@ -11,6 +11,7 @@ import AppLockGate from "@/components/AppLockGate";
 import LocalReminderService from "@/components/LocalReminderService";
 import WhatsNew from "@/components/WhatsNew";
 import UpdatePrompt from "@/components/UpdatePrompt";
+import TimezoneChangeNotice from "@/components/TimezoneChangeNotice";
 import styles from "./layout.module.css";
 
 // Reading from Dexie is usually instant, so a naive loader would flash for a
@@ -86,6 +87,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div className={styles.shell}>
       <LocalReminderService />
       <UpdatePrompt />
+      <TimezoneChangeNotice />
       <WhatsNew />
       <BottomNav />
       <main className={styles.content}>{children}</main>
