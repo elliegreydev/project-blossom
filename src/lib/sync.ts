@@ -1250,26 +1250,45 @@ async function pullAll(
   clockOffsetMs: number
 ): Promise<PullResult> {
   let overwritten = 0;
-  const failed: SyncEntity[] = [];
-  let firstError: unknown = null;
+  const errors = new Map<SyncEntity, unknown>();
 
-  // Read once: the profile is pulled first (see SYNC_ORDER), so by the time the
-  // other entities come round this reflects any choice made on another device.
-  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
-
-  for (const entity of SYNC_ORDER) {
-    // Nothing to fetch for a category that shouldn't be on the server, and
-    // fetching it would quietly re-seed the device from stale rows.
-    if (isEntityExcluded(entity, excluded)) continue;
-    try {
-      overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
-    } catch (error) {
-      failed.push(entity);
-      if (firstError === null) firstError = error;
-    }
+  // The profile has to land before the rest, and now actually does. It carries
+  // the "what syncs" choices and everything below is filtered by them, so
+  // fetching it first means a choice made on another device takes effect on
+  // this pass rather than the next one. The old code read those choices before
+  // the loop that fetched the profile, so it promised an ordering it never
+  // delivered.
+  try {
+    overwritten += await pullEntity(client, "profile", userId, since, cutoff, clockOffsetMs);
+  } catch (error) {
+    errors.set("profile", error);
   }
 
-  return { overwritten, failed, firstError };
+  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
+  // Nothing to fetch for a category that shouldn't be on the server, and
+  // fetching it would quietly re-seed the device from stale rows.
+  const rest = SYNC_ORDER.filter(
+    (entity) => entity !== "profile" && !isEntityExcluded(entity, excluded)
+  );
+
+  // Together, not one after another. Every category costs a round trip even
+  // when it has nothing new to send back, so a sync used to be twenty-seven of
+  // them end to end: unnoticeable on a laptop, long enough on mobile data that
+  // people assumed sync wasn't running and went hunting for a button. Each
+  // entity writes to its own local table and none of them reads another's, so
+  // there is no order here worth keeping.
+  const settled = await Promise.allSettled(
+    rest.map((entity) => pullEntity(client, entity, userId, since, cutoff, clockOffsetMs))
+  );
+  settled.forEach((result, index) => {
+    if (result.status === "fulfilled") overwritten += result.value;
+    else errors.set(rest[index], result.reason);
+  });
+
+  // Reported in SYNC_ORDER rather than in whichever order the requests happened
+  // to fail, so the same broken sync reads the same way twice running.
+  const failed = SYNC_ORDER.filter((entity) => errors.has(entity));
+  return { overwritten, failed, firstError: failed.length ? errors.get(failed[0]) : null };
 }
 
 async function pushOutbox(
@@ -1485,6 +1504,33 @@ export async function retryStuckSyncItems(userId: string): Promise<void> {
   const stuck = await db.syncOutbox.filter((item) => item.attempts > 0).toArray();
   if (stuck.length) {
     await db.syncOutbox.bulkPut(stuck.map((item) => ({ ...item, attempts: 0, lastError: null })));
+  }
+  await syncNow(userId);
+}
+
+/** How long a parked record waits before the app gives it another go unasked. */
+const UNPARK_EVERY_MS = 30 * 60 * 1000;
+let lastUnparkAt = 0;
+
+/**
+ * The background pass, which is the same sync as the button with one addition:
+ * every so often it unparks records first.
+ *
+ * Until now retryStuckSyncItems was reachable from exactly one place, the
+ * "Sync now" button, so a record that failed five times stayed stuck until
+ * somebody happened to visit the account screen and press it. Nobody would
+ * guess that, and the app gave no sign there was anything to guess.
+ *
+ * Half-hourly rather than every pass, because MAX_PUSH_ATTEMPTS exists to stop
+ * a genuinely unsendable record hammering the server forever, and unparking on
+ * every tick would delete that protection rather than soften it. Starts at zero
+ * so opening the app is itself a retry.
+ */
+export async function backgroundSync(userId: string): Promise<void> {
+  if (Date.now() - lastUnparkAt >= UNPARK_EVERY_MS) {
+    lastUnparkAt = Date.now();
+    await retryStuckSyncItems(userId);
+    return;
   }
   await syncNow(userId);
 }

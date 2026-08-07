@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.4.0";
+export const APP_VERSION = "0.4.1";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.1",
+    date: "2026-08-07",
+    title: "Sync catches up faster, and says so",
+    items: [
+      { tag: "improved", text: "Syncing is a lot quicker, especially on mobile data. Blossom used to fetch each part of your account one after another, and now fetches them together." },
+      { tag: "new", text: "A small \"Catching up\" note appears while Blossom is syncing, so you can tell it's working rather than wondering whether anything is happening." },
+      { tag: "fix", text: "Closing the app now sends whatever you just wrote straight away, instead of waiting for the next check. Writing something on your phone and going to look at it on a laptop should now just work." },
+      { tag: "fix", text: "Changes the server kept refusing are given another go every half hour on their own. Before this, only the Sync now button could rescue them." },
+    ],
+  },
   {
     version: "0.4.0",
     date: "2026-08-07",
