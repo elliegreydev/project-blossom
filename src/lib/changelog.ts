@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.3.1";
+export const APP_VERSION = "0.4.0";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
