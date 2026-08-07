@@ -51,6 +51,7 @@ import {
 import { isAppearance, isThemeId } from "@/lib/themes";
 import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
+import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 
 type RemoteRow = Record<string, unknown>;
 
@@ -228,6 +229,7 @@ async function localPayload(
         hrt_status: profile.hrtStatus,
         enabled_modules: profile.enabledModules,
         aurora_mode: profile.auroraMode,
+        sync_excluded_categories: profile.syncExcludedCategories,
         reminder_privacy: profile.reminderPrivacy,
         theme: profile.theme,
         appearance: profile.appearance,
@@ -786,6 +788,9 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         enabledModules: stringArray(row.enabled_modules) as ModuleKey[],
         auroraMode: stringValue(row.aurora_mode) as AuroraMode,
         reminderPrivacy: stringValue(row.reminder_privacy) as ReminderPrivacy,
+        // Restored, unlike timezone. A device that didn't know the journal is
+        // excluded would upload it, so this has to be the same on all of them.
+        syncExcludedCategories: stringArray(row.sync_excluded_categories),
         theme: isThemeId(row.theme) ? row.theme : local.theme,
         appearance: isAppearance(row.appearance) ? row.appearance : local.appearance,
         gentleMode: row.gentle_mode === true,
@@ -1248,7 +1253,14 @@ async function pullAll(
   const failed: SyncEntity[] = [];
   let firstError: unknown = null;
 
+  // Read once: the profile is pulled first (see SYNC_ORDER), so by the time the
+  // other entities come round this reflects any choice made on another device.
+  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
+
   for (const entity of SYNC_ORDER) {
+    // Nothing to fetch for a category that shouldn't be on the server, and
+    // fetching it would quietly re-seed the device from stale rows.
+    if (isEntityExcluded(entity, excluded)) continue;
     try {
       overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
     } catch (error) {
@@ -1266,9 +1278,18 @@ async function pushOutbox(
   clockOffsetMs: number
 ): Promise<void> {
   const priority = new Map(SYNC_ORDER.map((entity, index) => [entity, index]));
-  const items = (await db.syncOutbox.toArray()).sort(
-    (a, b) => (priority.get(a.entity) ?? 99) - (priority.get(b.entity) ?? 99)
-  );
+  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
+  const queued = await db.syncOutbox.toArray();
+
+  // A belt-and-braces second gate. recordSyncChange already refuses to queue
+  // excluded records, but a change made before the choice - or arriving from
+  // another device mid-sync - must not slip out here either.
+  const blocked = queued.filter((item) => isEntityExcluded(item.entity, excluded));
+  if (blocked.length) await db.syncOutbox.bulkDelete(blocked.map((item) => item.id));
+
+  const items = queued
+    .filter((item) => !isEntityExcluded(item.entity, excluded))
+    .sort((a, b) => (priority.get(a.entity) ?? 99) - (priority.get(b.entity) ?? 99));
 
   let firstError: unknown = null;
   let stuck = 0;
@@ -1280,6 +1301,11 @@ async function pushOutbox(
     // instead and carry on - the rest of someone's journal is more important
     // than this one row, and it stays in the outbox rather than being thrown
     // away.
+    // Parked items used to be skipped here forever: attempts only ever went up,
+    // nothing reset it, and "Sync now" ran this same loop - so five failures on
+    // one flaky train journey stranded a record permanently. A retry now clears
+    // the count first (see retryStuckSyncItems), and this stays as the guard
+    // for a genuinely unsendable record rather than a life sentence.
     if (item.attempts >= MAX_PUSH_ATTEMPTS) {
       stuck++;
       continue;
@@ -1408,12 +1434,59 @@ async function performSync(userId: string): Promise<void> {
   }
 }
 
+/**
+ * Remove already-uploaded records for categories that are now device-only.
+ *
+ * A HARD delete, deliberately - and this is the load-bearing detail of the
+ * whole feature. The normal removal path sets `deleted_at`, and applyRemote
+ * treats any row carrying it as an instruction to delete locally. Going that
+ * way would mean switching off journal sync silently wiped the person's
+ * journal on their other phone: a privacy setting destroying the thing it
+ * exists to protect.
+ *
+ * A hard-deleted row is simply absent from the next pull. Other devices are
+ * told nothing, keep every local record they hold, and stop uploading because
+ * the profile carries the new choice. Nothing on any device is lost.
+ */
+export async function purgeExcludedFromServer(userId: string, categoryKeys: string[]): Promise<number> {
+  if (categoryKeys.length === 0) return 0;
+  const client = createClient();
+  const entities = entitiesForCategories(categoryKeys);
+  let removed = 0;
+
+  for (const entity of entities) {
+    const { count, error } = await client
+      .from(TABLES[entity])
+      .delete({ count: "exact" })
+      .eq("user_id", userId);
+    if (error) throw error;
+    removed += count ?? 0;
+  }
+  return removed;
+}
+
 export async function syncNow(userId: string): Promise<void> {
   if (activeSync) return activeSync;
   activeSync = performSync(userId).finally(() => {
     activeSync = null;
   });
   return activeSync;
+}
+
+/**
+ * Give parked records another go.
+ *
+ * Most push failures are transient - offline, an expired token, a server
+ * blip - and five of those in a row is an ordinary bad afternoon, not proof a
+ * record is unsendable. Without this the only escape was pausing and
+ * re-enabling sync, which nobody would guess.
+ */
+export async function retryStuckSyncItems(userId: string): Promise<void> {
+  const stuck = await db.syncOutbox.filter((item) => item.attempts > 0).toArray();
+  if (stuck.length) {
+    await db.syncOutbox.bulkPut(stuck.map((item) => ({ ...item, attempts: 0, lastError: null })));
+  }
+  await syncNow(userId);
 }
 
 export async function enableSync(userId: string): Promise<void> {

@@ -6,6 +6,7 @@ import Dexie, { type EntityTable } from "dexie";
 import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
 import { DEFAULT_APPEARANCE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
+import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -96,6 +97,11 @@ export interface Profile {
   trackRecentModules: ModuleKey[];
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
+  // Category keys (see src/lib/syncCategories.ts) whose records must never
+  // leave this account's devices. Unlike `timezone` this IS restored on pull:
+  // "my journal never goes to the server" is a fact about the data, and a
+  // second device that didn't know would cheerfully upload it anyway.
+  syncExcludedCategories: string[];
   ageConfirmedAt: string | null;
   onboardingCompletedAt: string | null;
   onboardingStep: number;
@@ -1820,6 +1826,7 @@ export const DEFAULT_PROFILE: Profile = {
   trackRecentModules: [],
   sensitiveModulesLocked: false,
   syncEnabled: false,
+  syncExcludedCategories: [],
   ageConfirmedAt: null,
   onboardingCompletedAt: null,
   onboardingStep: 0,
@@ -1866,8 +1873,12 @@ export async function getOrCreateProfile(): Promise<Profile> {
   const existing = await db.profiles.get(LOCAL_PROFILE_ID);
   if (!existing) {
     await db.profiles.add(DEFAULT_PROFILE);
+    primeExcludedCategoriesCache(DEFAULT_PROFILE.syncExcludedCategories);
     return DEFAULT_PROFILE;
   }
+  // Every read of the profile refreshes the gate, which covers app boot and
+  // anything a sync pull changed.
+  primeExcludedCategoriesCache(existing.syncExcludedCategories ?? []);
   // Backfill fields added in later schema versions for profiles created
   // before they existed, so the UI never has to guard against undefined.
   const backfill: Partial<Profile> = {};
@@ -2011,12 +2022,32 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
+/** Mirrors profile.syncExcludedCategories for the synchronous gate in
+ *  recordSyncChange. Never read this to make a final decision about sending -
+ *  pushOutbox checks the stored profile for that. */
+let excludedCategoriesCache: string[] = [];
+
+export function primeExcludedCategoriesCache(keys: string[]): void {
+  excludedCategoriesCache = keys;
+}
+
 export async function recordSyncChange(
   entity: SyncEntity,
   recordId: string,
   operation: SyncOutboxItem["operation"],
   changedAt = new Date().toISOString()
 ): Promise<void> {
+  // First gate: a record from an excluded category is never queued, so there
+  // is nothing to accidentally push later.
+  //
+  // Read from a cache rather than the database on purpose. Most callers invoke
+  // this inside a Dexie transaction scoped to their own table, and touching
+  // `profiles` there throws "not part of the transaction" - which would break
+  // every write in the app. The cache is primed on load and updated whenever
+  // the choice changes, and pushOutbox re-checks against the real profile, so
+  // a briefly cold cache costs nothing.
+  if (isEntityExcluded(entity, excludedCategoriesCache)) return;
+
   await db.syncOutbox.put({
     id: `${entity}:${recordId}`,
     entity,
@@ -2029,6 +2060,41 @@ export async function recordSyncChange(
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("blossom:sync-needed"));
   }
+}
+
+/**
+ * Change which categories may leave the device.
+ *
+ * Anything newly excluded is dropped from the outbox immediately - those
+ * records were queued under the old choice and must not be sent under the new
+ * one. This only touches the queue; the records themselves are untouched on
+ * this device and on every other device, which is the whole point.
+ *
+ * Removing what is already on the server is a separate, explicit step - see
+ * purgeExcludedFromServer in sync.ts.
+ */
+export async function setSyncExcludedCategories(keys: string[]): Promise<void> {
+  const drop = new Set<string>(entitiesForCategories(keys));
+  await db.transaction("rw", db.profiles, db.syncOutbox, async () => {
+    const changedAt = new Date().toISOString();
+    await db.profiles.update(LOCAL_PROFILE_ID, { syncExcludedCategories: keys, updatedAt: changedAt });
+    primeExcludedCategoriesCache(keys);
+    const queued = await db.syncOutbox.toArray();
+    const stale = queued.filter((item) => drop.has(item.entity)).map((item) => item.id);
+    if (stale.length) await db.syncOutbox.bulkDelete(stale);
+    // The profile itself always syncs, and carries the new choice to the
+    // other devices so they stop uploading too.
+    await db.syncOutbox.put({
+      id: `profile:${LOCAL_PROFILE_ID}`,
+      entity: "profile",
+      recordId: LOCAL_PROFILE_ID,
+      operation: "upsert",
+      changedAt,
+      attempts: 0,
+      lastError: null,
+    });
+  });
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("blossom:sync-needed"));
 }
 
 export async function getOrCreateSyncState(): Promise<SyncState> {

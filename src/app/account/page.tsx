@@ -14,6 +14,7 @@ import {
   enableSync,
   LocalDataOwnershipError,
   pauseSync,
+  retryStuckSyncItems,
   syncNow,
 } from "@/lib/sync";
 import styles from "./account.module.css";
@@ -46,6 +47,7 @@ export default function AccountPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const syncState = useLiveQuery(() => db.syncMeta.get("sync"));
   const pendingCount = useLiveQuery(() => db.syncOutbox.count(), []);
+  const excludedCount = (profile?.syncExcludedCategories ?? []).length;
   // Anything that has failed at least once. Without this the screen could say
   // "1 change waiting" for weeks with no hint of what was wrong - which is how
   // a sync problem stays invisible until someone notices data missing.
@@ -173,7 +175,10 @@ export default function AccountPage() {
     setWorking(true);
     setError(null);
     try {
-      await syncNow(user.id);
+      // Clears the attempt count on anything parked before syncing. Without
+      // this, a record that failed five times was skipped by every subsequent
+      // sync forever - including this button.
+      await retryStuckSyncItems(user.id);
       setMessage("All caught up.");
     } catch (syncError) {
       reportSyncFailure("syncing their data when they asked", syncError);
@@ -351,6 +356,16 @@ export default function AccountPage() {
                     Pause sync
                   </button>
                 </div>
+                {/* Sync used to be all or nothing. This is where someone says
+                    which parts of their life may leave the device. */}
+                <Link href="/account/what-syncs" className={styles.chooseLink}>
+                  Choose what syncs
+                  <span>
+                    {excludedCount === 0
+                      ? "Everything is being synced"
+                      : `${excludedCount} ${excludedCount === 1 ? "category is" : "categories are"} on your devices only`}
+                  </span>
+                </Link>
               </section>
             ) : (
               <section className={styles.card}>

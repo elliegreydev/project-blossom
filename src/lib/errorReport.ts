@@ -20,6 +20,19 @@ const APP_SLUG = "project-blossom";
 // function open. A report that never arrives costs nothing.
 const TIMEOUT_MS = 4000;
 
+/**
+ * Which site this is. Vercel sets VERCEL_ENV on every deployment, so this needs
+ * no configuration and cannot drift out of step with reality. "preview" is the
+ * dev site, and anything unrecognised says so rather than guessing production:
+ * HQ reading a dev test as a real outage is the mistake this prevents.
+ */
+function hqEnvironment(): "production" | "development" | "unknown" {
+  const raw = process.env.VERCEL_ENV;
+  if (raw === "production") return "production";
+  if (raw === "preview" || raw === "development") return "development";
+  return "unknown";
+}
+
 export interface ErrorReport {
   /**
    * What the PERSON was doing, in words Ellie can read: "signing in with their
@@ -82,6 +95,7 @@ export async function deliverErrorReport(report: ErrorReport): Promise<void> {
         errorClass: report.errorClass,
         ...(report.detail ? { detail: report.detail.slice(0, 500) } : {}),
         severity: report.severity ?? "error",
+        environment: hqEnvironment(),
         accountRef: report.accountRef ?? null,
         ...(Object.keys(context).length > 0 ? { context } : {}),
       }),
