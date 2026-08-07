@@ -29,6 +29,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.4.0",
+    date: "2026-08-07",
+    title: "Choose what leaves your device",
+    items: [
+      { tag: "new", text: "Sync used to be all or nothing. You can now keep any category - your journal, intimacy notes, budget, anything - on your devices only, while the rest still syncs. Account & sync, then Choose what syncs." },
+      { tag: "new", text: "Turning a category off offers to remove what's already on the server. Nothing is ever removed from your phone or any other device you use." },
+      { tag: "improved", text: "The same screen now says plainly what never leaves your device at all, whatever you choose." },
+      { tag: "fix", text: "A change that failed to save five times used to be stuck forever - even Sync now skipped it. Sync now clears the count and tries again." },
+    ],
+  },
+  {
     version: "0.3.1",
     date: "2026-08-05",
     title: "Blossom tells us when it breaks",
