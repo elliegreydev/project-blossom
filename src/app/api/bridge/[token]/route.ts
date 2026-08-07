@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { reportError } from "@/lib/errorReport";
+import { errorClassOf } from "@/lib/errorShape";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +20,29 @@ function serviceClient() {
 
 async function loadLink(token: string) {
   const supabase = serviceClient();
-  const { data: link } = await supabase
+  const { data: link, error } = await supabase
     .from("bridge_links")
     .select("id,owner_id,categories,expires_at,revoked_at")
     .eq("id", token)
     .maybeSingle();
+  // A read that failed and a link that never existed look exactly the same
+  // from here, and both end up telling the recipient "not found". Someone has
+  // chosen to share part of their life with a person they trust, that person
+  // is looking at a page saying the link is wrong, and nothing anywhere would
+  // say otherwise.
+  //
+  // No accountRef: the owner's id would tie their share to a failure their
+  // recipient hit, and the person in front of the error isn't them anyway.
+  if (error) {
+    reportError({
+      operation: "opening a shared Blossom link",
+      errorClass: errorClassOf(error),
+      detail: "reading bridge_links",
+      severity: "error",
+      accountRef: null,
+      context: { route: "/api/bridge/[token]" },
+    });
+  }
   if (!link) return { link: null, reason: "not_found" as const };
   if (link.revoked_at) return { link: null, reason: "revoked" as const };
   if (new Date(link.expires_at).getTime() < Date.now()) return { link: null, reason: "expired" as const };

@@ -7,6 +7,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { isHqDevEntry } from "@/lib/devAccess";
 import HqSignInNotice from "@/components/HqSignInNotice";
+import { reportClientError } from "@/lib/clientErrorReport";
+import { isExpectedAuthFailure } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/client";
 import {
   enableSync,
@@ -20,6 +22,14 @@ function friendlySyncError(error: unknown): string {
   if (error instanceof LocalDataOwnershipError) return error.message;
   if (!navigator.onLine) return "You’re offline. Nothing is lost, and Blossom will try again when you reconnect.";
   return error instanceof Error ? error.message : "Blossom couldn’t sync just now. Your local data is safe.";
+}
+
+// Sync refusing to run because this device belongs to someone else is the
+// guard working, not a fault, so it stays out of the error log. Everything
+// else here is Blossom failing at the one job it promised.
+function reportSyncFailure(operation: "connecting a device to their account" | "syncing their data when they asked", error: unknown) {
+  if (error instanceof LocalDataOwnershipError) return;
+  reportClientError(operation, error);
 }
 
 function formatSyncTime(value: string | null | undefined): string {
@@ -86,6 +96,14 @@ export default function AccountPage() {
       setCode("");
       setMessage("We sent a six-digit code. It may take a minute to arrive.");
     } catch (authError) {
+      // A malformed address is the person, not us, and isExpectedAuthFailure
+      // filters those out. A 429 gets through on purpose: if Blossom's sign-in
+      // emails are being rate limited then nobody new can get in at all, and
+      // that is exactly the kind of thing we'd otherwise learn about far too
+      // late.
+      if (!isExpectedAuthFailure(authError)) {
+        reportClientError("asking for a sign-in code", authError);
+      }
       setError(authError instanceof Error ? authError.message : "Blossom couldn’t send a code just now.");
     } finally {
       setWorking(false);
@@ -104,6 +122,11 @@ export default function AccountPage() {
       type: "email",
     });
     if (verifyError) {
+      // Somebody mistyping six digits is not a breakage, and a log full of it
+      // would bury the times the code was right and Blossom still said no.
+      if (!isExpectedAuthFailure(verifyError)) {
+        reportClientError("signing in with their code", verifyError);
+      }
       setError("That code is incorrect or has expired. Check it and try again.");
     } else {
       setUser(data.user ?? data.session?.user ?? null);
@@ -138,6 +161,7 @@ export default function AccountPage() {
       await enableSync(user.id);
       setMessage("Sync is on. Blossom has safely connected this device to your account.");
     } catch (syncError) {
+      reportSyncFailure("connecting a device to their account", syncError);
       setError(friendlySyncError(syncError));
     } finally {
       setWorking(false);
@@ -152,6 +176,7 @@ export default function AccountPage() {
       await syncNow(user.id);
       setMessage("All caught up.");
     } catch (syncError) {
+      reportSyncFailure("syncing their data when they asked", syncError);
       setError(friendlySyncError(syncError));
     } finally {
       setWorking(false);

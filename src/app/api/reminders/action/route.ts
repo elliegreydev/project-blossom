@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { reportError } from "@/lib/errorReport";
+import { errorClassOf } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
     if (!medication) return NextResponse.json({ error: "not found" }, { status: 404 });
 
     const nowIso = new Date().toISOString();
-    await supabase.from("medication_logs").insert({
+    const { error: logError } = await supabase.from("medication_logs").insert({
       medication_id: medicationId,
       user_id: user.id,
       scheduled_time: scheduledTime,
@@ -56,6 +58,22 @@ export async function POST(request: Request) {
       logged_at: nowIso,
       note: null,
     });
+    // Someone has tapped "Mark as taken" on a notification and been told it
+    // worked. If the insert didn't, they will be nagged again for a dose they
+    // have already had, and their history will be wrong.
+    if (logError) {
+      // Named for the tap, not for what was being taken. "acting on a
+      // reminder" is all Ellie needs to fix this; which medication, or that
+      // there is one at all, is nothing to do with her.
+      reportError({
+        operation: "acting on a reminder notification",
+        errorClass: errorClassOf(logError),
+        detail: "insert into medication_logs",
+        severity: "error",
+        accountRef: user.id,
+        context: { route: "/api/reminders/action", method: "POST" },
+      });
+    }
     // The log itself is what stops future re-nags for this slot (the cron
     // and LocalReminderService both check medication_logs already) - no
     // need to also touch push_notified_reminders here.
@@ -71,7 +89,7 @@ export async function POST(request: Request) {
     .eq("reminder_key", key)
     .maybeSingle();
 
-  await service.from("push_notified_reminders").upsert(
+  const { error: snoozeError } = await service.from("push_notified_reminders").upsert(
     {
       user_id: user.id,
       reminder_key: key,
@@ -81,6 +99,18 @@ export async function POST(request: Request) {
     },
     { onConflict: "user_id,reminder_key" }
   );
+  // A snooze that didn't stick means the notification comes straight back,
+  // which is the opposite of what someone asked for when they tapped it.
+  if (snoozeError) {
+    reportError({
+      operation: "acting on a reminder notification",
+      errorClass: errorClassOf(snoozeError),
+      detail: "upsert into push_notified_reminders",
+      severity: "warning",
+      accountRef: user.id,
+      context: { route: "/api/reminders/action", method: "POST" },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

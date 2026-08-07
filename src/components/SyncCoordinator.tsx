@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/clientErrorReport";
 import { createClient } from "@/lib/supabase/client";
 import { syncNow } from "@/lib/sync";
 
@@ -15,8 +16,12 @@ export default function SyncCoordinator() {
       if (!data.session?.user) return;
       try {
         await syncNow(data.session.user.id);
-      } catch {
+      } catch (error) {
         // The account screen surfaces the stored error and offers a retry.
+        // Told to HQ as well, because this is the background pass: nobody is
+        // looking at a screen when it fails, so without this the first sign of
+        // a broken sync is someone noticing data missing weeks later.
+        reportClientError("syncing their data in the background", error);
       }
     }
 

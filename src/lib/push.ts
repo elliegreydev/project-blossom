@@ -1,3 +1,4 @@
+import { reportClientError } from "@/lib/clientErrorReport";
 import { createClient } from "@/lib/supabase/client";
 
 // Real, server-triggered push (see src/app/api/cron/send-reminders) - only
@@ -39,13 +40,22 @@ export async function subscribeToPush(userId: string): Promise<SubscribeResult> 
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!publicKey) return "unsupported";
 
-  const registration = await navigator.serviceWorker.register("/sw.js");
-  await navigator.serviceWorker.ready;
+  let subscription: PushSubscription;
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
 
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-  });
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+    });
+  } catch (error) {
+    // Someone has said yes to notifications and the browser still couldn't
+    // set one up. Rethrown so the settings screen can say so rather than
+    // quietly showing the toggle as on.
+    reportClientError("turning on reminder notifications", error, { severity: "warning" });
+    throw error;
+  }
 
   const json = subscription.toJSON();
   const { error } = await createClient()
@@ -59,7 +69,13 @@ export async function subscribeToPush(userId: string): Promise<SubscribeResult> 
       },
       { onConflict: "endpoint" }
     );
-  if (error) throw error;
+  if (error) {
+    // The worse half of the two. The browser is subscribed but the server has
+    // no row for it, so the reminder cron will never find this device and the
+    // person will wait for a dose reminder that was never going to come.
+    reportClientError("turning on reminder notifications", error);
+    throw error;
+  }
 
   return "subscribed";
 }
