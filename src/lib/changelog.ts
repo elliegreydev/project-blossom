@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.4.1";
+export const APP_VERSION = "0.4.2";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.2",
+    date: "2026-08-08",
+    title: "Your sync choices hold",
+    items: [
+      { tag: "fix", text: "A device that had been offline could quietly undo your choice about what syncs, just by saving an unrelated setting. It can't now. Whichever device you last made the choice on is the one that counts." },
+      { tag: "fix", text: "Turning a category back on now catches up properly. Anything you wrote on this device while it was off gets uploaded, and anything written on your other devices comes down. Before, both halves stayed missing." },
+    ],
+  },
   {
     version: "0.4.1",
     date: "2026-08-07",

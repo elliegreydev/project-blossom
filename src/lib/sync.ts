@@ -4,7 +4,7 @@ import {
   getOrCreateProfile,
   getOrCreateSyncState,
   LOCAL_PROFILE_ID,
-  recordSyncChange,
+  enqueueSnapshot,
   type Appointment,
   emptyAppointmentBuilderData,
   type AuroraMode,
@@ -230,6 +230,7 @@ async function localPayload(
         enabled_modules: profile.enabledModules,
         aurora_mode: profile.auroraMode,
         sync_excluded_categories: profile.syncExcludedCategories,
+        sync_excluded_categories_at: profile.syncExcludedCategoriesAt,
         reminder_privacy: profile.reminderPrivacy,
         theme: profile.theme,
         appearance: profile.appearance,
@@ -764,6 +765,34 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
   }
 }
 
+/**
+ * Which side's "what syncs" choice is the newer decision.
+ *
+ * Null on either side loses to a real timestamp, so a device that has never
+ * touched the setting cannot overwrite one that has. Both null means neither
+ * has ever chosen, and keeping the local empty list is the same answer either
+ * way. Ties keep local, because a tie means nothing has actually changed.
+ */
+export function pickExclusions(
+  local: { syncExcludedCategories: string[]; syncExcludedCategoriesAt: string | null },
+  row: RemoteRow,
+): { syncExcludedCategories: string[]; syncExcludedCategoriesAt: string | null } {
+  const remoteAt = nullableString(row.sync_excluded_categories_at);
+  const localAt = local.syncExcludedCategoriesAt;
+
+  const remoteWins = remoteAt !== null && (localAt === null || remoteAt > localAt);
+  if (!remoteWins) {
+    return {
+      syncExcludedCategories: local.syncExcludedCategories,
+      syncExcludedCategoriesAt: localAt,
+    };
+  }
+  return {
+    syncExcludedCategories: stringArray(row.sync_excluded_categories),
+    syncExcludedCategoriesAt: remoteAt,
+  };
+}
+
 async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
   if (row.deleted_at) {
     await deleteLocal(entity, row);
@@ -790,7 +819,19 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         reminderPrivacy: stringValue(row.reminder_privacy) as ReminderPrivacy,
         // Restored, unlike timezone. A device that didn't know the journal is
         // excluded would upload it, so this has to be the same on all of them.
-        syncExcludedCategories: stringArray(row.sync_excluded_categories),
+        //
+        // Merged on its own timestamp rather than with the rest of the row.
+        // Everything else here is whole-row last-write-wins, which for this
+        // field meant a device that had been offline could revert somebody's
+        // privacy choice just by saving a theme: its pull skipped the remote
+        // profile (its own edit was newer), so it never learned about the
+        // exclusion, and then it pushed its stale empty list back over the top.
+        //
+        // Comparing decisions rather than saves fixes that in both directions.
+        // A union would also have stopped the leak and was the obvious idea,
+        // but it would mean a category could never be re-enabled: the server's
+        // copy would always win and "keep my journal local" would be permanent.
+        ...pickExclusions(local, row),
         theme: isThemeId(row.theme) ? row.theme : local.theme,
         appearance: isAppearance(row.appearance) ? row.appearance : local.appearance,
         gentleMode: row.gentle_mode === true,
@@ -1354,52 +1395,6 @@ async function pushOutbox(
   if (firstError !== null) throw firstError;
 }
 
-async function enqueueFullSnapshot(): Promise<void> {
-  const profile = await getOrCreateProfile();
-  await recordSyncChange("profile", LOCAL_PROFILE_ID, "upsert", profile.updatedAt);
-
-  const collections: Array<[SyncEntity, Array<{ id: string; updatedAt: string }>]> = [
-    ["milestone", await db.milestones.toArray()],
-    ["journey_event", await db.journeyEvents.toArray()],
-    ["medication", await db.medications.toArray()],
-    ["medication_supply", await db.medicationSupplies.toArray()],
-    ["medication_log", await db.medicationLogs.toArray()],
-    ["medication_supply_adjustment", await db.medicationSupplyAdjustments.toArray()],
-    ["care_supply", await db.careSupplies.toArray()],
-    ["care_supply_adjustment", await db.careSupplyAdjustments.toArray()],
-    ["appointment", await db.appointments.toArray()],
-    ["check_in", await db.checkIns.toArray()],
-    ["goal", await db.goals.toArray()],
-    ["journal_entry", await db.journalEntries.toArray()],
-    ["blood_test_entry", await db.bloodTestEntries.toArray()],
-    ["voice_goal", await db.voiceGoals.toArray()],
-    ["presentation_entry", await db.presentationEntries.toArray()],
-    ["body_entry", await db.bodyEntries.toArray()],
-    ["intimacy_entry", await db.intimacyEntries.toArray()],
-    ["weight_entry", await db.weightEntries.toArray()],
-    ["calorie_entry", await db.calorieEntries.toArray()],
-    ["budget_entry", await db.budgetEntries.toArray()],
-    ["budget_goal", await db.budgetGoals.toArray()],
-    ["support_map_entry", await db.supportMapEntries.toArray()],
-  ];
-  for (const [entity, records] of collections) {
-    for (const record of records) {
-      await recordSyncChange(entity, record.id, "upsert", record.updatedAt);
-    }
-  }
-  for (const nudge of await db.auroraNudges.toArray()) {
-    await recordSyncChange("aurora_nudge", nudge.nudgeKey, "upsert", nudge.lastShownAt);
-  }
-  for (const link of await db.privateLinks.toArray()) {
-    await recordSyncChange("private_link", link.id, "upsert", link.createdAt);
-  }
-  for (const session of await db.voiceSessions.toArray()) {
-    await recordSyncChange("voice_session", session.id, "upsert", session.createdAt);
-  }
-  for (const checkIn of await db.safetyCheckIns.toArray()) {
-    await recordSyncChange("safety_check_in", checkIn.id, "upsert", checkIn.startedAt);
-  }
-}
 
 let activeSync: Promise<void> | null = null;
 
@@ -1542,7 +1537,7 @@ export async function enableSync(userId: string): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.syncMeta.update("sync", { ownerId: userId, lastError: null });
   await db.profiles.update(LOCAL_PROFILE_ID, { syncEnabled: true, updatedAt: changedAt });
-  await enqueueFullSnapshot();
+  await enqueueSnapshot(SYNC_ORDER);
   await syncNow(userId);
 }
 
