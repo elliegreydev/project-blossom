@@ -1245,19 +1245,29 @@ async function pullAll(
   clockOffsetMs: number
 ): Promise<PullResult> {
   let overwritten = 0;
-  const failed: SyncEntity[] = [];
-  let firstError: unknown = null;
+  const errors = new Map<SyncEntity, unknown>();
 
-  for (const entity of SYNC_ORDER) {
-    try {
-      overwritten += await pullEntity(client, entity, userId, since, cutoff, clockOffsetMs);
-    } catch (error) {
-      failed.push(entity);
-      if (firstError === null) firstError = error;
-    }
-  }
+  // Together, not one after another. Every category costs a round trip even
+  // when it has nothing new to send back, so a sync used to be twenty-seven of
+  // them end to end, twice over: unnoticeable on a laptop, long enough on
+  // mobile data that people assumed sync wasn't running at all and went
+  // looking for a button to press.
+  //
+  // Safe because each entity owns its own local table: applyRemote and
+  // deleteLocal each touch exactly one, and nothing reads across them. There
+  // was no order here worth keeping.
+  const settled = await Promise.allSettled(
+    SYNC_ORDER.map((entity) => pullEntity(client, entity, userId, since, cutoff, clockOffsetMs))
+  );
+  settled.forEach((result, index) => {
+    if (result.status === "fulfilled") overwritten += result.value;
+    else errors.set(SYNC_ORDER[index], result.reason);
+  });
 
-  return { overwritten, failed, firstError };
+  // Reported in SYNC_ORDER rather than in whichever order the requests happened
+  // to fail, so the same broken sync reads the same way twice running.
+  const failed = SYNC_ORDER.filter((entity) => errors.has(entity));
+  return { overwritten, failed, firstError: failed.length ? errors.get(failed[0]) : null };
 }
 
 async function pushOutbox(
