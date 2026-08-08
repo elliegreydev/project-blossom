@@ -11,6 +11,7 @@ import AppLockGate from "@/components/AppLockGate";
 import LocalReminderService from "@/components/LocalReminderService";
 import WhatsNew from "@/components/WhatsNew";
 import UpdatePrompt from "@/components/UpdatePrompt";
+import SyncStatus from "@/components/SyncStatus";
 import styles from "./layout.module.css";
 
 // Local Dexie reads resolve almost instantly, which made the loading
@@ -65,6 +66,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div className={styles.shell}>
       <LocalReminderService />
       <UpdatePrompt />
+      <SyncStatus />
       <WhatsNew />
       <BottomNav />
       <main className={styles.content}>{children}</main>

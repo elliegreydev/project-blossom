@@ -1,0 +1,103 @@
+/* Quiet on purpose. This is a status, not a notice: it should be findable when
+   someone is wondering whether anything is happening, and ignorable when they
+   aren't.
+
+   Sits above the bottom nav rather than at the top, and that is a fix rather
+   than a preference. At the top it was offset by the notch inset, but so is
+   the page content, and the page's own offset grows faster. On a notched
+   iPhone added to the home screen the pill landed directly on the screen
+   title and covered most of it. Down here there is nothing to collide with,
+   which is also where a phone expects a transient status to appear. */
+.pill {
+  position: fixed;
+  /* 68px is the nav's measured height at a zero inset, plus ten to sit clear of
+     it. The nav's own bottom padding is max(8px, safe-bottom), so on a phone
+     with a home indicator it grows and this grows slightly faster, which errs
+     towards more clearance rather than less. */
+  bottom: calc(78px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 13px 6px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--plum) 16%, transparent);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+  animation: settle var(--duration-fast) var(--ease-standard);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--plum) 25%, transparent);
+  border-top-color: var(--plum);
+  animation: spin 720ms linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .spinner {
+    border-color: color-mix(in srgb, var(--lavender) 28%, transparent);
+    border-top-color: var(--lavender);
+  }
+}
+
+:global(html[data-appearance="dark"]) .spinner {
+  border-color: color-mix(in srgb, var(--lavender) 28%, transparent);
+  border-top-color: var(--lavender);
+}
+
+:global(html[data-appearance="light"]) .spinner {
+  border-color: color-mix(in srgb, var(--plum) 25%, transparent);
+  border-top-color: var(--plum);
+}
+
+/* Rises from behind the nav, since that is the edge it now lives on. */
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* At this width the nav becomes a 240px rail down the left and the content
+   sits beside it, so a pill centred on the viewport reads as noticeably
+   off-centre. Centred on the content instead, and clear of the bottom edge
+   because there is no nav down there to sit above. */
+@media (min-width: 900px) {
+  .pill {
+    bottom: 20px;
+    left: calc(240px + (100vw - 240px) / 2);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Still tells you it is working, without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    animation: none;
+  }
+
+  .spinner {
+    animation: none;
+    border-top-color: transparent;
+    border-right-color: transparent;
+  }
+}
