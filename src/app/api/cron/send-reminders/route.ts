@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { reportError } from "@/lib/errorReport";
+import { errorClassOf } from "@/lib/errorShape";
 import { MAX_NOTIFICATIONS, RENAG_INTERVAL_MS, dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, dueSafetyCheckInReminders, isQuietHours } from "@/lib/reminders";
 import { emptyAppointmentBuilderData, type Appointment, type Medication, type MedicationLog, type NotifiedReminder, type SafetyCheckIn } from "@/lib/db";
 
@@ -31,6 +33,18 @@ export async function GET(request: Request) {
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidSubject = process.env.VAPID_SUBJECT;
   if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
+    // Silent and total: every reminder for everybody stops, and the app looks
+    // completely fine from the inside. Nothing else in Blossom would ever tell
+    // us this had happened.
+    reportError({
+      operation: "sending out reminders",
+      errorClass: "not_configured",
+      detail: "VAPID keys missing from the environment",
+      severity: "fatal",
+      // A cron. There is nobody behind this run.
+      accountRef: null,
+      context: { route: "/api/cron/send-reminders", method: "GET" },
+    });
     return NextResponse.json({ error: "push is not configured" }, { status: 500 });
   }
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
@@ -43,7 +57,19 @@ export async function GET(request: Request) {
   const { data: subscriptions, error: subsError } = await supabase
     .from("push_subscriptions")
     .select("user_id, endpoint, p256dh, auth");
-  if (subsError) return NextResponse.json({ error: subsError.message }, { status: 500 });
+  if (subsError) {
+    // Same blast radius as missing keys: no subscriptions read means no
+    // reminders sent to anyone on this run.
+    reportError({
+      operation: "sending out reminders",
+      errorClass: errorClassOf(subsError),
+      detail: "reading push_subscriptions",
+      severity: "fatal",
+      accountRef: null,
+      context: { route: "/api/cron/send-reminders", method: "GET" },
+    });
+    return NextResponse.json({ error: subsError.message }, { status: 500 });
+  }
   if (!subscriptions || subscriptions.length === 0) {
     return NextResponse.json({ sent: 0, usersChecked: 0 });
   }
@@ -75,6 +101,12 @@ export async function GET(request: Request) {
   const now = new Date();
   let sent = 0;
   const deadEndpoints = new Set<string>();
+  // A gone endpoint is routine housekeeping. Anything else is a reminder that
+  // didn't arrive, and those are counted rather than reported one by one, so
+  // a bad afternoon at a push service arrives as a single number instead of
+  // thousands of rows.
+  let failedSends = 0;
+  let firstSendError: unknown = null;
   const renagIntervalSeconds = Math.round(RENAG_INTERVAL_MS / 1000);
 
   for (const userId of userIds) {
@@ -204,7 +236,12 @@ export async function GET(request: Request) {
           );
           sent++;
         } catch (error) {
-          if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
+          if (isDeadEndpointError(error)) {
+            deadEndpoints.add(sub.endpoint);
+          } else {
+            failedSends += 1;
+            if (firstSendError === null) firstSendError = error;
+          }
         }
       }
     }
@@ -212,6 +249,22 @@ export async function GET(request: Request) {
 
   if (deadEndpoints.size > 0) {
     await supabase.from("push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
+  }
+
+  // One report for the whole run, carrying how many reminders it lost.
+  if (failedSends > 0) {
+    reportError({
+      operation: "sending out reminders",
+      errorClass: errorClassOf(firstSendError),
+      detail: "web-push rejected one or more sends",
+      severity: "warning",
+      accountRef: null,
+      context: {
+        route: "/api/cron/send-reminders",
+        method: "GET",
+        retryCount: failedSends,
+      },
+    });
   }
 
   return NextResponse.json({ sent, usersChecked: userIds.length });

@@ -6,6 +6,8 @@ import Dexie, { type EntityTable } from "dexie";
 import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
 import { DEFAULT_APPEARANCE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
+import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
+import { snoozeUntil } from "@/lib/support";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -96,6 +98,20 @@ export interface Profile {
   trackRecentModules: ModuleKey[];
   sensitiveModulesLocked: boolean;
   syncEnabled: boolean;
+  // Category keys (see src/lib/syncCategories.ts) whose records must never
+  // leave this account's devices. Unlike `timezone` this IS restored on pull:
+  // "my journal never goes to the server" is a fact about the data, and a
+  // second device that didn't know would cheerfully upload it anyway.
+  syncExcludedCategories: string[];
+  /**
+   * When the list above was last changed, on whichever device changed it.
+   *
+   * Merged on its own rather than with the rest of the profile, because a
+   * whole-row last-write-wins means a device that has been offline can revert
+   * this by saving any unrelated setting. Losing a theme change to a race is a
+   * shrug. Losing "my journal never leaves this device" is not.
+   */
+  syncExcludedCategoriesAt: string | null;
   ageConfirmedAt: string | null;
   onboardingCompletedAt: string | null;
   onboardingStep: number;
@@ -128,6 +144,18 @@ export interface Profile {
   // device should keep reflecting its own current zone, not whichever device
   // last synced.
   timezone: string | null;
+  // A device timezone that has been *detected* but not yet applied. Changing
+  // `timezone` moves every medication reminder, so an aeroplane landing must
+  // not do it silently - this parks the new zone until the person has been
+  // shown what it would do and picked. Device-local, never synced: it is a
+  // question for this device, not a fact about the account.
+  pendingTimezone: string | null;
+  // The "chip in" card on Home. Device-local, like pendingTimezone: it's a UI
+  // preference, and syncing it would mean another column on two databases for
+  // no correctness gain. Blossom never records who actually donated (see
+  // src/lib/support.ts), so "I've already given" is taken on trust.
+  supportPromptHiddenUntil: string | null;
+  supportPromptDismissedForever: boolean;
   // Safety check-ins (see the SafetyCheckIn table below). Off by default -
   // this is opt-in, never something a user finds already running. The
   // trusted contact's name and how to reach them are device-local, same
@@ -701,6 +729,32 @@ export interface WeightEntry {
   updatedAt: string;
 }
 
+/**
+ * A trip. Device-local and never synced, same treatment as weight and calorie
+ * tracking: a list of where someone is going and when is not something
+ * Blossom's server needs, and for some people it's the most sensitive thing
+ * in the app. See src/lib/travel.ts for the timezone arithmetic.
+ */
+export interface Trip {
+  id: string;
+  /** Free text, so anywhere is allowed - not only the six countries we hold
+   *  verified resources for. */
+  destinationLabel: string;
+  /** Set only when the destination matches a country we have resources for,
+   *  which is what unlocks the local support and legal sections. */
+  destinationCountry: string | null;
+  destinationSubregion: string | null;
+  /** IANA zone, optional - someone may only want the checklist. */
+  destinationTimezone: string | null;
+  startDate: string;
+  endDate: string;
+  /** Checklist keys ticked off, from TRAVEL_CHECKLIST. */
+  completedSteps: string[];
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WeightBaseline {
   sourceEntryId: string | null;
   date: string;
@@ -933,6 +987,7 @@ type BlossomDb = Dexie & {
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
   weightEntries: EntityTable<WeightEntry, "id">;
+  trips: EntityTable<Trip, "id">;
   calorieEntries: EntityTable<CalorieEntry, "id">;
   notifiedReminders: EntityTable<NotifiedReminder, "key">;
   cachedRegionResources: EntityTable<CachedRegionResource, "id">;
@@ -1709,6 +1764,46 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+
+  instance.version(28).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    trips: "id, startDate, endDate",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -1747,6 +1842,8 @@ export const DEFAULT_PROFILE: Profile = {
   trackRecentModules: [],
   sensitiveModulesLocked: false,
   syncEnabled: false,
+  syncExcludedCategories: [],
+  syncExcludedCategoriesAt: null,
   ageConfirmedAt: null,
   onboardingCompletedAt: null,
   onboardingStep: 0,
@@ -1764,6 +1861,9 @@ export const DEFAULT_PROFILE: Profile = {
   accessibilityProfile: "custom",
   notificationsEnabled: false,
   timezone: null,
+  pendingTimezone: null,
+  supportPromptHiddenUntil: null,
+  supportPromptDismissedForever: false,
   safetyCheckInsEnabled: false,
   trustedContactName: null,
   trustedContactMethod: null,
@@ -1792,8 +1892,12 @@ export async function getOrCreateProfile(): Promise<Profile> {
   const existing = await db.profiles.get(LOCAL_PROFILE_ID);
   if (!existing) {
     await db.profiles.add(DEFAULT_PROFILE);
+    primeExcludedCategoriesCache(DEFAULT_PROFILE.syncExcludedCategories);
     return DEFAULT_PROFILE;
   }
+  // Every read of the profile refreshes the gate, which covers app boot and
+  // anything a sync pull changed.
+  primeExcludedCategoriesCache(existing.syncExcludedCategories ?? []);
   // Backfill fields added in later schema versions for profiles created
   // before they existed, so the UI never has to guard against undefined.
   const backfill: Partial<Profile> = {};
@@ -1854,8 +1958,49 @@ export async function syncDeviceTimezone(): Promise<void> {
   if (typeof Intl === "undefined") return;
   const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const profile = await db.profiles.get(LOCAL_PROFILE_ID);
-  if (!detected || profile?.timezone === detected) return;
-  await updateProfile({ timezone: detected });
+  if (!detected || !profile) return;
+
+  // First run on a device: nothing to compare against and no schedule to
+  // disturb, so adopt it quietly.
+  if (!profile.timezone) {
+    await updateProfile({ timezone: detected, pendingTimezone: null });
+    return;
+  }
+
+  if (profile.timezone === detected) {
+    // Back home, or never left. Any parked question is moot.
+    if (profile.pendingTimezone) await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: null });
+    return;
+  }
+
+  // Somewhere new. Park it - applying it here would move every medication
+  // reminder by the offset without anyone being told. See Travel Mode.
+  if (profile.pendingTimezone !== detected) {
+    await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: detected });
+  }
+}
+
+/**
+ * Resolve a parked timezone once the person has chosen.
+ *
+ * "local"  - adopt the new zone, so times keep their clock face (08:00 stays
+ *            08:00, now in the new place).
+ * "home"   - keep the old zone, so times keep their real interval (an 08:00
+ *            London dose fires at midnight local).
+ *
+ * pendingTimezone is cleared either way; the question has been answered and
+ * shouldn't be asked again for the same zone.
+ */
+export async function resolvePendingTimezone(choice: "local" | "home"): Promise<void> {
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile?.pendingTimezone) return;
+  if (choice === "local") {
+    await updateProfile({ timezone: profile.pendingTimezone, pendingTimezone: null });
+  } else {
+    // Only the parked question changes, so this doesn't need to reach the
+    // server - the stored timezone it already has is still correct.
+    await db.profiles.update(LOCAL_PROFILE_ID, { pendingTimezone: null });
+  }
 }
 
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {
@@ -1896,12 +2041,103 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
+/** Mirrors profile.syncExcludedCategories for the synchronous gate in
+ *  recordSyncChange. Never read this to make a final decision about sending -
+ *  pushOutbox checks the stored profile for that. */
+let excludedCategoriesCache: string[] = [];
+
+export function primeExcludedCategoriesCache(keys: string[]): void {
+  excludedCategoriesCache = keys;
+}
+
+/**
+ * Queue every local record of these entities for upload.
+ *
+ * Lives here rather than in sync.ts because this is where the tables are, and
+ * because two copies of a 27-entity list is two chances for one of them to be
+ * missing an entity and silently never upload it.
+ *
+ * The four at the bottom are separate because their key or their timestamp is
+ * not called what the others are called.
+ */
+export async function enqueueSnapshot(entities: SyncEntity[]): Promise<void> {
+  const wanted = new Set(entities);
+  const take = (entity: SyncEntity) => wanted.has(entity);
+
+  if (take("profile")) {
+    const profile = await getOrCreateProfile();
+    await recordSyncChange("profile", LOCAL_PROFILE_ID, "upsert", profile.updatedAt);
+  }
+
+  const collections: Array<[SyncEntity, Array<{ id: string; updatedAt: string }>]> = [
+    ["milestone", take("milestone") ? await db.milestones.toArray() : []],
+    ["journey_event", take("journey_event") ? await db.journeyEvents.toArray() : []],
+    ["medication", take("medication") ? await db.medications.toArray() : []],
+    ["medication_supply", take("medication_supply") ? await db.medicationSupplies.toArray() : []],
+    ["medication_log", take("medication_log") ? await db.medicationLogs.toArray() : []],
+    ["medication_supply_adjustment", take("medication_supply_adjustment") ? await db.medicationSupplyAdjustments.toArray() : []],
+    ["care_supply", take("care_supply") ? await db.careSupplies.toArray() : []],
+    ["care_supply_adjustment", take("care_supply_adjustment") ? await db.careSupplyAdjustments.toArray() : []],
+    ["appointment", take("appointment") ? await db.appointments.toArray() : []],
+    ["check_in", take("check_in") ? await db.checkIns.toArray() : []],
+    ["goal", take("goal") ? await db.goals.toArray() : []],
+    ["journal_entry", take("journal_entry") ? await db.journalEntries.toArray() : []],
+    ["blood_test_entry", take("blood_test_entry") ? await db.bloodTestEntries.toArray() : []],
+    ["voice_goal", take("voice_goal") ? await db.voiceGoals.toArray() : []],
+    ["presentation_entry", take("presentation_entry") ? await db.presentationEntries.toArray() : []],
+    ["body_entry", take("body_entry") ? await db.bodyEntries.toArray() : []],
+    ["intimacy_entry", take("intimacy_entry") ? await db.intimacyEntries.toArray() : []],
+    ["weight_entry", take("weight_entry") ? await db.weightEntries.toArray() : []],
+    ["calorie_entry", take("calorie_entry") ? await db.calorieEntries.toArray() : []],
+    ["budget_entry", take("budget_entry") ? await db.budgetEntries.toArray() : []],
+    ["budget_goal", take("budget_goal") ? await db.budgetGoals.toArray() : []],
+    ["support_map_entry", take("support_map_entry") ? await db.supportMapEntries.toArray() : []],
+  ];
+  for (const [entity, records] of collections) {
+    for (const record of records) {
+      await recordSyncChange(entity, record.id, "upsert", record.updatedAt);
+    }
+  }
+
+  if (take("aurora_nudge")) {
+    for (const nudge of await db.auroraNudges.toArray()) {
+      await recordSyncChange("aurora_nudge", nudge.nudgeKey, "upsert", nudge.lastShownAt);
+    }
+  }
+  if (take("private_link")) {
+    for (const link of await db.privateLinks.toArray()) {
+      await recordSyncChange("private_link", link.id, "upsert", link.createdAt);
+    }
+  }
+  if (take("voice_session")) {
+    for (const session of await db.voiceSessions.toArray()) {
+      await recordSyncChange("voice_session", session.id, "upsert", session.createdAt);
+    }
+  }
+  if (take("safety_check_in")) {
+    for (const checkIn of await db.safetyCheckIns.toArray()) {
+      await recordSyncChange("safety_check_in", checkIn.id, "upsert", checkIn.startedAt);
+    }
+  }
+}
+
 export async function recordSyncChange(
   entity: SyncEntity,
   recordId: string,
   operation: SyncOutboxItem["operation"],
   changedAt = new Date().toISOString()
 ): Promise<void> {
+  // First gate: a record from an excluded category is never queued, so there
+  // is nothing to accidentally push later.
+  //
+  // Read from a cache rather than the database on purpose. Most callers invoke
+  // this inside a Dexie transaction scoped to their own table, and touching
+  // `profiles` there throws "not part of the transaction" - which would break
+  // every write in the app. The cache is primed on load and updated whenever
+  // the choice changes, and pushOutbox re-checks against the real profile, so
+  // a briefly cold cache costs nothing.
+  if (isEntityExcluded(entity, excludedCategoriesCache)) return;
+
   await db.syncOutbox.put({
     id: `${entity}:${recordId}`,
     entity,
@@ -1914,6 +2150,96 @@ export async function recordSyncChange(
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("blossom:sync-needed"));
   }
+}
+
+/**
+ * Change which categories may leave the device.
+ *
+ * Anything newly excluded is dropped from the outbox immediately - those
+ * records were queued under the old choice and must not be sent under the new
+ * one. This only touches the queue; the records themselves are untouched on
+ * this device and on every other device, which is the whole point.
+ *
+ * Removing what is already on the server is a separate, explicit step - see
+ * purgeExcludedFromServer in sync.ts.
+ */
+export async function setSyncExcludedCategories(keys: string[]): Promise<void> {
+  const drop = new Set<string>(entitiesForCategories(keys));
+  const changedAt = new Date().toISOString();
+
+  const before = (await db.profiles.get(LOCAL_PROFILE_ID))?.syncExcludedCategories ?? [];
+  const nowExcluded = new Set(keys);
+  const turnedBackOn = before.filter((key) => !nowExcluded.has(key));
+  const reEnabled = entitiesForCategories(turnedBackOn);
+
+  /* Turning a category back on has to bring BOTH halves back, and it used to
+     bring neither.
+
+     While a category was excluded, local edits were never queued (the gate in
+     recordSyncChange) and remote changes were never pulled (the filter in
+     pullAll). Switching it on again only stopped those two things happening in
+     future: everything written on either side during the gap stayed where it
+     was, and the download half had no recovery path at all, because
+     lastPulledAt never moves backwards.
+
+     Uploads are queued FIRST, deliberately. A pending outbox entry is what
+     stops pullEntity applying an older remote row over a newer local one, so
+     enqueueing before rewinding the watermark is what protects a journal entry
+     written on this device while the category was off. Rewinding first would
+     race it. */
+  if (reEnabled.length > 0) {
+    // Outside the transaction below: this reads a lot of tables, and Dexie
+    // transactions should not be held open across that much work.
+    await enqueueSnapshot(reEnabled);
+  }
+
+  await db.transaction("rw", db.profiles, db.syncOutbox, db.syncMeta, async () => {
+    await db.profiles.update(LOCAL_PROFILE_ID, {
+      syncExcludedCategories: keys,
+      // Stamped separately so a device that has been offline cannot revert this
+      // choice by saving an unrelated setting. See applyRemote's profile case.
+      syncExcludedCategoriesAt: changedAt,
+      updatedAt: changedAt,
+    });
+    primeExcludedCategoriesCache(keys);
+
+    const queued = await db.syncOutbox.toArray();
+    const stale = queued.filter((item) => drop.has(item.entity)).map((item) => item.id);
+    if (stale.length) await db.syncOutbox.bulkDelete(stale);
+
+    // The profile itself always syncs, and carries the new choice to the
+    // other devices so they stop uploading too.
+    await db.syncOutbox.put({
+      id: `profile:${LOCAL_PROFILE_ID}`,
+      entity: "profile",
+      recordId: LOCAL_PROFILE_ID,
+      operation: "upsert",
+      changedAt,
+      attempts: 0,
+      lastError: null,
+    });
+
+    if (reEnabled.length > 0) {
+      // Rewound so the next pull reaches back past the excluded window. It
+      // re-reads everything rather than only the re-enabled categories, which
+      // is wasteful and correct; pulls now run in parallel, so the cost is
+      // bandwidth rather than a minute of waiting.
+      await db.syncMeta.update("sync", { lastPulledAt: null });
+    }
+  });
+
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("blossom:sync-needed"));
+}
+
+/** "Not now" on the support card. Comes back after SNOOZE_DAYS. */
+export async function snoozeSupportPrompt(): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, { supportPromptHiddenUntil: snoozeUntil() });
+}
+
+/** "I've already chipped in", or simply "stop asking". Taken at their word,
+ *  because Blossom deliberately has no way to check. */
+export async function dismissSupportPromptForever(): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, { supportPromptDismissedForever: true });
 }
 
 export async function getOrCreateSyncState(): Promise<SyncState> {
@@ -3010,6 +3336,36 @@ export async function updateBodyEntry(
   });
 }
 
+/* Trips. Device-local, so no outbox writes here - see the Trip interface for
+   why a list of destinations doesn't go to the server. */
+
+export async function addTrip(
+  input: Pick<Trip, "destinationLabel" | "destinationCountry" | "destinationSubregion" | "destinationTimezone" | "startDate" | "endDate" | "note">
+): Promise<Trip> {
+  const now = new Date().toISOString();
+  const trip: Trip = { id: newId(), completedSteps: [], createdAt: now, updatedAt: now, ...input };
+  await db.trips.add(trip);
+  return trip;
+}
+
+export async function updateTrip(id: string, patch: Partial<Omit<Trip, "id" | "createdAt">>): Promise<void> {
+  await db.trips.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteTrip(id: string): Promise<void> {
+  await db.trips.delete(id);
+}
+
+export async function toggleTripStep(id: string, stepKey: string): Promise<void> {
+  const trip = await db.trips.get(id);
+  if (!trip) return;
+  const done = trip.completedSteps.includes(stepKey);
+  await db.trips.update(id, {
+    completedSteps: done ? trip.completedSteps.filter((k) => k !== stepKey) : [...trip.completedSteps, stepKey],
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function addWeightEntry(
   input: Pick<WeightEntry, "date" | "weightGrams" | "note">
 ): Promise<WeightEntry> {
@@ -3507,6 +3863,7 @@ export async function deleteAllData(): Promise<void> {
         // wipe exists to remove.
         db.cachedRegionResources.clear(),
         db.cachedLegalContextNotes.clear(),
+        db.trips.clear(),
         db.syncOutbox.clear(),
         db.syncMeta.clear(),
       ]);

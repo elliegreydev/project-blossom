@@ -1,0 +1,431 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: max(28px, var(--safe-top)) 20px 20px;
+}
+
+.intro {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.empty {
+  padding: 18px 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- a trip ---------------------------------------------------------------- */
+
+.trip {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.tripHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stage {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tripHead h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--text-primary);
+}
+
+.dates {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.deleteTrip {
+  flex: none;
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The time-difference explanation - the reason this feature exists. */
+.tzNote {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--sky) 16%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--sky) 34%, var(--border));
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.tzNote strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- checklist ------------------------------------------------------------- */
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checklistHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.checklistHead h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.checklistHead span {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A label, so the whole row is the tap target rather than the box alone. */
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.step:hover {
+  background: color-mix(in srgb, var(--plum) 5%, transparent);
+}
+
+.step input {
+  flex: none;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--plum);
+}
+
+.step span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step em {
+  font-style: normal;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.stepDone strong {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* --- destination information ------------------------------------------------ */
+
+.legal,
+.resources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.legal h3,
+.resources h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.legal p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.source {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.source a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.resource {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.resource > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.resource strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.category {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.contact {
+  font-size: 13px;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.availability {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.moreLink {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.noResources {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* --- add a trip -------------------------------------------------------------- */
+
+.addButton {
+  min-height: 48px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background: var(--bg-raised);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.form h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.field em {
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.field input,
+.field select {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-primary);
+  width: 100%;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.warn {
+  margin: -4px 0 0;
+  font-size: 12.5px;
+  color: var(--danger, #b2564a);
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+}
+
+.cancel,
+.save {
+  flex: 1;
+  min-height: 46px;
+  border-radius: var(--radius-sm);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.save {
+  border: none;
+  background: var(--plum);
+  color: #fff;
+}
+
+.save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-color-scheme: dark) {
+  .save {
+    background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+    color: #1b151f;
+  }
+}
+
+:global(html[data-appearance="dark"]) .save {
+  background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+  color: #1b151f;
+}
+
+:global(html[data-appearance="light"]) .save {
+  background: var(--plum);
+  color: #fff;
+}
+
+/* --- past trips ---------------------------------------------------------------- */
+
+.pastTrips {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pastTrips summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pastRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.pastRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pastRow strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.pastRow span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pastRow button {
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}

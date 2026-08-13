@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/clientErrorReport";
 import { createClient } from "@/lib/supabase/client";
-import { syncNow } from "@/lib/sync";
+import { backgroundSync } from "@/lib/sync";
 
 export default function SyncCoordinator() {
   useEffect(() => {
@@ -14,9 +15,13 @@ export default function SyncCoordinator() {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.user) return;
       try {
-        await syncNow(data.session.user.id);
-      } catch {
+        await backgroundSync(data.session.user.id);
+      } catch (error) {
         // The account screen surfaces the stored error and offers a retry.
+        // Told to HQ as well, because this is the background pass: nobody is
+        // looking at a screen when it fails, so without this the first sign of
+        // a broken sync is someone noticing data missing weeks later.
+        reportClientError("syncing their data in the background", error);
       }
     }
 
@@ -28,7 +33,7 @@ export default function SyncCoordinator() {
     // Leaving is the one moment worth skipping the wait for. The debounce is
     // there so a burst of edits becomes one upload, but if the app is going
     // away the burst is over, and 900ms is long enough to lose the race
-    // against someone switching straight to another device to check.
+    // against someone switching straight to the other device to check.
     function flushNow() {
       window.clearTimeout(debounceTimer);
       void runSync();
@@ -36,9 +41,8 @@ export default function SyncCoordinator() {
 
     // Both halves, deliberately. Coming back catches anything written
     // elsewhere; going away sends what was written here. Only the first half
-    // existed before, so a change made on a phone waited for the five minute
-    // tick while its owner was already looking at the website wondering where
-    // it had got to.
+    // existed before, so a change made on the phone waited for the five minute
+    // tick while she was already looking at the website wondering where it was.
     function handleVisibility() {
       if (document.visibilityState === "visible") scheduleSync();
       else flushNow();

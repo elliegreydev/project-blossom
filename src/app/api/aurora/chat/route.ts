@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { reportError } from "@/lib/errorReport";
+import { errorClassOf, httpErrorClass, narrowErrorClass } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/server";
 import { assessAuroraMessage, normaliseConversation, safetyReply } from "@/lib/auroraAiSafety";
 
@@ -177,6 +179,33 @@ export async function POST(request: Request) {
       type: failure.type,
       requestId: failure.requestId,
     });
+    // Same discipline as the log line above: provider diagnostics only. What
+    // someone asked Aurora, and what she said back, exist nowhere outside the
+    // request that carried them, and this doesn't change that.
+    //
+    // A busy or overloaded provider is weather rather than a fault, so it goes
+    // in as a warning. Anything else means Aurora is properly broken: an
+    // expired key or a bad model name would leave everyone in the beta
+    // talking to a wall until somebody noticed.
+    const transient = anthropicResponse.status === 429 || anthropicResponse.status === 529;
+    // failure.type is read straight out of the provider's response body, so it gets the same
+    // narrowing the browser's reports get rather than just being filed to a token: every real
+    // value ("rate_limit_error", "overloaded_error") is a short code, and anything that isn't one
+    // falls back to the status rather than becoming an errorClass of its own choosing.
+    const providerClass = failure.type ? narrowErrorClass(failure.type) : "unknown";
+    reportError({
+      operation: "getting a reply from Aurora",
+      errorClass:
+        providerClass === "unknown" ? httpErrorClass(anthropicResponse.status) : providerClass,
+      detail: "the AI provider refused the request",
+      severity: transient ? "warning" : "error",
+      accountRef: user.id,
+      context: {
+        route: "/api/aurora/chat",
+        method: "POST",
+        status: anthropicResponse.status,
+      },
+    });
     return NextResponse.json({
       error: claudeFailureMessage(anthropicResponse.status, failure),
       remainingToday: remainingToday(todayUsage?.length ?? 0),
@@ -194,7 +223,19 @@ export async function POST(request: Request) {
     model,
     safety_outcome: "normal",
   });
-  if (usageError) return NextResponse.json({ error: "Aurora’s usage record could not be saved safely." }, { status: 503 });
+  if (usageError) {
+    // The spending guard runs off this table. If rows stop landing, the daily
+    // and monthly limits stop counting, and the first sign of that is a bill.
+    reportError({
+      operation: "getting a reply from Aurora",
+      errorClass: errorClassOf(usageError),
+      detail: "insert into aurora_ai_usage, the spending guard",
+      severity: "error",
+      accountRef: user.id,
+      context: { route: "/api/aurora/chat", method: "POST" },
+    });
+    return NextResponse.json({ error: "Aurora’s usage record could not be saved safely." }, { status: 503 });
+  }
 
   return NextResponse.json({
     reply: reply.text,

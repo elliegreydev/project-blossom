@@ -341,3 +341,24 @@
   color: var(--text-muted);
   word-break: break-word;
 }
+
+/* Door to the per-category sync choices. Sits under the sync controls because
+   it is a refinement of "sync is on", not a separate idea. */
+.chooseLink {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.chooseLink span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}

@@ -146,6 +146,19 @@ const TRACKERS: {
    with the other things you use. */
 const SHARING: { href: string; title: string; desc: string; tint: string; icon: React.ReactNode }[] = [
   {
+    href: "/travel",
+    title: "Travel",
+    desc: "Trips, what to pack, and what happens to your reminders",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="8.4" />
+        <path d="M3.6 12h16.8" />
+        <path d="M12 3.6a13 13 0 0 1 0 16.8a13 13 0 0 1 0-16.8Z" />
+      </svg>
+    ),
+  },
+  {
     href: "/settings/circle",
     title: "Trusted Circle",
     desc: "Share specific data with specific people",

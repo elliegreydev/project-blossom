@@ -1,0 +1,220 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: max(28px, var(--safe-top)) 20px calc(32px + var(--safe-bottom));
+}
+
+.back {
+  align-self: flex-start;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.eyebrow {
+  margin: 10px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vw, 32px);
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.lede {
+  margin: 6px 0 6px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+
+/* A label so the whole row is the target, not just the checkbox. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  min-height: 56px;
+  cursor: pointer;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowText strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rowText em {
+  font-style: normal;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.row input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--plum);
+}
+
+.offNote {
+  margin: 0;
+  padding: 0 16px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* The consequential bit: what to do about copies already on the server. */
+.purge {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--plum) 5%, transparent);
+}
+
+.purge p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.purgeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.purgeGo,
+.purgeSkip {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.purgeGo {
+  border: none;
+  background: var(--plum);
+  color: #fff;
+}
+
+.purgeGo:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.purgeSkip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .purgeGo {
+    background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+    color: #1b151f;
+  }
+}
+
+:global(html[data-appearance="dark"]) .purgeGo {
+  background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+  color: #1b151f;
+}
+
+:global(html[data-appearance="light"]) .purgeGo {
+  background: var(--plum);
+  color: #fff;
+}
+
+.reassure {
+  margin-top: 10px !important;
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+
+.success,
+.error {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.success {
+  background: color-mix(in srgb, var(--mint) 22%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.error {
+  background: color-mix(in srgb, var(--pink) 22%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.never {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-left: 2px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.never strong {
+  color: var(--text-primary);
+}
+
+.never ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+}

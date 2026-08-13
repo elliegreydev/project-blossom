@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { reportError } from "@/lib/errorReport";
+import { errorClassOf } from "@/lib/errorShape";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +39,24 @@ export async function POST(request: Request) {
   const { error } = await anon
     .from("feedback_items")
     .insert({ type, title, description, contact_email: contactEmail || null });
-  if (error) return NextResponse.json({ error: "could not submit" }, { status: 500 });
+  if (error) {
+    // This form is one of the few ways somebody tells us Blossom is broken.
+    // If it's broken itself, every report about everything else goes quiet at
+    // the same time, and the app looks healthier than it is.
+    //
+    // The error only, never the submission: what they typed is the whole
+    // point of the form and none of HQ's business.
+    reportError({
+      operation: "sending feedback or a bug report",
+      errorClass: errorClassOf(error),
+      detail: "insert into feedback_items",
+      severity: "error",
+      // A public form. There may well be nobody signed in behind it.
+      accountRef: null,
+      context: { route: "/api/feedback", method: "POST" },
+    });
+    return NextResponse.json({ error: "could not submit" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

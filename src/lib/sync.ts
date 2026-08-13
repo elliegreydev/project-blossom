@@ -4,7 +4,7 @@ import {
   getOrCreateProfile,
   getOrCreateSyncState,
   LOCAL_PROFILE_ID,
-  recordSyncChange,
+  enqueueSnapshot,
   type Appointment,
   emptyAppointmentBuilderData,
   type AuroraMode,
@@ -51,6 +51,7 @@ import {
 import { isAppearance, isThemeId } from "@/lib/themes";
 import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
+import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 
 type RemoteRow = Record<string, unknown>;
 
@@ -228,6 +229,8 @@ async function localPayload(
         hrt_status: profile.hrtStatus,
         enabled_modules: profile.enabledModules,
         aurora_mode: profile.auroraMode,
+        sync_excluded_categories: profile.syncExcludedCategories,
+        sync_excluded_categories_at: profile.syncExcludedCategoriesAt,
         reminder_privacy: profile.reminderPrivacy,
         theme: profile.theme,
         appearance: profile.appearance,
@@ -762,6 +765,34 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
   }
 }
 
+/**
+ * Which side's "what syncs" choice is the newer decision.
+ *
+ * Null on either side loses to a real timestamp, so a device that has never
+ * touched the setting cannot overwrite one that has. Both null means neither
+ * has ever chosen, and keeping the local empty list is the same answer either
+ * way. Ties keep local, because a tie means nothing has actually changed.
+ */
+export function pickExclusions(
+  local: { syncExcludedCategories: string[]; syncExcludedCategoriesAt: string | null },
+  row: RemoteRow,
+): { syncExcludedCategories: string[]; syncExcludedCategoriesAt: string | null } {
+  const remoteAt = nullableString(row.sync_excluded_categories_at);
+  const localAt = local.syncExcludedCategoriesAt;
+
+  const remoteWins = remoteAt !== null && (localAt === null || remoteAt > localAt);
+  if (!remoteWins) {
+    return {
+      syncExcludedCategories: local.syncExcludedCategories,
+      syncExcludedCategoriesAt: localAt,
+    };
+  }
+  return {
+    syncExcludedCategories: stringArray(row.sync_excluded_categories),
+    syncExcludedCategoriesAt: remoteAt,
+  };
+}
+
 async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
   if (row.deleted_at) {
     await deleteLocal(entity, row);
@@ -786,6 +817,21 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         enabledModules: stringArray(row.enabled_modules) as ModuleKey[],
         auroraMode: stringValue(row.aurora_mode) as AuroraMode,
         reminderPrivacy: stringValue(row.reminder_privacy) as ReminderPrivacy,
+        // Restored, unlike timezone. A device that didn't know the journal is
+        // excluded would upload it, so this has to be the same on all of them.
+        //
+        // Merged on its own timestamp rather than with the rest of the row.
+        // Everything else here is whole-row last-write-wins, which for this
+        // field meant a device that had been offline could revert somebody's
+        // privacy choice just by saving a theme: its pull skipped the remote
+        // profile (its own edit was newer), so it never learned about the
+        // exclusion, and then it pushed its stale empty list back over the top.
+        //
+        // Comparing decisions rather than saves fixes that in both directions.
+        // A union would also have stopped the leak and was the obvious idea,
+        // but it would mean a category could never be re-enabled: the server's
+        // copy would always win and "keep my journal local" would be permanent.
+        ...pickExclusions(local, row),
         theme: isThemeId(row.theme) ? row.theme : local.theme,
         appearance: isAppearance(row.appearance) ? row.appearance : local.appearance,
         gentleMode: row.gentle_mode === true,
@@ -1247,21 +1293,37 @@ async function pullAll(
   let overwritten = 0;
   const errors = new Map<SyncEntity, unknown>();
 
+  // The profile has to land before the rest, and now actually does. It carries
+  // the "what syncs" choices and everything below is filtered by them, so
+  // fetching it first means a choice made on another device takes effect on
+  // this pass rather than the next one. The old code read those choices before
+  // the loop that fetched the profile, so it promised an ordering it never
+  // delivered.
+  try {
+    overwritten += await pullEntity(client, "profile", userId, since, cutoff, clockOffsetMs);
+  } catch (error) {
+    errors.set("profile", error);
+  }
+
+  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
+  // Nothing to fetch for a category that shouldn't be on the server, and
+  // fetching it would quietly re-seed the device from stale rows.
+  const rest = SYNC_ORDER.filter(
+    (entity) => entity !== "profile" && !isEntityExcluded(entity, excluded)
+  );
+
   // Together, not one after another. Every category costs a round trip even
   // when it has nothing new to send back, so a sync used to be twenty-seven of
-  // them end to end, twice over: unnoticeable on a laptop, long enough on
-  // mobile data that people assumed sync wasn't running at all and went
-  // looking for a button to press.
-  //
-  // Safe because each entity owns its own local table: applyRemote and
-  // deleteLocal each touch exactly one, and nothing reads across them. There
-  // was no order here worth keeping.
+  // them end to end: unnoticeable on a laptop, long enough on mobile data that
+  // people assumed sync wasn't running and went hunting for a button. Each
+  // entity writes to its own local table and none of them reads another's, so
+  // there is no order here worth keeping.
   const settled = await Promise.allSettled(
-    SYNC_ORDER.map((entity) => pullEntity(client, entity, userId, since, cutoff, clockOffsetMs))
+    rest.map((entity) => pullEntity(client, entity, userId, since, cutoff, clockOffsetMs))
   );
   settled.forEach((result, index) => {
     if (result.status === "fulfilled") overwritten += result.value;
-    else errors.set(SYNC_ORDER[index], result.reason);
+    else errors.set(rest[index], result.reason);
   });
 
   // Reported in SYNC_ORDER rather than in whichever order the requests happened
@@ -1276,9 +1338,18 @@ async function pushOutbox(
   clockOffsetMs: number
 ): Promise<void> {
   const priority = new Map(SYNC_ORDER.map((entity, index) => [entity, index]));
-  const items = (await db.syncOutbox.toArray()).sort(
-    (a, b) => (priority.get(a.entity) ?? 99) - (priority.get(b.entity) ?? 99)
-  );
+  const excluded = (await getOrCreateProfile()).syncExcludedCategories ?? [];
+  const queued = await db.syncOutbox.toArray();
+
+  // A belt-and-braces second gate. recordSyncChange already refuses to queue
+  // excluded records, but a change made before the choice - or arriving from
+  // another device mid-sync - must not slip out here either.
+  const blocked = queued.filter((item) => isEntityExcluded(item.entity, excluded));
+  if (blocked.length) await db.syncOutbox.bulkDelete(blocked.map((item) => item.id));
+
+  const items = queued
+    .filter((item) => !isEntityExcluded(item.entity, excluded))
+    .sort((a, b) => (priority.get(a.entity) ?? 99) - (priority.get(b.entity) ?? 99));
 
   let firstError: unknown = null;
   let stuck = 0;
@@ -1290,6 +1361,11 @@ async function pushOutbox(
     // instead and carry on - the rest of someone's journal is more important
     // than this one row, and it stays in the outbox rather than being thrown
     // away.
+    // Parked items used to be skipped here forever: attempts only ever went up,
+    // nothing reset it, and "Sync now" ran this same loop - so five failures on
+    // one flaky train journey stranded a record permanently. A retry now clears
+    // the count first (see retryStuckSyncItems), and this stays as the guard
+    // for a genuinely unsendable record rather than a life sentence.
     if (item.attempts >= MAX_PUSH_ATTEMPTS) {
       stuck++;
       continue;
@@ -1319,52 +1395,6 @@ async function pushOutbox(
   if (firstError !== null) throw firstError;
 }
 
-async function enqueueFullSnapshot(): Promise<void> {
-  const profile = await getOrCreateProfile();
-  await recordSyncChange("profile", LOCAL_PROFILE_ID, "upsert", profile.updatedAt);
-
-  const collections: Array<[SyncEntity, Array<{ id: string; updatedAt: string }>]> = [
-    ["milestone", await db.milestones.toArray()],
-    ["journey_event", await db.journeyEvents.toArray()],
-    ["medication", await db.medications.toArray()],
-    ["medication_supply", await db.medicationSupplies.toArray()],
-    ["medication_log", await db.medicationLogs.toArray()],
-    ["medication_supply_adjustment", await db.medicationSupplyAdjustments.toArray()],
-    ["care_supply", await db.careSupplies.toArray()],
-    ["care_supply_adjustment", await db.careSupplyAdjustments.toArray()],
-    ["appointment", await db.appointments.toArray()],
-    ["check_in", await db.checkIns.toArray()],
-    ["goal", await db.goals.toArray()],
-    ["journal_entry", await db.journalEntries.toArray()],
-    ["blood_test_entry", await db.bloodTestEntries.toArray()],
-    ["voice_goal", await db.voiceGoals.toArray()],
-    ["presentation_entry", await db.presentationEntries.toArray()],
-    ["body_entry", await db.bodyEntries.toArray()],
-    ["intimacy_entry", await db.intimacyEntries.toArray()],
-    ["weight_entry", await db.weightEntries.toArray()],
-    ["calorie_entry", await db.calorieEntries.toArray()],
-    ["budget_entry", await db.budgetEntries.toArray()],
-    ["budget_goal", await db.budgetGoals.toArray()],
-    ["support_map_entry", await db.supportMapEntries.toArray()],
-  ];
-  for (const [entity, records] of collections) {
-    for (const record of records) {
-      await recordSyncChange(entity, record.id, "upsert", record.updatedAt);
-    }
-  }
-  for (const nudge of await db.auroraNudges.toArray()) {
-    await recordSyncChange("aurora_nudge", nudge.nudgeKey, "upsert", nudge.lastShownAt);
-  }
-  for (const link of await db.privateLinks.toArray()) {
-    await recordSyncChange("private_link", link.id, "upsert", link.createdAt);
-  }
-  for (const session of await db.voiceSessions.toArray()) {
-    await recordSyncChange("voice_session", session.id, "upsert", session.createdAt);
-  }
-  for (const checkIn of await db.safetyCheckIns.toArray()) {
-    await recordSyncChange("safety_check_in", checkIn.id, "upsert", checkIn.startedAt);
-  }
-}
 
 let activeSync: Promise<void> | null = null;
 
@@ -1418,12 +1448,86 @@ async function performSync(userId: string): Promise<void> {
   }
 }
 
+/**
+ * Remove already-uploaded records for categories that are now device-only.
+ *
+ * A HARD delete, deliberately - and this is the load-bearing detail of the
+ * whole feature. The normal removal path sets `deleted_at`, and applyRemote
+ * treats any row carrying it as an instruction to delete locally. Going that
+ * way would mean switching off journal sync silently wiped the person's
+ * journal on their other phone: a privacy setting destroying the thing it
+ * exists to protect.
+ *
+ * A hard-deleted row is simply absent from the next pull. Other devices are
+ * told nothing, keep every local record they hold, and stop uploading because
+ * the profile carries the new choice. Nothing on any device is lost.
+ */
+export async function purgeExcludedFromServer(userId: string, categoryKeys: string[]): Promise<number> {
+  if (categoryKeys.length === 0) return 0;
+  const client = createClient();
+  const entities = entitiesForCategories(categoryKeys);
+  let removed = 0;
+
+  for (const entity of entities) {
+    const { count, error } = await client
+      .from(TABLES[entity])
+      .delete({ count: "exact" })
+      .eq("user_id", userId);
+    if (error) throw error;
+    removed += count ?? 0;
+  }
+  return removed;
+}
+
 export async function syncNow(userId: string): Promise<void> {
   if (activeSync) return activeSync;
   activeSync = performSync(userId).finally(() => {
     activeSync = null;
   });
   return activeSync;
+}
+
+/**
+ * Give parked records another go.
+ *
+ * Most push failures are transient - offline, an expired token, a server
+ * blip - and five of those in a row is an ordinary bad afternoon, not proof a
+ * record is unsendable. Without this the only escape was pausing and
+ * re-enabling sync, which nobody would guess.
+ */
+export async function retryStuckSyncItems(userId: string): Promise<void> {
+  const stuck = await db.syncOutbox.filter((item) => item.attempts > 0).toArray();
+  if (stuck.length) {
+    await db.syncOutbox.bulkPut(stuck.map((item) => ({ ...item, attempts: 0, lastError: null })));
+  }
+  await syncNow(userId);
+}
+
+/** How long a parked record waits before the app gives it another go unasked. */
+const UNPARK_EVERY_MS = 30 * 60 * 1000;
+let lastUnparkAt = 0;
+
+/**
+ * The background pass, which is the same sync as the button with one addition:
+ * every so often it unparks records first.
+ *
+ * Until now retryStuckSyncItems was reachable from exactly one place, the
+ * "Sync now" button, so a record that failed five times stayed stuck until
+ * somebody happened to visit the account screen and press it. Nobody would
+ * guess that, and the app gave no sign there was anything to guess.
+ *
+ * Half-hourly rather than every pass, because MAX_PUSH_ATTEMPTS exists to stop
+ * a genuinely unsendable record hammering the server forever, and unparking on
+ * every tick would delete that protection rather than soften it. Starts at zero
+ * so opening the app is itself a retry.
+ */
+export async function backgroundSync(userId: string): Promise<void> {
+  if (Date.now() - lastUnparkAt >= UNPARK_EVERY_MS) {
+    lastUnparkAt = Date.now();
+    await retryStuckSyncItems(userId);
+    return;
+  }
+  await syncNow(userId);
 }
 
 export async function enableSync(userId: string): Promise<void> {
@@ -1433,7 +1537,7 @@ export async function enableSync(userId: string): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.syncMeta.update("sync", { ownerId: userId, lastError: null });
   await db.profiles.update(LOCAL_PROFILE_ID, { syncEnabled: true, updatedAt: changedAt });
-  await enqueueFullSnapshot();
+  await enqueueSnapshot(SYNC_ORDER);
   await syncNow(userId);
 }
 

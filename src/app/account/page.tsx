@@ -5,11 +5,16 @@ import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
+import { isHqDevEntry } from "@/lib/devAccess";
+import HqSignInNotice from "@/components/HqSignInNotice";
+import { reportClientError } from "@/lib/clientErrorReport";
+import { isExpectedAuthFailure } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/client";
 import {
   enableSync,
   LocalDataOwnershipError,
   pauseSync,
+  retryStuckSyncItems,
   syncNow,
 } from "@/lib/sync";
 import styles from "./account.module.css";
@@ -18,6 +23,14 @@ function friendlySyncError(error: unknown): string {
   if (error instanceof LocalDataOwnershipError) return error.message;
   if (!navigator.onLine) return "You’re offline. Nothing is lost, and Blossom will try again when you reconnect.";
   return error instanceof Error ? error.message : "Blossom couldn’t sync just now. Your local data is safe.";
+}
+
+// Sync refusing to run because this device belongs to someone else is the
+// guard working, not a fault, so it stays out of the error log. Everything
+// else here is Blossom failing at the one job it promised.
+function reportSyncFailure(operation: "connecting a device to their account" | "syncing their data when they asked", error: unknown) {
+  if (error instanceof LocalDataOwnershipError) return;
+  reportClientError(operation, error);
 }
 
 function formatSyncTime(value: string | null | undefined): string {
@@ -34,6 +47,7 @@ export default function AccountPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const syncState = useLiveQuery(() => db.syncMeta.get("sync"));
   const pendingCount = useLiveQuery(() => db.syncOutbox.count(), []);
+  const excludedCount = (profile?.syncExcludedCategories ?? []).length;
   // Anything that has failed at least once. Without this the screen could say
   // "1 change waiting" for weeks with no hint of what was wrong - which is how
   // a sync problem stays invisible until someone notices data missing.
@@ -84,6 +98,14 @@ export default function AccountPage() {
       setCode("");
       setMessage("We sent a six-digit code. It may take a minute to arrive.");
     } catch (authError) {
+      // A malformed address is the person, not us, and isExpectedAuthFailure
+      // filters those out. A 429 gets through on purpose: if Blossom's sign-in
+      // emails are being rate limited then nobody new can get in at all, and
+      // that is exactly the kind of thing we'd otherwise learn about far too
+      // late.
+      if (!isExpectedAuthFailure(authError)) {
+        reportClientError("asking for a sign-in code", authError);
+      }
       setError(authError instanceof Error ? authError.message : "Blossom couldn’t send a code just now.");
     } finally {
       setWorking(false);
@@ -102,6 +124,11 @@ export default function AccountPage() {
       type: "email",
     });
     if (verifyError) {
+      // Somebody mistyping six digits is not a breakage, and a log full of it
+      // would bury the times the code was right and Blossom still said no.
+      if (!isExpectedAuthFailure(verifyError)) {
+        reportClientError("signing in with their code", verifyError);
+      }
       setError("That code is incorrect or has expired. Check it and try again.");
     } else {
       setUser(data.user ?? data.session?.user ?? null);
@@ -136,6 +163,7 @@ export default function AccountPage() {
       await enableSync(user.id);
       setMessage("Sync is on. Blossom has safely connected this device to your account.");
     } catch (syncError) {
+      reportSyncFailure("connecting a device to their account", syncError);
       setError(friendlySyncError(syncError));
     } finally {
       setWorking(false);
@@ -147,9 +175,13 @@ export default function AccountPage() {
     setWorking(true);
     setError(null);
     try {
-      await syncNow(user.id);
+      // Clears the attempt count on anything parked before syncing. Without
+      // this, a record that failed five times was skipped by every subsequent
+      // sync forever - including this button.
+      await retryStuckSyncItems(user.id);
       setMessage("All caught up.");
     } catch (syncError) {
+      reportSyncFailure("syncing their data when they asked", syncError);
       setError(friendlySyncError(syncError));
     } finally {
       setWorking(false);
@@ -181,6 +213,9 @@ export default function AccountPage() {
 
   const ownershipConflict = Boolean(user && syncState?.ownerId && syncState.ownerId !== user.id);
   const syncing = Boolean(syncState?.syncing || working);
+  // Dev only. False on production, where the email code sign-in below stays
+  // exactly as it has always been.
+  const hqOnlySignIn = isHqDevEntry();
 
   return (
     <main className={styles.page}>
@@ -193,7 +228,9 @@ export default function AccountPage() {
           <p>Signing in is optional. It never uploads your local Blossom data by itself.</p>
         </header>
 
-        {!user && pendingEmail ? (
+        {!user && hqOnlySignIn ? (
+          <HqSignInNotice purpose="account" />
+        ) : !user && pendingEmail ? (
           <section className={styles.card}>
             <div className={styles.cardHeading}>
               <div className={styles.icon} aria-hidden="true">#</div>
@@ -319,6 +356,16 @@ export default function AccountPage() {
                     Pause sync
                   </button>
                 </div>
+                {/* Sync used to be all or nothing. This is where someone says
+                    which parts of their life may leave the device. */}
+                <Link href="/account/what-syncs" className={styles.chooseLink}>
+                  Choose what syncs
+                  <span>
+                    {excludedCount === 0
+                      ? "Everything is being synced"
+                      : `${excludedCount} ${excludedCount === 1 ? "category is" : "categories are"} on your devices only`}
+                  </span>
+                </Link>
               </section>
             ) : (
               <section className={styles.card}>
