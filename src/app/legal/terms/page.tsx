@@ -12,12 +12,12 @@ export default function TermsPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Terms of Service</h1>
-          <p className={styles.updated}>Beta draft - last updated 20 July 2026</p>
+          <p className={styles.updated}>Last updated 7 August 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
-          These are Blossom&apos;s current beta terms. They describe the service as it works today, but
-          they are still being reviewed before any wider public release.
+          These describe Blossom as it works today. Our registered legal contact details are still to
+          be added, and these terms have not yet been reviewed by a solicitor.
         </div>
 
         <div className={styles.body}>
@@ -122,6 +122,32 @@ export default function TermsPage() {
               but cannot promise uninterrupted availability, successful notification delivery, or that a
               feature will always remain available. Local-only features can still work offline, subject to
               your device and browser.
+            </p>
+          </section>
+
+          <section>
+            <h2>Money</h2>
+            <p>
+              Blossom is free to use. There is no paid version, no trial that expires, and no feature
+              that stops working because you have not paid. If that ever changes, anything you can do
+              in Blossom today will still be free.
+            </p>
+            <p>
+              You can choose to donate, once or monthly. A donation is voluntary and buys nothing: it
+              unlocks no features, grants no status, and gives you no additional rights over the
+              service. It supports the work of keeping Blossom&apos;s support listings and regional
+              information checked and current.
+            </p>
+            <p>
+              Payment is handled by Stripe under its own terms. Stripe emails you a receipt, and a
+              monthly donation can be cancelled at any time from that receipt or by contacting us. We
+              keep no record linking a donation to a Blossom account, so we cannot look up or cancel a
+              payment on your behalf without the details from your receipt.
+            </p>
+            <p>
+              If you donate by mistake, or a monthly donation continues after you meant to stop, tell
+              us and we will refund it. We would rather refund a donation than keep money from someone
+              who did not mean to give it.
             </p>
           </section>
 
