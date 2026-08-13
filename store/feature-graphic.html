@@ -1,0 +1,96 @@
+<!--
+  Google Play feature graphic, 1024x500.
+
+  Play crops and scales this in several places, so everything that has to be
+  read sits well inside a safe margin and nothing important goes near an edge.
+  No claim about outcomes: the tagline is the app's own existing description,
+  which was already agreed, rather than marketing invented for a store page.
+-->
+<style>
+  @font-face {
+    font-family: "BlossomDisplay";
+    src: local("Manrope"), local("Manrope-Bold");
+    font-weight: 700;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { width: 1024px; height: 500px; overflow: hidden; }
+
+  .graphic {
+    position: relative;
+    width: 1024px;
+    height: 500px;
+    background:
+      radial-gradient(900px 520px at 88% 18%, #f9c4d6 0%, rgba(249, 196, 214, 0) 62%),
+      radial-gradient(760px 500px at 68% 96%, #cfc0f8 0%, rgba(207, 192, 248, 0) 60%),
+      radial-gradient(620px 420px at 10% 88%, #c3dcff 0%, rgba(195, 220, 255, 0) 58%),
+      #fbf8fc;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* Safe area. Play can crop the outer edges, so nothing readable goes here. */
+  .inner {
+    display: flex;
+    align-items: center;
+    gap: 52px;
+    padding: 0 92px;
+    width: 100%;
+  }
+
+  .mark {
+    width: 172px;
+    height: 172px;
+    flex: none;
+    border-radius: 40px;
+    box-shadow: 0 22px 60px rgba(43, 31, 51, 0.18);
+    background: #fff;
+  }
+
+  .words { display: flex; flex-direction: column; gap: 14px; }
+
+  h1 {
+    font-size: 92px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    color: #2b1f33;
+  }
+
+  p {
+    font-size: 30px;
+    line-height: 1.35;
+    font-weight: 500;
+    color: #5c4f66;
+    max-width: 18ch;
+  }
+
+  /* Three petals, echoing the in-app decoration. Purely atmospheric, kept to
+     the far edge so they never compete with the wordmark. */
+  .petal {
+    position: absolute;
+    border-radius: 50% 0 50% 50%;
+    opacity: 0.5;
+    filter: blur(0.4px);
+  }
+  .p1 { width: 130px; height: 130px; background: #f7b4c8; top: -34px;  right: 96px;  transform: rotate(24deg); }
+  .p2 { width: 92px;  height: 92px;  background: #c4b6f6; bottom: -22px; right: 232px; transform: rotate(-14deg); opacity: 0.42; }
+  .p3 { width: 68px;  height: 68px;  background: #b7d6ff; top: 178px;   right: 36px;  transform: rotate(52deg); opacity: 0.38; }
+</style>
+
+<div class="graphic">
+  <span class="petal p1"></span>
+  <span class="petal p2"></span>
+  <span class="petal p3"></span>
+
+  <div class="inner">
+    <img class="mark" src="http://localhost:5201/icon-512.png" alt="" />
+    <div class="words">
+      <h1>Blossom</h1>
+      <p>A gentle companion for your journey</p>
+    </div>
+  </div>
+</div>

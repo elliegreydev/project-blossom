@@ -95,15 +95,24 @@ Made by a small team who needed this to exist.
 
 ## Still needed before submitting
 
-- [ ] **Feature graphic, 1024×500 PNG** — required, no way around it. Not
-      generated here; needs a designed banner rather than a screenshot.
+Updated 13 Aug 2026.
+
+- [x] ~~**Feature graphic, 1024×500 PNG**~~ — `store/feature-graphic.png`,
+      generated from `store/feature-graphic.html`. Brand gradient, wordmark and
+      the app's own existing tagline, with everything readable kept inside a
+      safe margin because Play crops the edges.
+- [x] ~~**Screenshots**~~ — eight at 1080×1920 in `store/screenshots/`.
+      Regenerate with `store/generate-screenshots.mjs` against a **production**
+      build; a dev server renders the Next devtools badge into every shot.
 - [ ] **App icon 512×512** — `public/icon-512.png` should work as-is.
-- [ ] **Data Safety form** — do this with Aurora. Blossom touches health data
-      AND gender identity, both "sensitive" in Google's taxonomy. The
-      local-first design means the honest answers are genuinely good, but
-      getting it wrong risks removal later.
-- [ ] **Content rating questionnaire** — check what `/track/intimacy` covers
-      before answering; it may push the rating up.
-- [ ] **12 testers running the app for 14 consecutive days** — required for new
-      Play developer accounts before any production release. This is the long
-      pole; start it before everything else is finished.
+- [x] ~~**Data Safety form**~~ — drafted in `store/data-safety.md`, every answer
+      taken from the code. Still needs entering into the Play console by hand.
+- [ ] **Content rating questionnaire** — `store/data-safety.md` has the two
+      questions that need a judgement call, on the intimacy module and on
+      user-to-user content.
+- [ ] **12 testers running the app for 14 consecutive days** — required before
+      any production release. The clock cannot start until a build is uploaded,
+      so this follows the assets rather than running alongside them.
+- [ ] **After the first upload:** add Google's Play App Signing SHA-256 to
+      `public/.well-known/assetlinks.json` alongside the upload key. Until this
+      is done the TWA shows a browser address bar.
