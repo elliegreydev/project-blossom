@@ -1,0 +1,100 @@
+/* Quieter than a feature card on purpose. This is an ask, and an ask that
+   shouts in an app people open on bad days would be the wrong trade. No
+   gradient, no accent bar, no celebration. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.primary,
+.secondary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--plum);
+  color: #fff;
+}
+
+.secondary {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .primary {
+    background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+    color: #1b151f;
+  }
+}
+
+:global(html[data-appearance="dark"]) .primary {
+  background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+  color: #1b151f;
+}
+
+:global(html[data-appearance="light"]) .primary {
+  background: var(--plum);
+  color: #fff;
+}
+
+/* Deliberately plain and easy to reach. Someone who has already given, or who
+   simply can't, should not have to hunt for the way out. */
+.forever {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 8px 0;
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

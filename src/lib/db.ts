@@ -7,6 +7,7 @@ import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
 import { DEFAULT_APPEARANCE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
+import { snoozeUntil } from "@/lib/support";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -149,6 +150,12 @@ export interface Profile {
   // shown what it would do and picked. Device-local, never synced: it is a
   // question for this device, not a fact about the account.
   pendingTimezone: string | null;
+  // The "chip in" card on Home. Device-local, like pendingTimezone: it's a UI
+  // preference, and syncing it would mean another column on two databases for
+  // no correctness gain. Blossom never records who actually donated (see
+  // src/lib/support.ts), so "I've already given" is taken on trust.
+  supportPromptHiddenUntil: string | null;
+  supportPromptDismissedForever: boolean;
   // Safety check-ins (see the SafetyCheckIn table below). Off by default -
   // this is opt-in, never something a user finds already running. The
   // trusted contact's name and how to reach them are device-local, same
@@ -1855,6 +1862,8 @@ export const DEFAULT_PROFILE: Profile = {
   notificationsEnabled: false,
   timezone: null,
   pendingTimezone: null,
+  supportPromptHiddenUntil: null,
+  supportPromptDismissedForever: false,
   safetyCheckInsEnabled: false,
   trustedContactName: null,
   trustedContactMethod: null,
@@ -2220,6 +2229,17 @@ export async function setSyncExcludedCategories(keys: string[]): Promise<void> {
   });
 
   if (typeof window !== "undefined") window.dispatchEvent(new Event("blossom:sync-needed"));
+}
+
+/** "Not now" on the support card. Comes back after SNOOZE_DAYS. */
+export async function snoozeSupportPrompt(): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, { supportPromptHiddenUntil: snoozeUntil() });
+}
+
+/** "I've already chipped in", or simply "stop asking". Taken at their word,
+ *  because Blossom deliberately has no way to check. */
+export async function dismissSupportPromptForever(): Promise<void> {
+  await db.profiles.update(LOCAL_PROFILE_ID, { supportPromptDismissedForever: true });
 }
 
 export async function getOrCreateSyncState(): Promise<SyncState> {

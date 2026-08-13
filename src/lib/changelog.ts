@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.4.2";
+export const APP_VERSION = "0.5.0";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.0",
+    date: "2026-08-07",
+    title: "You can chip in, if you want to",
+    items: [
+      { tag: "new", text: "Blossom is free and stays free. If you can spare something, there's now a way to give once or monthly. It pays for checking the support services and rewriting the legal notes, not for features." },
+      { tag: "new", text: "We don't record who donates. No supporter badge, no note on your account." },
+    ],
+  },
   {
     version: "0.4.2",
     date: "2026-08-08",

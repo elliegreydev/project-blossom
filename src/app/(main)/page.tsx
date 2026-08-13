@@ -24,6 +24,7 @@ import BetaNudge from "@/components/BetaNudge";
 import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
+import SupportCard from "@/components/SupportCard";
 import styles from "./home.module.css";
 
 type IntentionKey = "organise" | "prepare" | "reflect" | "calm" | "celebrate" | "support" | "today" | "record";
@@ -209,6 +210,7 @@ export default function HomePage() {
     <header className={styles.hero}><div><div className={styles.eyebrow}>{todayLabel(now)}</div><h1 className={styles.greeting}>Hi {name} 🌸</h1></div><div className={styles.heroActions}><Link href="/reminders" className={styles.accountLink} aria-label="Reminders">{HEADER_ICONS.reminders}<span>Reminders</span></Link><Link href="/search" className={styles.accountLink} aria-label="Search">{HEADER_ICONS.search}<span>Search</span></Link><Link href="/account" className={styles.accountLink} aria-label="Account &amp; sync">{HEADER_ICONS.account}<span>Account &amp; sync</span></Link><div className={styles.petals} data-blossom-decoration aria-hidden="true"><span /><span /><span /></div></div></header>
     <AppNotice />
     <div className={styles.homeBlocks}>{orderedBlocks.map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
+    <SupportCard />
     <Link href="/crisis-support" className={styles.supportLink}>Need support right now?</Link>
   </div>;
 }
