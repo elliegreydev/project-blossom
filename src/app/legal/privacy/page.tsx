@@ -12,13 +12,14 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Beta draft - last updated 28 July 2026</p>
+          <p className={styles.updated}>Last updated 7 August 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
-          This is Blossom&apos;s current beta privacy policy. It describes the app as it works today,
-          but it is still being reviewed before any wider public release. We&apos;ll clearly publish a
-          final version, with our legal contact details and retention periods, before that happens.
+          This describes Blossom exactly as it works today. Two things are still outstanding and are
+          marked where they appear: our registered legal contact details, and the exact retention
+          periods for support cases, logs and backups. This policy has not yet been reviewed by a
+          solicitor.
         </div>
 
         <div className={styles.body}>
@@ -59,9 +60,10 @@ export default function PrivacyPolicyPage() {
             </p>
             <p>
               The following also stays on the device where you create it: Aurora AI conversation
-              history; gender-euphoria entries and Time Capsule entries; social-transition plans; your
-              app lock, PIN, biometric credential reference, accessibility choices, and Home layout
-              choices.
+              history; any trips you plan in Travel Mode, including where you are going and when;
+              unsaved drafts of journal entries and check-in notes, which Blossom keeps as you type so
+              a crash or a restart can&apos;t lose them; your app lock, PIN, biometric credential
+              reference, accessibility choices, and Home layout choices.
             </p>
             <p>
               Blossom does not receive your biometric data. Your device handles that itself; Blossom
@@ -80,8 +82,7 @@ export default function PrivacyPolicyPage() {
               If you sign in and turn on sync, we store selected data in Supabase so it can follow you
               between your signed-in devices. This can include your profile and preferences; journey
               milestones and timeline; medications, schedules, dose logs, medication supplies and care
-              supplies; appointments, including appointment-builder details and private appointment
-              notes; check-in ratings and notes; goals; the minimal Aurora state needed to avoid
+              supplies; appointments, including private appointment notes; check-in ratings and notes; goals; the minimal Aurora state needed to avoid
               repeating the same nudge; journal entries; blood-test records; voice practice goals and
               session notes (never the recording itself); presentation and body/progress tracking data
               such as category, rating and measurements (never the photo itself); weight and
@@ -93,8 +94,15 @@ export default function PrivacyPolicyPage() {
               None of this is currently visible to Blossom staff through the support-access system
               described below, even while synced - staff support access only reaches the smaller set
               of categories it already covered before this list expanded. Photos, voice recordings,
-              Aurora AI conversation history, gender-euphoria/Time Capsule entries and social-transition
-              plans never sync at all, as described above.
+              Aurora AI conversation history and Travel Mode trips never sync at all, as described
+              above.
+            </p>
+            <p>
+              You control this category by category. In Account &amp; sync, &ldquo;Choose what
+              syncs&rdquo; lets you keep any of the groups above on your devices only while the rest
+              still syncs. Turning a category off stops it being uploaded from then on, and offers to
+              delete what was already uploaded. Nothing is ever removed from your own devices when you
+              do that.
             </p>
           </section>
 
@@ -170,6 +178,43 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
+            <h2>When Blossom breaks</h2>
+            <p>
+              When something in Blossom fails, the app sends a report to Grey Studios so we find out
+              rather than waiting for someone to tell us. A report carries the shape of the failure and
+              nothing else: which part of the app was doing what, a short code for the kind of error,
+              and whether it happened on the live site or our test one.
+            </p>
+            <p>
+              It never carries anything you have written. Not journal text, notes, moods, search terms
+              or email addresses. It also never carries the raw error message, because databases
+              sometimes quote the offending record back inside one, and a message about a journal entry
+              could otherwise contain the entry.
+            </p>
+            <p>
+              If you are signed in, the report includes your account reference so we can tell one
+              person hitting a problem repeatedly from a hundred people hitting it once. That reference
+              is the same identifier your account uses, so we can connect a report back to an account
+              if we need to. It is not published, and it is not shared outside Grey Studios.
+            </p>
+          </section>
+
+          <section>
+            <h2>Donations</h2>
+            <p>
+              Blossom is free. If you choose to give something, payment happens entirely on Stripe&apos;s
+              own page. Blossom never sees or stores your card details, and we deliberately keep no
+              record of who has donated: there is no supporter marker on your account and no donor list.
+            </p>
+            <p>
+              Stripe holds the payment information and sends you a receipt, under its own privacy
+              policy. If you set up a monthly donation you can stop it at any time from that receipt.
+              Because we hold no link between a donation and a Blossom account, we cannot look up your
+              payments for you, and you would need to contact Stripe or use your receipt.
+            </p>
+          </section>
+
+          <section>
             <h2>How we use information</h2>
             <p>
               We use information to provide the features you choose, keep your account and data secure,
@@ -194,11 +239,17 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Providers and external links</h2>
             <p>
-              We currently use Supabase for authentication and synced data, Vercel to host Blossom, and
-              your browser or operating system&apos;s push service if you enable notifications. Those
-              services process data only to provide their services to us. Their infrastructure may
-              involve processing outside the UK; the final public policy will list the current locations
-              and safeguards after legal review.
+              We currently use Supabase for authentication and synced data, Vercel to host Blossom,
+              Stripe if you choose to donate, and your browser or operating system&apos;s push service
+              if you enable notifications. Those services process data only to provide their services
+              to us.
+            </p>
+            <p>
+              Where this happens today: synced data is stored in Ireland, and the server code that
+              reads and writes it currently runs in the United States. That means your synced data
+              crosses the Atlantic in the course of ordinary use. We are moving that server code to
+              Europe. The safeguards relied on for those transfers have not yet been reviewed by a
+              solicitor, and this paragraph will be updated when they have.
             </p>
             <p>
               Regional resources are curated by Blossom&apos;s team. Opening a resource may take you to an
