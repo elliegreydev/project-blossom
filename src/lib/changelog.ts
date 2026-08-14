@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.7";
+export const APP_VERSION = "0.5.8";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.8",
+    date: "2026-08-14",
+    title: "The crisis page was hiding help it already had",
+    items: [
+      { tag: "fix", text: "Open the crisis page in the UK and you got one number. Switchboard's LGBT+ helpline was already in Blossom, open until 10pm every night, and the page wouldn't show it because of how it was filed. Ireland had three lines hidden the same way." },
+      { tag: "improved", text: "The page now asks a better question. Not \"is this tagged as crisis\", but \"can you reach a person through this right now\". Those lines appear underneath the crisis ones, labelled for what they are, so the two are never blurred." },
+    ],
+  },
   {
     version: "0.5.7",
     date: "2026-08-14",
