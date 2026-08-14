@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.11";
+export const APP_VERSION = "0.5.12";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.12",
+    date: "2026-08-14",
+    title: "One line on the donations page, said better",
+    items: [
+      { tag: "improved", text: "The \"if money's tight\" note described you rather than the situation. It doesn't now. Same meaning: if you can't spare anything, don't give anything, and don't feel bad about it." },
+    ],
+  },
   {
     version: "0.5.11",
     date: "2026-08-14",

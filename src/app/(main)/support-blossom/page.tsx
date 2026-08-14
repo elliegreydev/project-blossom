@@ -134,9 +134,9 @@ export default function SupportBlossomPage() {
       <section className={styles.section}>
         <h2>If money&rsquo;s tight</h2>
         <p>
-          Then don&rsquo;t. Genuinely. Blossom is built for people who are often skint, and an app
-          that made you feel bad for using it for free would be a worse app. Telling a friend it
-          exists helps more than a few quid.
+          Then don&rsquo;t. Genuinely. Money&rsquo;s tight for plenty of us, and an app that made
+          you feel bad for using it for free would be a worse app. Telling a friend Blossom exists
+          helps more than a few quid.
         </p>
       </section>
 
