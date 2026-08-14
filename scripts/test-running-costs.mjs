@@ -7,6 +7,7 @@ import {
   sumDonationsPence,
   londonMonthStartUtc,
   fetchMonthsTransactions,
+  fetchLinkPaymentIntentIds,
 } from "../src/lib/runningCosts.ts";
 
 // The figures are typed in by hand, so the parser's job is to refuse anything
@@ -62,13 +63,13 @@ assert.equal(daysLeftInMonth(new Date(2024, 1, 27, 12)), 2, "February, leap year
 
 // Summing Stripe. The allow-list is the whole point: a payout is money leaving
 // for the bank account and would otherwise zero the month out every time it ran.
-assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "charge", net: 470 }]), 1411);
-assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "payout", net: -941 }]), 941);
-assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "stripe_fee", net: -200 }]), 941);
-assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "refund", net: -941 }]), 0, "a refund pulls it back");
-assert.equal(sumDonationsPence([{ type: "payment", net: 500 }, { type: "adjustment", net: -500 }]), 0);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941, paymentIntent: "pi_1" }, { type: "charge", net: 470, paymentIntent: "pi_2" }]), 1411);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941, paymentIntent: "pi_1" }, { type: "payout", net: -941, paymentIntent: null }]), 941);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941, paymentIntent: "pi_1" }, { type: "stripe_fee", net: -200, paymentIntent: null }]), 941);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941, paymentIntent: "pi_1" }, { type: "refund", net: -941, paymentIntent: "pi_1" }]), 0, "a refund pulls it back");
+assert.equal(sumDonationsPence([{ type: "payment", net: 500, paymentIntent: "pi_3" }, { type: "adjustment", net: -500, paymentIntent: "pi_3" }]), 0);
 assert.equal(sumDonationsPence([]), 0, "no donations yet is zero, not a crash");
-assert.equal(sumDonationsPence([{ type: "charge", net: Number.NaN }]), 0, "junk from the API counts as nothing");
+assert.equal(sumDonationsPence([{ type: "charge", net: Number.NaN, paymentIntent: "pi_1" }]), 0, "junk from the API counts as nothing");
 
 // The month window is London's, not the server's UTC. During BST the first
 // hour of a month is still "last month" in UTC, and an hour of somebody's
@@ -99,7 +100,7 @@ function stubStripe(pages) {
 }
 
 const onePage = stubStripe([[{ id: "tx_1", type: "charge", net: 941 }]]);
-assert.deepEqual(await fetchMonthsTransactions("rk_test", 0, onePage.impl), [{ type: "charge", net: 941 }]);
+assert.deepEqual(await fetchMonthsTransactions("rk_test", 0, onePage.impl), [{ type: "charge", net: 941, paymentIntent: null }]);
 assert.equal(onePage.calls.length, 1, "stops as soon as has_more is false");
 
 const threePages = stubStripe([
@@ -114,11 +115,11 @@ assert.equal(threePages.calls.length, 3);
 assert.match(threePages.calls[1], /starting_after=tx_1/, "pages on the last id it saw");
 assert.match(threePages.calls[0], /created%5Bgte%5D=0/, "asks only for this month");
 
-// Everything Stripe sends other than the two fields the sum needs is dropped
+// Everything Stripe sends other than the three fields the sum needs is dropped
 // here, so the customer never travels any further into Blossom.
 const withCustomer = stubStripe([[{ id: "tx_1", type: "charge", net: 500, customer: "cus_abc", description: "Ellie" }]]);
 const carried = await fetchMonthsTransactions("rk_test", 0, withCustomer.impl);
-assert.deepEqual(Object.keys(carried[0]).sort(), ["net", "type"], "only type and net survive");
+assert.deepEqual(Object.keys(carried[0]).sort(), ["net", "paymentIntent", "type"], "only these three survive");
 
 // A refusal from Stripe throws rather than quietly returning a total of zero,
 // which would read as "nobody donated this month".
@@ -129,5 +130,61 @@ await assert.rejects(() => fetchMonthsTransactions("rk_bad", 0, failing), /401/)
 const runaway = { impl: async () => ({ ok: true, json: async () => ({ data: [{ id: "tx_same", type: "charge", net: 1 }], has_more: true }) }) };
 const capped = await fetchMonthsTransactions("rk_test", 0, runaway.impl);
 assert.equal(capped.length, 20, "stops at MAX_PAGES rather than looping forever");
+
+// The whole reason this filter exists. Blossom shares a Stripe account with
+// Filthy Rich Tycoon, so "everything on the account" is not "donations to
+// Blossom" - and a game sale counted as a donation would look entirely
+// plausible while quietly saying the bills were paid.
+const mixedAccount = [
+  { type: "charge", net: 300, paymentIntent: "pi_blossom" },
+  { type: "charge", net: 4999, paymentIntent: "pi_game_sale" },
+];
+const onlyBlossom = new Set(["pi_blossom"]);
+assert.equal(sumDonationsPence(mixedAccount, onlyBlossom), 300, "the game sale is not a donation");
+assert.equal(sumDonationsPence(mixedAccount, null), 5299, "and without a set, everything counts");
+
+// A refund of a Blossom donation still pulls Blossom's total down, because the
+// refund carries the same payment_intent as the charge it reverses.
+assert.equal(
+  sumDonationsPence(
+    [
+      { type: "charge", net: 300, paymentIntent: "pi_blossom" },
+      { type: "refund", net: -300, paymentIntent: "pi_blossom" },
+      { type: "charge", net: 4999, paymentIntent: "pi_game_sale" },
+    ],
+    onlyBlossom
+  ),
+  0
+);
+
+// A row Stripe couldn't attribute to a payment counts as nothing rather than
+// being waved through, which is the safe direction to fail in.
+assert.equal(sumDonationsPence([{ type: "charge", net: 999, paymentIntent: null }], onlyBlossom), 0);
+
+// Building the set of payments made through Blossom's link.
+const sessions = stubStripe([
+  [{ id: "cs_1", payment_intent: "pi_blossom" }, { id: "cs_2", payment_intent: "pi_two" }],
+]);
+const ids = await fetchLinkPaymentIntentIds("rk_test", "plink_abc", 1_000_000, sessions.impl);
+assert.deepEqual([...ids].sort(), ["pi_blossom", "pi_two"]);
+assert.match(sessions.calls[0], /payment_link=plink_abc/, "asks Stripe for one link only");
+assert.match(sessions.calls[0], /status=complete/, "and only sessions that actually completed");
+
+// Sessions are looked for a week before the month starts: someone opening the
+// payment page late on the 31st can complete it on the 1st.
+const lookback = Number(new URL(sessions.calls[0]).searchParams.get("created[gte]"));
+assert.equal(lookback, 1_000_000 - 7 * 24 * 60 * 60);
+
+// A session that never got a payment intent is skipped rather than adding
+// undefined to the set.
+const halfDone = stubStripe([[{ id: "cs_3", payment_intent: null }]]);
+assert.equal((await fetchLinkPaymentIntentIds("rk_test", "plink_abc", 0, halfDone.impl)).size, 0);
+
+// Balance transactions now ask Stripe to expand the source, which is where the
+// payment_intent lives, and it survives the trip.
+const expanded = stubStripe([[{ id: "txn_1", type: "charge", net: 300, source: { payment_intent: "pi_blossom" } }]]);
+const withSource = await fetchMonthsTransactions("rk_test", 0, expanded.impl);
+assert.deepEqual(withSource, [{ type: "charge", net: 300, paymentIntent: "pi_blossom" }]);
+assert.match(expanded.calls[0], /expand%5B%5D=data.source/, "asks for the source");
 
 console.log("Running-costs target checks passed.");

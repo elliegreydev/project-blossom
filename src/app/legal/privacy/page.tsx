@@ -262,10 +262,12 @@ export default function PrivacyPolicyPage() {
             </p>
             <p>
               Where Blossom shows how much a month has raised towards its running costs, our server
-              works that out by asking Stripe for the month&apos;s total. It asks for a total and it
-              receives a total: no names, no email addresses, no individual amounts, nothing that
-              says who gave. That figure is the only thing about donations that ever reaches
-              Blossom, which is what lets the paragraph above stay true.
+              works that out by asking Stripe for the payments made through Blossom&apos;s donation
+              link that month and adding them up. Stripe&apos;s reply is read for two things only:
+              what each payment was worth, and which payment it was, so a refund can be matched to
+              the payment it reverses. Nothing about the person who paid is read or kept, and the
+              only thing that survives is the monthly total. That is what lets the paragraph above
+              stay true.
             </p>
           </section>
 
