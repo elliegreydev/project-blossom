@@ -18,10 +18,16 @@ import styles from "./crisis-support.module.css";
 // access" roadmap item. Doesn't require or create a saved profile; a region
 // picked here only lives in this page's own state unless it already matches
 // what's saved.
+/** A contactInfo that gives you a person, rather than something to read.
+ *  Matches a phone number in any of the formats the list uses (0300 330 0630,
+ *  1-833-247-7683, (808) 521-2437, 116 123) or a shortcode text service. */
+const CONTACTABLE = /\d{3}[\d\s().-]{3,}|\btext\b/i;
+
 export default function CrisisSupportPage() {
   const [country, setCountry] = useState<string>("");
   const [subregion, setSubregion] = useState<string>("");
   const [resources, setResources] = useState<RegionResource[] | null>(null);
+  const [otherLines, setOtherLines] = useState<RegionResource[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -39,10 +45,28 @@ export default function CrisisSupportPage() {
   useEffect(() => {
     if (!country) return;
     void db.cachedRegionResources.toArray().then((all) => {
-      const matched = resourcesForRegion(all, country, subregion || null).filter(
-        (r) => r.category === "crisis" || r.category === "emergency"
+      const inRegion = resourcesForRegion(all, country, subregion || null);
+      const crisis = inRegion.filter((r) => r.category === "crisis" || r.category === "emergency");
+
+      // Anything else in the region you can actually ring or text right now.
+      //
+      // The category tags were written to describe what an organisation is,
+      // not what it can do for you at 3am, and the two came apart. Switchboard
+      // runs an LGBT+ helpline until 10pm every night and is tagged "peer", so
+      // this page refused to show it - somebody in the UK opening this at
+      // midnight got one general number and nothing else. Ireland had three
+      // lines hidden the same way.
+      //
+      // Sorting by tag was the wrong question. The right one is "does this
+      // give me a human to talk to", so that's what's asked here. They're
+      // shown separately and below, because they're support lines rather than
+      // crisis lines and the page shouldn't blur that.
+      const reachable = inRegion.filter(
+        (r) => !crisis.includes(r) && CONTACTABLE.test(r.contactInfo)
       );
-      setResources(matched);
+
+      setResources(crisis);
+      setOtherLines(reachable);
     });
   }, [country, subregion]);
 
@@ -128,6 +152,27 @@ export default function CrisisSupportPage() {
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {country && otherLines.length > 0 && (
+              <div className={styles.list}>
+                <h2 className={styles.otherLinesTitle}>Other lines you can reach today</h2>
+                <p className={styles.hint}>
+                  Not crisis lines, but real people you can ring or text. Check the
+                  hours before you call.
+                </p>
+                {otherLines.map((r) => (
+                  <div key={r.id} className={styles.resourceItem}>
+                    <span className={styles.resourceCategory}>{CATEGORY_LABELS[r.category]}</span>
+                    <span className={styles.resourceName}>
+                      {r.cityName && `${r.cityName} · `}
+                      {r.orgName}
+                    </span>
+                    <span className={styles.resourceMeta}>{r.contactInfo}</span>
+                    {r.availability && <span className={styles.resourceMeta}>{r.availability}</span>}
+                  </div>
+                ))}
               </div>
             )}
 

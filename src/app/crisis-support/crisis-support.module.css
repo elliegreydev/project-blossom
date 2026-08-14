@@ -135,3 +135,13 @@
   text-decoration: underline;
   width: fit-content;
 }
+
+/* Support lines that aren't crisis lines. Kept visually subordinate to the
+   crisis results above so the page never blurs the two, but present, because
+   "one general helpline and nothing else" was the wrong answer at 3am. */
+.otherLinesTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-top: 6px;
+}
