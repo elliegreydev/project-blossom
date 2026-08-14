@@ -57,9 +57,19 @@
   flex-direction: column;
   gap: 5px;
   padding: 15px 17px;
-  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-raised);
+  /* Tinted the same way every other callout in Blossom is: a brand colour
+     mixed into the neutral, so it follows whichever theme is on rather than
+     hardcoding a colour. Same recipe as the legal draft notice (pink), the
+     ideas board (mint) and Travel (sky).
+
+     Lavender for both states, on purpose. Pink for "short" and mint for
+     "covered" was the obvious split and it's the wrong one: it makes the card
+     an alarm in every month that isn't finished yet, which is the exact thing
+     dropping the progress bar was meant to avoid, and it quietly grades the
+     month as good or bad. One colour reports; two colours judge. */
+  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 14%, var(--bg-raised));
 }
 
 .targetHeadline {
