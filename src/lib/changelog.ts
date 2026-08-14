@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.3";
+export const APP_VERSION = "0.5.4";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.4",
+    date: "2026-08-14",
+    title: "The running costs figure keeps itself honest",
+    items: [
+      { tag: "improved", text: "When Blossom shows what a month has raised towards its running costs, that number now comes from Stripe rather than being typed in by us. It can't drift, and it can't be quietly out of date." },
+      { tag: "improved", text: "We still don't know who donated. Blossom's server asks Stripe for a total and gets a total: no names, no email addresses, no individual amounts. The privacy policy now spells that out." },
+    ],
+  },
   {
     version: "0.5.3",
     date: "2026-08-14",
