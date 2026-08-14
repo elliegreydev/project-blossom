@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { fetchMonthsTransactions, londonMonthStartUtc, sumDonationsPence } from "@/lib/runningCosts";
+import {
+  fetchLinkPaymentIntentIds,
+  fetchMonthsTransactions,
+  londonMonthStartUtc,
+  sumDonationsPence,
+} from "@/lib/runningCosts";
 import { reportError } from "@/lib/errorReport";
 
 /**
@@ -36,9 +41,14 @@ let cached: { at: number; body: unknown } | null = null;
 
 export async function GET() {
   const apiKey = process.env.STRIPE_API_KEY;
+  const paymentLinkId = process.env.BLOSSOM_STRIPE_PAYMENT_LINK;
   const targetPence = Number(process.env.BLOSSOM_COSTS_TARGET_PENCE);
 
-  if (!apiKey || !Number.isInteger(targetPence) || targetPence <= 0) {
+  // The payment link is required, not optional. Grey Studios runs more than
+  // one thing through this Stripe account, so counting the whole account would
+  // report Blossom's costs covered on the back of a game sale. Refusing to
+  // answer is the right failure: the page then shows nothing at all.
+  if (!apiKey || !paymentLinkId || !Number.isInteger(targetPence) || targetPence <= 0) {
     return NextResponse.json({ configured: false });
   }
 
@@ -50,14 +60,17 @@ export async function GET() {
   const since = Math.floor(londonMonthStartUtc(now).getTime() / 1000);
 
   try {
-    const transactions = await fetchMonthsTransactions(apiKey, since);
+    const [transactions, blossomPayments] = await Promise.all([
+      fetchMonthsTransactions(apiKey, since),
+      fetchLinkPaymentIntentIds(apiKey, paymentLinkId, since),
+    ]);
     const body = {
       configured: true,
       targetPence,
       // Clamped at zero. A month where refunds outweigh donations would go
       // negative, and "raised minus five pounds" is a puzzle rather than a
       // figure - the honest reading of that month is that none of it is covered.
-      raisedPence: Math.max(0, sumDonationsPence(transactions)),
+      raisedPence: Math.max(0, sumDonationsPence(transactions, blossomPayments)),
       // What "as of" means here is the moment we last asked, which is why the
       // page can show it honestly without anyone maintaining it.
       asOf: now.toISOString(),

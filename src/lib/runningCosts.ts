@@ -121,11 +121,30 @@ export interface BalanceTransaction {
   /** Already converted to the account's settlement currency, which is why this
    *  endpoint is used rather than charges: donors can pay in anything. */
   net: number;
+  /** Which payment this belongs to. Carried so money from one payment link can
+   *  be told apart from everything else on a shared account. */
+  paymentIntent: string | null;
 }
 
-export function sumDonationsPence(transactions: BalanceTransaction[]): number {
+/**
+ * Sum the month, counting only money that came through Blossom's own link.
+ *
+ * Grey Studios runs more than one thing through one Stripe account, so "every
+ * transaction this month" is not the same as "donations to Blossom". Without
+ * the second argument this would report Blossom's costs covered on the back of
+ * a game sale, and nobody would notice because the number would look plausible.
+ *
+ * `allowedPaymentIntents` is the set of payments made through the Blossom link,
+ * built separately by fetchLinkPaymentIntentIds. Pass null to count everything,
+ * which is only right on an account that does nothing else.
+ */
+export function sumDonationsPence(
+  transactions: BalanceTransaction[],
+  allowedPaymentIntents: Set<string> | null = null
+): number {
   return transactions
     .filter((t) => COUNTED_BALANCE_TYPES.includes(t.type))
+    .filter((t) => allowedPaymentIntents === null || (t.paymentIntent !== null && allowedPaymentIntents.has(t.paymentIntent)))
     .reduce((total, t) => total + (Number.isFinite(t.net) ? t.net : 0), 0);
 }
 
@@ -161,32 +180,35 @@ function londonOffsetMs(at: Date): number {
   return asLondon.getTime() - asUtc.getTime();
 }
 
-const STRIPE_API = "https://api.stripe.com/v1/balance_transactions";
+const BALANCE_TX_API = "https://api.stripe.com/v1/balance_transactions";
+const CHECKOUT_SESSIONS_API = "https://api.stripe.com/v1/checkout/sessions";
 const PAGE_SIZE = 100;
 /** A month of donations for an app this size will not run to thousands of
  *  rows. The cap stops a misconfiguration becoming an unbounded loop. */
 const MAX_PAGES = 20;
 
 /**
- * Every balance transaction since `since`, following Stripe's pagination.
+ * Page through a Stripe list endpoint and hand back the raw rows.
  *
- * `fetchImpl` is injectable purely so the paging can be tested without a
- * Stripe account, which is the part most likely to be wrong: a loop that stops
- * one page early silently under-counts somebody's month.
+ * `fetchImpl` is injectable purely so the paging can be tested without a Stripe
+ * account, which is the part most likely to be wrong: a loop that stops one
+ * page early silently under-counts somebody's month.
  */
-export async function fetchMonthsTransactions(
+async function stripeList(
+  url: string,
   apiKey: string,
-  since: number,
-  fetchImpl: typeof fetch = fetch
-): Promise<BalanceTransaction[]> {
-  const collected: BalanceTransaction[] = [];
+  params: URLSearchParams,
+  fetchImpl: typeof fetch
+): Promise<unknown[]> {
+  const collected: unknown[] = [];
   let startingAfter: string | undefined;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const params = new URLSearchParams({ "created[gte]": String(since), limit: String(PAGE_SIZE) });
-    if (startingAfter) params.set("starting_after", startingAfter);
+    const query = new URLSearchParams(params);
+    query.set("limit", String(PAGE_SIZE));
+    if (startingAfter) query.set("starting_after", startingAfter);
 
-    const response = await fetchImpl(`${STRIPE_API}?${params}`, {
+    const response = await fetchImpl(`${url}?${query}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
 
@@ -199,17 +221,7 @@ export async function fetchMonthsTransactions(
 
     const body = await response.json();
     const rows: unknown[] = Array.isArray(body?.data) ? body.data : [];
-
-    // Only the two fields the sum needs are carried forward. Everything else
-    // Stripe sent, the customer included, is dropped here and never travels
-    // any further into Blossom.
-    for (const row of rows) {
-      const item = row as { type?: unknown; net?: unknown };
-      collected.push({
-        type: typeof item.type === "string" ? item.type : "",
-        net: typeof item.net === "number" ? item.net : 0,
-      });
-    }
+    collected.push(...rows);
 
     if (!body?.has_more || rows.length === 0) break;
     const last = rows[rows.length - 1] as { id?: unknown };
@@ -218,6 +230,69 @@ export async function fetchMonthsTransactions(
   }
 
   return collected;
+}
+
+/** Every balance transaction since `since`, cut down to the three fields the
+ *  sum needs. Everything else Stripe sent, the customer included, is dropped
+ *  here and never travels any further into Blossom. */
+export async function fetchMonthsTransactions(
+  apiKey: string,
+  since: number,
+  fetchImpl: typeof fetch = fetch
+): Promise<BalanceTransaction[]> {
+  const params = new URLSearchParams({ "created[gte]": String(since) });
+  // The source says which payment a row belongs to. Charges and refunds both
+  // carry payment_intent, so a refund stays attributable to the link it came
+  // from and still pulls that link's total back down.
+  params.append("expand[]", "data.source");
+
+  return (await stripeList(BALANCE_TX_API, apiKey, params, fetchImpl)).map((row) => {
+    const item = row as { type?: unknown; net?: unknown; source?: { payment_intent?: unknown } | null };
+    const paymentIntent = item.source?.payment_intent;
+    return {
+      type: typeof item.type === "string" ? item.type : "",
+      net: typeof item.net === "number" ? item.net : 0,
+      paymentIntent: typeof paymentIntent === "string" ? paymentIntent : null,
+    };
+  });
+}
+
+/** How far back before the month to look for sessions. Somebody who opens the
+ *  payment page late on the 31st can complete it on the 1st, and that payment
+ *  would otherwise be unattributable and silently dropped. */
+const SESSION_LOOKBACK_SECONDS = 7 * 24 * 60 * 60;
+
+/**
+ * The payments made through one specific payment link.
+ *
+ * This is the piece that keeps a shared Stripe account honest. Grey Studios
+ * runs more than one thing through one account, so without this the figure
+ * would count a game sale as a donation to Blossom - and it would look
+ * entirely plausible while doing it.
+ *
+ * Known gap, and it bites the moment a monthly link exists: a subscription's
+ * renewals don't create new checkout sessions, so only the first payment of a
+ * subscription shows up here. Handling renewals means expanding the charge's
+ * invoice and matching it back to the subscription id on the session.
+ */
+export async function fetchLinkPaymentIntentIds(
+  apiKey: string,
+  paymentLinkId: string,
+  since: number,
+  fetchImpl: typeof fetch = fetch
+): Promise<Set<string>> {
+  const params = new URLSearchParams({
+    payment_link: paymentLinkId,
+    status: "complete",
+    "created[gte]": String(Math.max(0, since - SESSION_LOOKBACK_SECONDS)),
+  });
+
+  const ids = new Set<string>();
+  for (const row of await stripeList(CHECKOUT_SESSIONS_API, apiKey, params, fetchImpl)) {
+    const item = row as { payment_intent?: unknown };
+    if (typeof item.payment_intent === "string") ids.add(item.payment_intent);
+  }
+  return ids;
 }
 
 /** Whole pounds lose the ".00", because "£40" is what a person would say. */

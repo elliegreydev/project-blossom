@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.4";
+export const APP_VERSION = "0.5.5";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.5",
+    date: "2026-08-14",
+    title: "A game sale is not a donation",
+    items: [
+      { tag: "fix", text: "Blossom shares a payment account with the other things we build, so the running-costs figure now counts only what came through Blossom's own donation link. Before this, a sale somewhere else could have made it look like Blossom's bills were paid when they weren't." },
+      { tag: "improved", text: "The privacy policy now describes exactly what that involves: Stripe's reply is read for what each payment was worth and which payment it was, nothing about who paid, and only the monthly total is kept." },
+    ],
+  },
   {
     version: "0.5.4",
     date: "2026-08-14",
