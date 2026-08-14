@@ -260,6 +260,13 @@ export default function PrivacyPolicyPage() {
               Because we hold no link between a donation and a Blossom account, we cannot look up your
               payments for you, and you would need to contact Stripe or use your receipt.
             </p>
+            <p>
+              Where Blossom shows how much a month has raised towards its running costs, our server
+              works that out by asking Stripe for the month&apos;s total. It asks for a total and it
+              receives a total: no names, no email addresses, no individual amounts, nothing that
+              says who gave. That figure is the only thing about donations that ever reaches
+              Blossom, which is what lets the paragraph above stay true.
+            </p>
           </section>
 
           <section>

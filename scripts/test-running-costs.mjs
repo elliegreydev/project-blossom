@@ -4,6 +4,9 @@ import {
   runningCostsStatus,
   formatPence,
   daysLeftInMonth,
+  sumDonationsPence,
+  londonMonthStartUtc,
+  fetchMonthsTransactions,
 } from "../src/lib/runningCosts.ts";
 
 // The figures are typed in by hand, so the parser's job is to refuse anything
@@ -56,5 +59,75 @@ assert.equal(daysLeftInMonth(august(31)), 0);
 assert.equal(daysLeftInMonth(august(30)), 1);
 assert.equal(daysLeftInMonth(new Date(2026, 1, 27, 12)), 1, "February, non-leap");
 assert.equal(daysLeftInMonth(new Date(2024, 1, 27, 12)), 2, "February, leap year");
+
+// Summing Stripe. The allow-list is the whole point: a payout is money leaving
+// for the bank account and would otherwise zero the month out every time it ran.
+assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "charge", net: 470 }]), 1411);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "payout", net: -941 }]), 941);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "stripe_fee", net: -200 }]), 941);
+assert.equal(sumDonationsPence([{ type: "charge", net: 941 }, { type: "refund", net: -941 }]), 0, "a refund pulls it back");
+assert.equal(sumDonationsPence([{ type: "payment", net: 500 }, { type: "adjustment", net: -500 }]), 0);
+assert.equal(sumDonationsPence([]), 0, "no donations yet is zero, not a crash");
+assert.equal(sumDonationsPence([{ type: "charge", net: Number.NaN }]), 0, "junk from the API counts as nothing");
+
+// The month window is London's, not the server's UTC. During BST the first
+// hour of a month is still "last month" in UTC, and an hour of somebody's
+// donations would land in the wrong column.
+const bstStart = londonMonthStartUtc(new Date("2026-08-14T12:00:00Z"));
+assert.equal(bstStart.toISOString(), "2026-07-31T23:00:00.000Z", "August starts at 23:00 UTC on 31 July in BST");
+
+const gmtStart = londonMonthStartUtc(new Date("2026-01-14T12:00:00Z"));
+assert.equal(gmtStart.toISOString(), "2026-01-01T00:00:00.000Z", "January starts at midnight UTC, no offset");
+
+// The edge itself: 00:30 London on 1 August is 23:30 UTC on 31 July. A UTC
+// window would put this half hour in July.
+const justAfterMidnight = londonMonthStartUtc(new Date("2026-07-31T23:30:00Z"));
+assert.equal(justAfterMidnight.toISOString(), "2026-07-31T23:00:00.000Z", "already counted as August");
+
+// Stripe paging, against a stub. A loop that stops one page early silently
+// under-counts the month, which is the kind of wrong nobody notices.
+function stubStripe(pages) {
+  const calls = [];
+  const impl = async (url) => {
+    calls.push(url);
+    const after = new URL(url).searchParams.get("starting_after");
+    const index = after ? pages.findIndex((p) => p.at(-1)?.id === after) + 1 : 0;
+    const data = pages[index] ?? [];
+    return { ok: true, json: async () => ({ data, has_more: index < pages.length - 1 }) };
+  };
+  return { impl, calls };
+}
+
+const onePage = stubStripe([[{ id: "tx_1", type: "charge", net: 941 }]]);
+assert.deepEqual(await fetchMonthsTransactions("sk_test", 0, onePage.impl), [{ type: "charge", net: 941 }]);
+assert.equal(onePage.calls.length, 1, "stops as soon as has_more is false");
+
+const threePages = stubStripe([
+  [{ id: "tx_1", type: "charge", net: 100 }],
+  [{ id: "tx_2", type: "charge", net: 200 }],
+  [{ id: "tx_3", type: "charge", net: 300 }],
+]);
+const all = await fetchMonthsTransactions("sk_test", 0, threePages.impl);
+assert.equal(all.length, 3, "follows every page");
+assert.equal(sumDonationsPence(all), 600, "and nothing is lost on the way");
+assert.equal(threePages.calls.length, 3);
+assert.match(threePages.calls[1], /starting_after=tx_1/, "pages on the last id it saw");
+assert.match(threePages.calls[0], /created%5Bgte%5D=0/, "asks only for this month");
+
+// Everything Stripe sends other than the two fields the sum needs is dropped
+// here, so the customer never travels any further into Blossom.
+const withCustomer = stubStripe([[{ id: "tx_1", type: "charge", net: 500, customer: "cus_abc", description: "Ellie" }]]);
+const carried = await fetchMonthsTransactions("sk_test", 0, withCustomer.impl);
+assert.deepEqual(Object.keys(carried[0]).sort(), ["net", "type"], "only type and net survive");
+
+// A refusal from Stripe throws rather than quietly returning a total of zero,
+// which would read as "nobody donated this month".
+const failing = async () => ({ ok: false, status: 401, json: async () => ({}) });
+await assert.rejects(() => fetchMonthsTransactions("sk_bad", 0, failing), /401/);
+
+// A stub that always claims more pages must still terminate.
+const runaway = { impl: async () => ({ ok: true, json: async () => ({ data: [{ id: "tx_same", type: "charge", net: 1 }], has_more: true }) }) };
+const capped = await fetchMonthsTransactions("sk_test", 0, runaway.impl);
+assert.equal(capped.length, 20, "stops at MAX_PAGES rather than looping forever");
 
 console.log("Running-costs target checks passed.");

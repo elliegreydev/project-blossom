@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ScreenHeader from "@/components/ScreenHeader";
 import { SUPPORT_URL, supportConfigured } from "@/lib/support";
-import { runningCostsFromEnv, runningCostsStatus, type RunningCostsStatus } from "@/lib/runningCosts";
+import {
+  parseRunningCosts,
+  runningCostsFromEnv,
+  runningCostsStatus,
+  type RunningCosts,
+  type RunningCostsStatus,
+} from "@/lib/runningCosts";
 import styles from "./support.module.css";
 
 /**
@@ -19,7 +25,20 @@ function RunningCostsNote() {
   const [status, setStatus] = useState<RunningCostsStatus | null>(null);
 
   useEffect(() => {
-    setStatus(runningCostsStatus(runningCostsFromEnv(), new Date()));
+    let cancelled = false;
+
+    (async () => {
+      // Stripe first, and the hand-set figure only if Stripe isn't wired up or
+      // couldn't be reached. That ordering is what stops the two disagreeing:
+      // once Stripe is answering, the manual figure can be left stale without
+      // anyone seeing a wrong number.
+      const costs = (await fetchRunningCosts()) ?? runningCostsFromEnv();
+      if (!cancelled) setStatus(runningCostsStatus(costs, new Date()));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Tied to the donate link existing. A shortfall with no way to help is a
@@ -39,6 +58,22 @@ function RunningCostsNote() {
       <p className={styles.targetAsOf}>As of {status.asOf}.</p>
     </section>
   );
+}
+
+/** Runs the route's answer back through the same parser the manual figures use,
+ *  so a malformed reply is rejected on exactly the same terms rather than
+ *  trusted for having come from us. */
+async function fetchRunningCosts(): Promise<RunningCosts | null> {
+  try {
+    const response = await fetch("/api/running-costs");
+    if (!response.ok) return null;
+    const body = await response.json();
+    if (!body?.configured) return null;
+    return parseRunningCosts(String(body.targetPence), String(body.raisedPence), body.asOf);
+  } catch {
+    // Offline, most likely, which is a normal state for this app. Fall back.
+    return null;
+  }
 }
 
 function daysLeftLine(daysLeft: number, month: string): string {

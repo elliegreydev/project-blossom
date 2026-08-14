@@ -100,6 +100,126 @@ export function runningCostsStatus(costs: RunningCosts | null, now: Date): Runni
   };
 }
 
+/**
+ * Which Stripe balance-transaction types count as donor money.
+ *
+ * An allow-list rather than a block-list, because getting this wrong silently
+ * changes a number people are trusting. Refunds are included on purpose: they
+ * carry a negative net and should pull the total back down. Payouts are not,
+ * even though they look like money moving - that's the bank transfer of money
+ * already counted here, and including it would zero the month out every time
+ * Stripe paid us.
+ *
+ * Stripe's own fees are also excluded. They're a real cost, but this figure
+ * answers "how much have people given", and netting Stripe's bill off it would
+ * quietly conflate the two.
+ */
+export const COUNTED_BALANCE_TYPES = ["charge", "payment", "refund", "payment_refund", "adjustment"];
+
+export interface BalanceTransaction {
+  type: string;
+  /** Already converted to the account's settlement currency, which is why this
+   *  endpoint is used rather than charges: donors can pay in anything. */
+  net: number;
+}
+
+export function sumDonationsPence(transactions: BalanceTransaction[]): number {
+  return transactions
+    .filter((t) => COUNTED_BALANCE_TYPES.includes(t.type))
+    .reduce((total, t) => total + (Number.isFinite(t.net) ? t.net : 0), 0);
+}
+
+/**
+ * The first instant of the current month, in London rather than UTC.
+ *
+ * The server runs on UTC and the people reading this are mostly in the UK. For
+ * the hour after midnight on the first of a month during BST, UTC still thinks
+ * it's last month, so a UTC window would count an hour of September's donations
+ * towards August. One hour a month, but it's someone's money in the wrong
+ * column and the fix is cheap.
+ */
+export function londonMonthStartUtc(now: Date): Date {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(now);
+  const year = Number(parts.find((p) => p.type === "year")?.value);
+  const month = Number(parts.find((p) => p.type === "month")?.value);
+
+  // Treat midnight-in-London as if it were UTC, then correct by however far
+  // London actually sits from UTC at that moment (0 in winter, +1 in BST).
+  const naive = Date.UTC(year, month - 1, 1, 0, 0, 0);
+  return new Date(naive - londonOffsetMs(new Date(naive)));
+}
+
+function londonOffsetMs(at: Date): number {
+  // Formatting the same instant as London and as UTC and taking the difference
+  // is the reliable way to get an offset without hardcoding BST's dates.
+  const asLondon = new Date(at.toLocaleString("en-US", { timeZone: "Europe/London" }));
+  const asUtc = new Date(at.toLocaleString("en-US", { timeZone: "UTC" }));
+  return asLondon.getTime() - asUtc.getTime();
+}
+
+const STRIPE_API = "https://api.stripe.com/v1/balance_transactions";
+const PAGE_SIZE = 100;
+/** A month of donations for an app this size will not run to thousands of
+ *  rows. The cap stops a misconfiguration becoming an unbounded loop. */
+const MAX_PAGES = 20;
+
+/**
+ * Every balance transaction since `since`, following Stripe's pagination.
+ *
+ * `fetchImpl` is injectable purely so the paging can be tested without a
+ * Stripe account, which is the part most likely to be wrong: a loop that stops
+ * one page early silently under-counts somebody's month.
+ */
+export async function fetchMonthsTransactions(
+  secretKey: string,
+  since: number,
+  fetchImpl: typeof fetch = fetch
+): Promise<BalanceTransaction[]> {
+  const collected: BalanceTransaction[] = [];
+  let startingAfter: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const params = new URLSearchParams({ "created[gte]": String(since), limit: String(PAGE_SIZE) });
+    if (startingAfter) params.set("starting_after", startingAfter);
+
+    const response = await fetchImpl(`${STRIPE_API}?${params}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+
+    if (!response.ok) {
+      // Deliberately without the body. Stripe quotes the offending object back
+      // inside its error messages, and the point of this whole path is that
+      // nothing identifying leaves it - including into an error report.
+      throw new Error(`Stripe returned ${response.status}`);
+    }
+
+    const body = await response.json();
+    const rows: unknown[] = Array.isArray(body?.data) ? body.data : [];
+
+    // Only the two fields the sum needs are carried forward. Everything else
+    // Stripe sent, the customer included, is dropped here and never travels
+    // any further into Blossom.
+    for (const row of rows) {
+      const item = row as { type?: unknown; net?: unknown };
+      collected.push({
+        type: typeof item.type === "string" ? item.type : "",
+        net: typeof item.net === "number" ? item.net : 0,
+      });
+    }
+
+    if (!body?.has_more || rows.length === 0) break;
+    const last = rows[rows.length - 1] as { id?: unknown };
+    if (typeof last?.id !== "string") break;
+    startingAfter = last.id;
+  }
+
+  return collected;
+}
+
 /** Whole pounds lose the ".00", because "£40" is what a person would say. */
 export function formatPence(pence: number): string {
   const pounds = pence / 100;
