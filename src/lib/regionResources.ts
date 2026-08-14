@@ -2614,11 +2614,26 @@ export async function syncRegionResourcesCache(): Promise<void> {
     const resources = resourcesRes.data.map((row) => fromResourceRow(row as RegionResourceRow));
     const notes = notesRes.data.map((row) => fromLegalNoteRow(row as LegalContextNoteRow));
 
+    // An empty table is never a legitimate state for this data, so refuse to
+    // treat it as one. The line below clears the cache before refilling it,
+    // and an empty response would therefore leave somebody with no crisis
+    // numbers at all - including offline, where this cache is the only copy
+    // they have.
+    //
+    // Every realistic cause of an empty read is a fault at our end: a project
+    // that was never seeded, row-level security refusing the select, a key
+    // pointing at the wrong project. None of those are reasons to take a
+    // person's helpline list away. Found on the Blossom dev project, whose
+    // table was empty, which meant its crisis page showed nothing whatsoever.
+    if (resources.length === 0) return;
+
     await db.transaction("rw", db.cachedRegionResources, db.cachedLegalContextNotes, async () => {
       await db.cachedRegionResources.clear();
       await db.cachedRegionResources.bulkPut(resources);
-      await db.cachedLegalContextNotes.clear();
-      await db.cachedLegalContextNotes.bulkPut(notes);
+      if (notes.length > 0) {
+        await db.cachedLegalContextNotes.clear();
+        await db.cachedLegalContextNotes.bulkPut(notes);
+      }
     });
   } catch {
     // Offline or the request failed - the cache (fallback or last-fetched)
