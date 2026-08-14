@@ -12,8 +12,13 @@ import { reportError } from "@/lib/errorReport";
  * logs one, or returns anything below the aggregate. Stripe knows who paid,
  * because it has to; Blossom still doesn't, and this route doesn't learn.
  *
- * Inert without STRIPE_SECRET_KEY and BLOSSOM_COSTS_TARGET_PENCE, in which case
+ * Inert without STRIPE_API_KEY and BLOSSOM_COSTS_TARGET_PENCE, in which case
  * it says so and the page falls back to the manually-set figure.
+ *
+ * STRIPE_API_KEY, not STRIPE_SECRET_KEY, because this only ever reads balance
+ * transactions and should be a restricted key (rk_live_...) scoped to exactly
+ * that. Stripe's own guidance is not to use unrestricted secret keys for new
+ * integrations, and a name with "secret" in it invites pasting the wrong one.
  */
 
 // Matches every other route here. The caching below is done by hand rather
@@ -30,10 +35,10 @@ let cached: { at: number; body: unknown } | null = null;
 
 
 export async function GET() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const apiKey = process.env.STRIPE_API_KEY;
   const targetPence = Number(process.env.BLOSSOM_COSTS_TARGET_PENCE);
 
-  if (!secretKey || !Number.isInteger(targetPence) || targetPence <= 0) {
+  if (!apiKey || !Number.isInteger(targetPence) || targetPence <= 0) {
     return NextResponse.json({ configured: false });
   }
 
@@ -45,7 +50,7 @@ export async function GET() {
   const since = Math.floor(londonMonthStartUtc(now).getTime() / 1000);
 
   try {
-    const transactions = await fetchMonthsTransactions(secretKey, since);
+    const transactions = await fetchMonthsTransactions(apiKey, since);
     const body = {
       configured: true,
       targetPence,

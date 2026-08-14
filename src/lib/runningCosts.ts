@@ -175,7 +175,7 @@ const MAX_PAGES = 20;
  * one page early silently under-counts somebody's month.
  */
 export async function fetchMonthsTransactions(
-  secretKey: string,
+  apiKey: string,
   since: number,
   fetchImpl: typeof fetch = fetch
 ): Promise<BalanceTransaction[]> {
@@ -187,7 +187,7 @@ export async function fetchMonthsTransactions(
     if (startingAfter) params.set("starting_after", startingAfter);
 
     const response = await fetchImpl(`${STRIPE_API}?${params}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
+      headers: { Authorization: `Bearer ${apiKey}` },
     });
 
     if (!response.ok) {
