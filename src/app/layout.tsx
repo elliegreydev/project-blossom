@@ -3,6 +3,7 @@ import { Manrope, Inter } from "next/font/google";
 import AccessibilityEffects from "@/components/AccessibilityEffects";
 import SyncCoordinator from "@/components/SyncCoordinator";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import PersistentStorageRequest from "@/components/PersistentStorageRequest";
 import ThemeSync from "@/components/ThemeSync";
 import { SPLASH_SIZES, splashDims, splashMedia } from "@/lib/appleSplash";
 import "./globals.css";
@@ -81,6 +82,7 @@ export default function RootLayout({
       <body>
         <AccessibilityEffects />
         <ServiceWorkerRegistrar />
+        <PersistentStorageRequest />
         <ThemeSync />
         {children}
         <SyncCoordinator />

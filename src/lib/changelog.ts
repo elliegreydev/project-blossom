@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.10";
+export const APP_VERSION = "0.5.11";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.11",
+    date: "2026-08-14",
+    title: "Asking your phone to keep your Blossom",
+    items: [
+      { tag: "new", text: "Phones clear away app data they think is unused, and on iOS that can happen after about a week of not opening something. Blossom now asks your browser not to do that to it. Most of your things would come back when you signed in, but euphoria entries, Time Capsules, trips, Aurora chats, photos and voice notes never leave your device by design, so there'd be nothing to bring back." },
+      { tag: "new", text: "Privacy & security now tells you whether your browser agreed. If it hasn't, installing Blossom to your home screen and opening it regularly is what usually earns it - and exporting now and then is worth doing whatever the answer." },
+    ],
+  },
   {
     version: "0.5.10",
     date: "2026-08-14",

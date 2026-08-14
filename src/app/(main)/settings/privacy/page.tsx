@@ -17,6 +17,7 @@ import {
 import { isPlatformAuthenticatorAvailable, registerBiometricUnlock } from "@/lib/webauthn";
 import { createClient } from "@/lib/supabase/client";
 import { CATEGORY_LABELS, type TicketCategory } from "@/lib/ticketCategories";
+import { checkPersistentStorage, persistenceMessage, type PersistenceState } from "@/lib/persistentStorage";
 import styles from "@/components/settingsForm.module.css";
 
 interface ActiveGrant {
@@ -51,10 +52,15 @@ export default function PrivacySettingsPage() {
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [biometricError, setBiometricError] = useState(false);
 
+  const [persistence, setPersistence] = useState<PersistenceState | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [activeGrant, setActiveGrant] = useState<ActiveGrant | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    void checkPersistentStorage().then(setPersistence);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +226,10 @@ export default function PrivacySettingsPage() {
               app lock PIN/biometric and accessibility settings also always
               stay local, since they&apos;re per-device settings rather than
               account data.
+            </p>
+            <p className={styles.hint}>
+              <strong>Whether your phone will keep it.</strong>{" "}
+              {persistence === null ? "Checking…" : persistenceMessage(persistence)}
             </p>
             <div className={styles.field} style={{ gap: 7 }}>
               <span className={styles.label}>At a glance</span>
