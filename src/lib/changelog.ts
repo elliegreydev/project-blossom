@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.9";
+export const APP_VERSION = "0.5.10";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.10",
+    date: "2026-08-14",
+    title: "Your crisis numbers can't be taken away by a bad connection",
+    items: [
+      { tag: "fix", text: "If our server ever answered with an empty list, Blossom would wipe the support resources saved on your device and replace them with nothing. Offline, that copy is the only one you have. It now keeps what it already had unless there's genuinely something newer to put there." },
+    ],
+  },
   {
     version: "0.5.9",
     date: "2026-08-14",
