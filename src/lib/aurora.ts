@@ -17,7 +17,9 @@ import type {
   VoiceGoal,
   VoiceSession,
 } from "./db";
-import { localDateKey } from "@/lib/dates";
+// Relative rather than "@/lib/dates" on purpose: test-aurora.mjs runs this
+// file under plain node, which doesn't know Next's "@/" alias.
+import { localDateKey } from "./dates.ts";
 
 export type AuroraSuggestionKind =
   | "appointment"
