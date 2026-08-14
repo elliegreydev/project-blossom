@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.0";
+export const APP_VERSION = "0.5.1";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.1",
+    date: "2026-08-14",
+    title: "The privacy policy now matches the app",
+    items: [
+      { tag: "fix", text: "Our privacy policy still described four things Blossom stopped collecting weeks ago. It doesn't now. It also explains, for the first time, that Blossom reports its own breakages to us, and exactly what those reports do and don't contain." },
+      { tag: "improved", text: "It now says plainly where your synced data is stored and where it is processed, and the Terms cover donations, cancellation and refunds." },
+    ],
+  },
   {
     version: "0.5.0",
     date: "2026-08-07",
@@ -74,7 +83,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Blossom tells us when it breaks",
     items: [
       { tag: "improved", text: "When something goes wrong in Blossom, the app now tells us what broke and roughly where, so it can be fixed without you having to notice and report it." },
-      { tag: "improved", text: "It never sends anything you have written. Not a journal entry, not a message, not a mood, not what you were reading or searching for. What travels is the shape of the failure: which part of the app, what kind of error, and an anonymous id so we can tell one person's bad day from everybody's. That id cannot be turned back into you." },
+      { tag: "improved", text: "It never sends anything you have written. Not a journal entry, not a message, not a mood, not what you were reading or searching for. What travels is the shape of the failure: which part of the app, what kind of error, and your account reference, so we can tell one person hitting a problem repeatedly from a hundred people hitting it once. That reference is the same one your account uses, so we can connect a report back to an account if we need to. It is never shared outside Grey Studios." },
     ],
   },
   {
