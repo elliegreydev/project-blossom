@@ -208,9 +208,14 @@ export default function HomePage() {
   const name = profile.displayName || "there";
   return <div className={styles.screen} data-density={selectedLayout.density}>
     <header className={styles.hero}><div><div className={styles.eyebrow}>{todayLabel(now)}</div><h1 className={styles.greeting}>Hi {name} 🌸</h1></div><div className={styles.heroActions}><Link href="/reminders" className={styles.accountLink} aria-label="Reminders">{HEADER_ICONS.reminders}<span>Reminders</span></Link><Link href="/search" className={styles.accountLink} aria-label="Search">{HEADER_ICONS.search}<span>Search</span></Link><Link href="/account" className={styles.accountLink} aria-label="Account &amp; sync">{HEADER_ICONS.account}<span>Account &amp; sync</span></Link><div className={styles.petals} data-blossom-decoration aria-hidden="true"><span /><span /><span /></div></div></header>
+    {/* Up here rather than at the foot of the page, and visible rather than
+        muted. Someone who needs this needs it without scrolling past their
+        medication and their budget to find it. It stays warm rather than
+        alarming - pink, not red - because it's on screen every ordinary day
+        too, and a daily emergency banner would make the app heavy to open. */}
+    <Link href="/crisis-support" className={styles.crisisChip}>Need support right now?</Link>
     <AppNotice />
     <div className={styles.homeBlocks}>{orderedBlocks.map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
     <SupportCard />
-    <Link href="/crisis-support" className={styles.supportLink}>Need support right now?</Link>
   </div>;
 }

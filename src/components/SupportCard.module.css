@@ -99,15 +99,36 @@
   text-underline-offset: 2px;
 }
 
-/* The doorway, not the ask. Deliberately weighted below the crisis link it
-   sits near: somebody looking for help should never have their eye caught by
-   the money link first. Same size as .supportLink on Home, one step quieter. */
+/* The doorway, not the ask - but a visible one now.
+   Same solid treatment as the app's primary buttons, so it reads as tappable
+   at a glance. Safe to be this loud only because crisis help moved to the top
+   of Home and is no longer competing with it for attention. */
 .quietLink {
   align-self: flex-start;
-  font-size: 12.5px;
-  color: var(--text-muted);
-  opacity: 0.85;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 17px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--plum);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .quietLink {
+    background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+    color: #1b151f;
+  }
+}
+
+:global(html[data-appearance="dark"]) .quietLink {
+  background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+  color: #1b151f;
+}
+
+:global(html[data-appearance="light"]) .quietLink {
+  background: var(--plum);
+  color: #fff;
 }
