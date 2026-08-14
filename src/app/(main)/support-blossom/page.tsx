@@ -92,7 +92,7 @@ function daysLeftLine(daysLeft: number, month: string): string {
 export default function SupportBlossomPage() {
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Support Blossom" backHref="/" />
+      <ScreenHeader title="Keep Blossom running" backHref="/" />
 
       <p className={styles.lede}>
         Blossom is free, and it stays free. There&rsquo;s no paid version, nothing is locked, and
