@@ -49,6 +49,58 @@
   color: var(--text-muted);
 }
 
+/* This month's figure. A card with a number and no progress bar, on purpose -
+   src/lib/runningCosts.ts has the reasoning. Kept visually quiet so it reads as
+   information rather than a fundraising thermometer. */
+.target {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px 17px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+}
+
+.targetHeadline {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.targetDetail {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.targetAsOf {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.inlineLink {
+  color: var(--plum);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .inlineLink {
+    color: var(--lavender);
+  }
+}
+
+:global(html[data-appearance="dark"]) .inlineLink {
+  color: var(--lavender);
+}
+
+:global(html[data-appearance="light"]) .inlineLink {
+  color: var(--plum);
+}
+
 .cta {
   min-height: 50px;
   display: inline-flex;

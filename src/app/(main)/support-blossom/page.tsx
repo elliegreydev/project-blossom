@@ -1,8 +1,51 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import ScreenHeader from "@/components/ScreenHeader";
 import { SUPPORT_URL, supportConfigured } from "@/lib/support";
+import { runningCostsFromEnv, runningCostsStatus, type RunningCostsStatus } from "@/lib/runningCosts";
 import styles from "./support.module.css";
+
+/**
+ * Where we are this month, in one number and no progress bar. The reasoning
+ * for both of those lives in src/lib/runningCosts.ts.
+ *
+ * Worked out after mount rather than during render, because the answer depends
+ * on today's date and this page is prerendered: deciding it on the server would
+ * bake in the build date and then disagree with the browser.
+ */
+function RunningCostsNote() {
+  const [status, setStatus] = useState<RunningCostsStatus | null>(null);
+
+  useEffect(() => {
+    setStatus(runningCostsStatus(runningCostsFromEnv(), new Date()));
+  }, []);
+
+  // Tied to the donate link existing. A shortfall with no way to help is a
+  // complaint, and the page already says donations aren't switched on yet.
+  if (!status || !supportConfigured()) return null;
+
+  return (
+    <section className={styles.target}>
+      {status.kind === "covered" ? (
+        <p className={styles.targetHeadline}>{status.month}&rsquo;s costs are covered.</p>
+      ) : (
+        <>
+          <p className={styles.targetHeadline}>We&rsquo;re {status.shortfall} short this month.</p>
+          <p className={styles.targetDetail}>{daysLeftLine(status.daysLeft, status.month)}</p>
+        </>
+      )}
+      <p className={styles.targetAsOf}>As of {status.asOf}.</p>
+    </section>
+  );
+}
+
+function daysLeftLine(daysLeft: number, month: string): string {
+  if (daysLeft === 0) return `Today is the last day of ${month}.`;
+  if (daysLeft === 1) return `One day left in ${month}.`;
+  return `${daysLeft} days left in ${month}.`;
+}
 
 /**
  * Where the money goes, before anyone is asked for any.
@@ -37,6 +80,8 @@ export default function SupportBlossomPage() {
         <p>That&rsquo;s the work your money pays for. Not features.</p>
       </section>
 
+      <RunningCostsNote />
+
       <section className={styles.section}>
         <h2>How it works</h2>
         <ul className={styles.list}>
@@ -57,6 +102,26 @@ export default function SupportBlossomPage() {
           Then don&rsquo;t. Genuinely. Blossom is built for people who are often skint, and an app
           that made you feel bad for using it for free would be a worse app. Telling a friend it
           exists helps more than a few quid.
+        </p>
+      </section>
+
+      {/* Answered before anyone has to ask. Somebody wondering where their money
+          goes once the bills are paid has usually been wondering a while by the
+          time they work up to asking, and the answer is nothing to hide. */}
+      <section className={styles.section}>
+        <h2>What happens when the month is covered?</h2>
+        <p>
+          It goes into the next one. Some months come up short and some don&rsquo;t, and a buffer
+          means Blossom doesn&rsquo;t wobble when one does.
+        </p>
+        <p>
+          Beyond that it goes back into the app: the checking that keeps the support listings
+          current, and building things for everyone rather than only for people who pay. If
+          there&rsquo;s something you want to see, the{" "}
+          <Link href="/ideas" className={styles.inlineLink}>
+            ideas board
+          </Link>{" "}
+          is the place to say so.
         </p>
       </section>
 
