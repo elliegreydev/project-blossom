@@ -3,30 +3,52 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, dismissSupportPromptForever, snoozeSupportPrompt } from "@/lib/db";
-import { shouldOfferSupport } from "@/lib/support";
+import { shouldOfferSupport, supportConfigured } from "@/lib/support";
 import styles from "./SupportCard.module.css";
 
 /**
- * The chip-in card on Home.
+ * Blossom's two ways of mentioning money on Home, and they are not the same
+ * thing.
  *
- * Rendered after the day's blocks rather than as one of them, so it can't be
- * dragged to the top of someone's Home and can't be the first thing they see.
- * It doesn't appear at all in the first week, and it stays gone once someone
- * says it should - see src/lib/support.ts for the rules and why.
+ * The **card** is the ask. It's rendered after the day's blocks rather than as
+ * one of them, so it can't be dragged to the top of someone's Home and can't be
+ * the first thing they see. It stays away for the first week and goes quiet for
+ * a month and a half when snoozed - see src/lib/support.ts for the rules.
  *
- * The copy names the actual thing money pays for. "Support us" asks for a
- * favour; "this is what keeps the crisis numbers correct" asks for something.
+ * The **link** is a doorway, and it's always there. Somebody who wants to chip
+ * in shouldn't have to wait a week or go hunting through Settings to find out
+ * how, and a line of muted text is not an ask. Being findable and being asked
+ * are different dials; this component turns the first one up without touching
+ * the second.
+ *
+ * The one person who gets neither is somebody who pressed "I'd rather not be
+ * asked". A standing link on their Home would be ignoring what they told us,
+ * quiet or not. Settings still has it if they change their mind.
+ *
+ * The card's copy names the actual thing money pays for. "Support us" asks for
+ * a favour; "this is what keeps the crisis numbers correct" asks for something.
  */
 export default function SupportCard() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   if (!profile) return null;
+
+  // Nothing to point at until there's somewhere to give.
+  if (!supportConfigured()) return null;
+  if (profile.supportPromptDismissedForever) return null;
 
   const show = shouldOfferSupport({
     onboardingCompletedAt: profile.onboardingCompletedAt,
     hiddenUntil: profile.supportPromptHiddenUntil,
     dismissedForever: profile.supportPromptDismissedForever,
   });
-  if (!show) return null;
+
+  if (!show) {
+    return (
+      <Link href="/support-blossom" className={styles.quietLink}>
+        Keep Blossom running
+      </Link>
+    );
+  }
 
   return (
     <aside className={styles.card} aria-labelledby="support-title">

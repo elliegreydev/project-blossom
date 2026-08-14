@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.5";
+export const APP_VERSION = "0.5.6";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.6",
+    date: "2026-08-14",
+    title: "Easier to find, not harder to ignore",
+    items: [
+      { tag: "new", text: "There's now a small, permanent \"Keep Blossom running\" link at the bottom of Home. If you want to chip in you can, from day one, without waiting to be asked or going hunting through Settings." },
+      { tag: "improved", text: "It's called Keep Blossom running now rather than Support Blossom, because the app already had Help & support, Contact support and Need support right now, and one of those four was not like the others." },
+      { tag: "improved", text: "Nothing about the ask itself has changed. The card that actually asks still stays away for your first week, still goes quiet for six weeks if you say maybe later, and if you've said you'd rather not be asked you don't get the link either." },
+    ],
+  },
   {
     version: "0.5.5",
     date: "2026-08-14",

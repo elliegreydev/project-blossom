@@ -59,7 +59,7 @@ export default function AboutBlossomPage() {
         <p className={styles.sectionLabel}>The project</p>
         <div className={styles.group}>
           <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
-          <Row href="/support-blossom" title="Support Blossom" meta="Chip in, if you can and want to" />
+          <Row href="/support-blossom" title="Keep Blossom running" meta="Chip in, if you can and want to" />
           <Row href="/about" title="Who's building Blossom" />
           <Row href="/blog" title="Blog" meta="Updates from the team" />
           <Row href="/roadmap" title="Roadmap" meta="What's here and what's next" />
