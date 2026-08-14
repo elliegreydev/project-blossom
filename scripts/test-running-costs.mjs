@@ -99,7 +99,7 @@ function stubStripe(pages) {
 }
 
 const onePage = stubStripe([[{ id: "tx_1", type: "charge", net: 941 }]]);
-assert.deepEqual(await fetchMonthsTransactions("sk_test", 0, onePage.impl), [{ type: "charge", net: 941 }]);
+assert.deepEqual(await fetchMonthsTransactions("rk_test", 0, onePage.impl), [{ type: "charge", net: 941 }]);
 assert.equal(onePage.calls.length, 1, "stops as soon as has_more is false");
 
 const threePages = stubStripe([
@@ -107,7 +107,7 @@ const threePages = stubStripe([
   [{ id: "tx_2", type: "charge", net: 200 }],
   [{ id: "tx_3", type: "charge", net: 300 }],
 ]);
-const all = await fetchMonthsTransactions("sk_test", 0, threePages.impl);
+const all = await fetchMonthsTransactions("rk_test", 0, threePages.impl);
 assert.equal(all.length, 3, "follows every page");
 assert.equal(sumDonationsPence(all), 600, "and nothing is lost on the way");
 assert.equal(threePages.calls.length, 3);
@@ -117,17 +117,17 @@ assert.match(threePages.calls[0], /created%5Bgte%5D=0/, "asks only for this mont
 // Everything Stripe sends other than the two fields the sum needs is dropped
 // here, so the customer never travels any further into Blossom.
 const withCustomer = stubStripe([[{ id: "tx_1", type: "charge", net: 500, customer: "cus_abc", description: "Ellie" }]]);
-const carried = await fetchMonthsTransactions("sk_test", 0, withCustomer.impl);
+const carried = await fetchMonthsTransactions("rk_test", 0, withCustomer.impl);
 assert.deepEqual(Object.keys(carried[0]).sort(), ["net", "type"], "only type and net survive");
 
 // A refusal from Stripe throws rather than quietly returning a total of zero,
 // which would read as "nobody donated this month".
 const failing = async () => ({ ok: false, status: 401, json: async () => ({}) });
-await assert.rejects(() => fetchMonthsTransactions("sk_bad", 0, failing), /401/);
+await assert.rejects(() => fetchMonthsTransactions("rk_bad", 0, failing), /401/);
 
 // A stub that always claims more pages must still terminate.
 const runaway = { impl: async () => ({ ok: true, json: async () => ({ data: [{ id: "tx_same", type: "charge", net: 1 }], has_more: true }) }) };
-const capped = await fetchMonthsTransactions("sk_test", 0, runaway.impl);
+const capped = await fetchMonthsTransactions("rk_test", 0, runaway.impl);
 assert.equal(capped.length, 20, "stops at MAX_PAGES rather than looping forever");
 
 console.log("Running-costs target checks passed.");
