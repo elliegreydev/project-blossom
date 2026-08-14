@@ -96,6 +96,8 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
  *  loud on the same screen - otherwise the absence looks like an oversight. */
 export const NEVER_SYNCED = [
   "Photos and voice recordings",
+  "Euphoria entries and Time Capsules",
+  "Aurora AI conversations",
   "Trips you've planned",
   "Your app lock PIN",
 ];
