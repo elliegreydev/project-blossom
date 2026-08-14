@@ -15,16 +15,12 @@ import {
   LOCAL_PROFILE_ID,
 } from "@/lib/db";
 import { COUNTRIES, SUBREGIONS } from "@/lib/regionResources";
+import { DEFAULT_ONBOARDING_MODULES, MODULE_OPTIONS as MODULES } from "@/lib/moduleOptions";
 
-const TOTAL_STEPS = 8;
-
-const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
-  { key: "journey", title: "Journey", desc: "Milestones and your timeline" },
-  { key: "medication", title: "Medication", desc: "Schedules, reminders, history" },
-  { key: "appointments", title: "Appointments", desc: "Clinics, tests, reminders" },
-  { key: "journal", title: "Journal & check-ins", desc: "Notes, mood, reflections" },
-  { key: "goals", title: "Goals", desc: "Things you're working towards" },
-];
+// Nine steps, but somebody already inside the installed app sees eight: the
+// last step teaches installing, and teaching it to a person who has already
+// done it is noise. totalSteps below handles that.
+const TOTAL_STEPS = 9;
 
 const AURORA_MODES: { key: AuroraMode; title: string; desc: string }[] = [
   { key: "quiet", title: "Quiet", desc: "Only appears when you open it" },
@@ -50,7 +46,7 @@ export default function OnboardingPage() {
   const [region, setRegion] = useState("");
   const [subregion, setSubregion] = useState("");
   const [hrtStatus, setHrtStatus] = useState<HrtStatus>(null);
-  const [modules, setModules] = useState<ModuleKey[]>(MODULES.map((m) => m.key));
+  const [modules, setModules] = useState<ModuleKey[]>(DEFAULT_ONBOARDING_MODULES);
   const [auroraMode, setAuroraMode] = useState<AuroraMode>("gentle");
   const [discreetReminders, setDiscreetReminders] = useState(true);
   const [lockSensitive, setLockSensitive] = useState(false);
@@ -68,7 +64,7 @@ export default function OnboardingPage() {
       setRegion(p.region ?? "");
       setSubregion(p.subregion ?? "");
       setHrtStatus(p.hrtStatus);
-      setModules(p.enabledModules?.length ? p.enabledModules : MODULES.map((m) => m.key));
+      setModules(p.enabledModules?.length ? p.enabledModules : DEFAULT_ONBOARDING_MODULES);
       setAuroraMode(p.auroraMode ?? "gentle");
       setDiscreetReminders((p.reminderPrivacy ?? "discreet") === "discreet");
       setLockSensitive(p.sensitiveModulesLocked ?? false);
@@ -115,10 +111,23 @@ export default function OnboardingPage() {
 
   const canSkipAll = step > 0;
 
+  // Already opened from a home-screen icon? Then the install step teaches
+  // nothing, so the flow ends at sync. matchMedia covers Android and desktop
+  // installs; navigator.standalone is Safari's own flag for the same thing.
+  const isStandalone =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true);
+  const totalSteps = isStandalone ? TOTAL_STEPS - 1 : TOTAL_STEPS;
+
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+
   return (
     <div className={styles.screen}>
       <div className={styles.progress}>
-        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+        {Array.from({ length: totalSteps }).map((_, i) => (
           <div
             key={i}
             className={`${styles.progressDot} ${i <= step ? styles.done : ""}`}
@@ -265,7 +274,7 @@ export default function OnboardingPage() {
             <h1 className={styles.title}>What would you like to use?</h1>
             <p className={styles.subtitle}>
               Pick as many or as few as you like. You can change this later in
-              Settings.
+              Settings, and nothing you skip is deleted.
             </p>
             <div className={styles.optionGrid}>
               {MODULES.map((m) => (
@@ -343,9 +352,15 @@ export default function OnboardingPage() {
             <div className={styles.eyebrow}>Sync</div>
             <h1 className={styles.title}>Local-only, or sync across devices?</h1>
             <p className={styles.subtitle}>
-              Blossom works fully without an account. Sync is an optional upgrade you
-              can turn on any time. Not something you&apos;re missing.
+              Blossom works fully without an account. Sync is optional, and you choose
+              category by category what syncs, so your journal can stay on this device
+              while your medication follows you.
             </p>
+            <div className={styles.callout}>
+              <strong>Whatever you choose here:</strong> photos, voice recordings,
+              euphoria entries, Time Capsules, Aurora chats and trips never leave this
+              device. Not with sync on, not ever.
+            </div>
             <div className={styles.optionGrid}>
               <button
                 type="button"
@@ -354,7 +369,7 @@ export default function OnboardingPage() {
               >
                 <span className={styles.optionTitle}>Keep it local-only</span>
                 <span className={styles.optionDesc}>
-                  Everything stays on this device
+                  Everything stays on this device. You can change your mind any time.
                 </span>
               </button>
               <button
@@ -362,11 +377,52 @@ export default function OnboardingPage() {
                 className={`${styles.optionCard} ${setUpSync ? styles.selected : ""}`}
                 onClick={() => setSetUpSync(true)}
               >
-                <span className={styles.optionTitle}>Set up sync later</span>
+                <span className={styles.optionTitle}>Set up sync after this</span>
                 <span className={styles.optionDesc}>
-                  Review account and sync options after onboarding
+                  Sign in with just an email and pick what syncs, once you&apos;re in.
                 </span>
               </button>
+            </div>
+          </>
+        )}
+
+        {step === 8 && !isStandalone && (
+          <>
+            <div className={styles.eyebrow}>One last thing</div>
+            <h1 className={styles.title}>Put Blossom on your home screen</h1>
+            <p className={styles.subtitle}>
+              It opens quicker, works with no signal, and your phone treats an
+              installed app&apos;s data as worth protecting rather than something to
+              clear out.
+            </p>
+            <div className={styles.installSteps}>
+              {(isIos || !isAndroid) && (
+                <div className={styles.installStep}>
+                  <span className={styles.installNum}>1</span>
+                  <span>
+                    <strong>On iPhone:</strong> in Safari, tap the Share button, then{" "}
+                    <strong>Add to Home Screen</strong>.
+                  </span>
+                </div>
+              )}
+              {(isAndroid || !isIos) && (
+                <div className={styles.installStep}>
+                  <span className={styles.installNum}>{isAndroid && !isIos ? 1 : 2}</span>
+                  <span>
+                    <strong>On Android:</strong> in Chrome, tap the menu, then{" "}
+                    <strong>Add to home screen</strong> or <strong>Install app</strong>.
+                  </span>
+                </div>
+              )}
+              <div className={styles.installStep}>
+                <span className={styles.installNum}>{isIos || isAndroid ? 2 : 3}</span>
+                <span>From then on, open Blossom from the new icon, not the browser.</span>
+              </div>
+            </div>
+            <div className={`${styles.callout} ${styles.calloutPink}`}>
+              The icon is visible on your home screen. If someone else uses your phone
+              and that&apos;s a worry, it&apos;s okay to skip this - Blossom works in
+              the browser too.
             </div>
           </>
         )}
@@ -388,10 +444,10 @@ export default function OnboardingPage() {
             className={styles.primaryButton}
             disabled={step === 0 && !profile.ageConfirmedAt}
             onClick={() =>
-              step === TOTAL_STEPS - 1 ? finish() : goTo(step + 1)
+              step === totalSteps - 1 ? finish() : goTo(step + 1)
             }
           >
-            {step === TOTAL_STEPS - 1 ? "Finish" : "Continue"}
+            {step === totalSteps - 1 ? (isStandalone ? "Finish" : "Take me to Blossom 🌸") : "Continue"}
           </button>
         </div>
         {canSkipAll && (
