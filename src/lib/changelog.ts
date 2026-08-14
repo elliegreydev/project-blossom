@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.12";
+export const APP_VERSION = "0.5.13";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.13",
+    date: "2026-08-14",
+    title: "A proper welcome",
+    items: [
+      { tag: "improved", text: "The setup flow's module picker now shows everything Blossom can do - all eleven areas, not the original five. Blood tests, voice practice, presentation, body & progress, budget and intimacy were all there, but you had to find them in Settings afterwards." },
+      { tag: "improved", text: "The sync step now says the important part out loud: syncing is per category, and photos, voice recordings, euphoria entries, Time Capsules, Aurora chats and trips never leave your device whatever you choose." },
+      { tag: "new", text: "Setup ends with a new step showing how to put Blossom on your home screen, and why: it opens quicker, works offline, and your phone protects an installed app's data properly. If your phone is shared, it also says plainly that it's fine to skip." },
+    ],
+  },
   {
     version: "0.5.12",
     date: "2026-08-14",

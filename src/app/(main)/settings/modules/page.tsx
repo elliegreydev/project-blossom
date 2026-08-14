@@ -4,21 +4,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
 import { db, LOCAL_PROFILE_ID, togglePinnedTrackModule, updateProfile, type ModuleKey } from "@/lib/db";
+import { MODULE_OPTIONS as MODULES } from "@/lib/moduleOptions";
 import styles from "@/components/settingsForm.module.css";
-
-const MODULES: { key: ModuleKey; title: string; desc: string }[] = [
-  { key: "journey", title: "Journey", desc: "Milestones and your timeline" },
-  { key: "medication", title: "Medication", desc: "Schedules, reminders, history" },
-  { key: "appointments", title: "Appointments", desc: "Clinics, tests, reminders" },
-  { key: "journal", title: "Journal & check-ins", desc: "Notes, mood, reflections" },
-  { key: "goals", title: "Goals", desc: "Things you're working towards" },
-  { key: "bloodTests", title: "Blood tests", desc: "A private, descriptive record of your results" },
-  { key: "voicePractice", title: "Voice practice", desc: "Practice goals and session notes" },
-  { key: "presentation", title: "Presentation", desc: "Outfits, hair, makeup, and things you want to try" },
-  { key: "bodyProgress", title: "Body & progress", desc: "A quiet, private place to notice change" },
-  { key: "budget", title: "Budget tracker", desc: "Transition costs and savings goals, kept private" },
-  { key: "intimacy", title: "Intimacy & wellbeing", desc: "A private space for personal notes" },
-];
 
 export default function ModulesSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
