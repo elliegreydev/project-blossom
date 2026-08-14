@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.8";
+export const APP_VERSION = "0.5.9";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.9",
+    date: "2026-08-14",
+    title: "More crisis lines, in every country we cover",
+    items: [
+      { tag: "new", text: "Eight national crisis lines added. Every country Blossom covers now has three rather than one. That includes text-only options for anyone who can't face speaking on a phone: Shout in the UK, and text 988 in the US and Canada." },
+      { tag: "new", text: "Australia had one LGBTIQ+ line that closes at 9pm and nothing after it. Lifeline and the Suicide Call Back Service are both there now, both round the clock." },
+    ],
+  },
   {
     version: "0.5.8",
     date: "2026-08-14",
