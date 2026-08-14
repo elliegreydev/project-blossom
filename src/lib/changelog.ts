@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.1";
+export const APP_VERSION = "0.5.2";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.2",
+    date: "2026-08-14",
+    title: "We went back through the privacy policy properly",
+    items: [
+      { tag: "fix", text: "Our last update took three things out of the privacy policy that belonged in it. Euphoria entries and Time Capsules stay on your device, and they're back on the list that says so. The details you prepare for an appointment do sync, and the policy says that again too." },
+      { tag: "fix", text: "Aurora's consent screen said your typed message goes to Anthropic. It's the conversation that goes: your message plus the earlier ones in that same chat, so the reply makes sense. Nothing else, and it now says so before you agree to it." },
+      { tag: "improved", text: "Choose what syncs now lists everything that never leaves your device. Euphoria entries, Time Capsules and Aurora chats were always device-only, but that screen only mentioned photos, recordings, trips and your PIN." },
+      { tag: "new", text: "The policy now covers what happens when you write to support. That message is stored as ordinary text and staff can read it, and it's the one place in Blossom where something you write is visible to us by default. Worth knowing before you write it." },
+      { tag: "improved", text: "It also names who's responsible for your data and how Blossom and Grey Studios relate, says our servers moved to Ireland so your synced data no longer crosses the Atlantic, and states plainly that there's no analytics or advertising code in Blossom at all." },
+    ],
+  },
   {
     version: "0.5.1",
     date: "2026-08-14",

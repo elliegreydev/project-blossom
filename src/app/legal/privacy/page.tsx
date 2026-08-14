@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Last updated 7 August 2026</p>
+          <p className={styles.updated}>Last updated 14 August 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -28,7 +28,8 @@ export default function PrivacyPolicyPage() {
             <p>
               Blossom is local-first. You can use it without an account, and most of the more
               sensitive things you write stay on your own device. Signing in and sync are optional.
-              We do not sell your data, show ads, or use third-party behavioural tracking.
+              We do not sell your data, show ads, or use third-party behavioural tracking. There is
+              no analytics or advertising code in Blossom at all - not a reduced amount, none.
             </p>
           </section>
 
@@ -36,17 +37,26 @@ export default function PrivacyPolicyPage() {
             <h2>Who this applies to</h2>
             <p>
               Blossom is for transgender, nonbinary, and questioning adults aged 18 and over. We ask
-              you to confirm your age during setup. We do not ask for ID, a legal name, sex assigned
-              at birth, or a diagnosis.
+              you to confirm your age during setup, and that confirmation is all we keep - we never
+              ask for or store a date of birth. We do not ask for ID, a legal name, sex assigned at
+              birth, or a diagnosis.
             </p>
           </section>
 
           <section>
             <h2>Who is responsible for your data</h2>
             <p>
-              Project Blossom is responsible for the personal data handled through the app. Our legal
-              contact details are being finalised for beta and will be added here before wider public
-              release. Until then, use the support route in the app for privacy questions or requests.
+              Blossom is a project of Grey Studios, and Grey Studios is responsible for the personal
+              data handled through the app. Where this policy says &ldquo;we&rdquo;, that means Grey
+              Studios. It is also why some of what follows describes data being handled by Grey
+              Studios rather than by Blossom itself: the people who run Blossom and the people who
+              would see a support message or a crash report are the same small team, working in the
+              same company.
+            </p>
+            <p>
+              Our registered legal contact details are being finalised for beta and will be added
+              here before wider public release. Until then, use the support route in the app for
+              privacy questions or requests.
             </p>
           </section>
 
@@ -59,11 +69,18 @@ export default function PrivacyPolicyPage() {
               practice sessions). These only ever exist on the device you took or recorded them on.
             </p>
             <p>
-              The following also stays on the device where you create it: Aurora AI conversation
-              history; any trips you plan in Travel Mode, including where you are going and when;
-              unsaved drafts of journal entries and check-in notes, which Blossom keeps as you type so
-              a crash or a restart can&apos;t lose them; your app lock, PIN, biometric credential
-              reference, accessibility choices, and Home layout choices.
+              The following also stays on the device where you create it: your gender-euphoria
+              entries, including any you have sealed as a Time Capsule to reopen later; Aurora AI
+              conversation history; any trips you plan in Travel Mode, including where you are going
+              and when; unsaved drafts of journal entries and check-in notes, which Blossom keeps as
+              you type so a crash or a restart can&apos;t lose them; your app lock, PIN, biometric
+              credential reference, accessibility choices, and Home layout choices.
+            </p>
+            <p>
+              Because Blossom is built to work without a signal, your device also keeps a copy of the
+              app itself - its pages, images and fonts - so it can open on a train or anywhere else
+              offline. That cache holds the app, not your entries, and clearing your browser or app
+              storage removes it.
             </p>
             <p>
               Blossom does not receive your biometric data. Your device handles that itself; Blossom
@@ -82,7 +99,9 @@ export default function PrivacyPolicyPage() {
               If you sign in and turn on sync, we store selected data in Supabase so it can follow you
               between your signed-in devices. This can include your profile and preferences; journey
               milestones and timeline; medications, schedules, dose logs, medication supplies and care
-              supplies; appointments, including private appointment notes; check-in ratings and notes; goals; the minimal Aurora state needed to avoid
+              supplies; appointments, including the questions and details you prepare for an appointment in
+              advance and any private notes you add afterwards; check-in ratings and notes; goals;
+              the minimal Aurora state needed to avoid
               repeating the same nudge; journal entries; blood-test records; voice practice goals and
               session notes (never the recording itself); presentation and body/progress tracking data
               such as category, rating and measurements (never the photo itself); weight and
@@ -94,8 +113,8 @@ export default function PrivacyPolicyPage() {
               None of this is currently visible to Blossom staff through the support-access system
               described below, even while synced - staff support access only reaches the smaller set
               of categories it already covered before this list expanded. Photos, voice recordings,
-              Aurora AI conversation history and Travel Mode trips never sync at all, as described
-              above.
+              gender-euphoria and Time Capsule entries, Aurora AI conversation history and Travel
+              Mode trips never sync at all, as described above.
             </p>
             <p>
               You control this category by category. In Account &amp; sync, &ldquo;Choose what
@@ -140,6 +159,12 @@ export default function PrivacyPolicyPage() {
               a link or Trusted Circle grant stops future Blossom access, but cannot remove something a
               recipient has already read, copied, saved or screenshotted.
             </p>
+            <p>
+              The access history records that a link was opened and when. It deliberately does not
+              record who opened it - no name, no IP address, nothing about their device - so it can
+              tell you your link has been used without turning into a log of the person you shared
+              it with.
+            </p>
           </section>
 
           <section>
@@ -161,8 +186,31 @@ export default function PrivacyPolicyPage() {
               body/progress tracking, weight and food/calorie logs, budget entries, Intimacy &amp;
               wellbeing entries, safety check-ins, private links, and your Personal Support Map cannot
               currently be reached through support access - not because they don&apos;t sync, but
-              because we have deliberately not extended staff access to reach them. Photos and voice
-              recordings cannot be reached either way, since they never sync at all.
+              because we have deliberately not extended staff access to reach them. Photos, voice
+              recordings, and gender-euphoria and Time Capsule entries cannot be reached either way,
+              since they never sync at all.
+            </p>
+          </section>
+
+          <section>
+            <h2>When you write to support</h2>
+            <p>
+              A support message is not covered by any of the choices above. When you open a support
+              ticket, the category you pick and everything you type into it are stored on our servers
+              as ordinary text, and they stay there whether or not you use sync and whether or not a
+              support case is ever opened on your account. Authorised Blossom staff can read them.
+              This is the one place in Blossom where something you write is visible to us by default,
+              so it is worth knowing before you write it.
+            </p>
+            <p>
+              Staff read and reply to tickets through Grey Studios&apos; own internal system rather
+              than through Blossom, so your message and the display name and email on your account
+              are visible there too. It is the same company and the same small team described at the
+              top of this policy, and tickets are not shared outside it.
+            </p>
+            <p>
+              You do not have to put anything sensitive in a ticket for us to help. If something is
+              easier to describe without the detail, describe it without the detail.
             </p>
           </section>
 
@@ -240,16 +288,28 @@ export default function PrivacyPolicyPage() {
             <h2>Providers and external links</h2>
             <p>
               We currently use Supabase for authentication and synced data, Vercel to host Blossom,
-              Stripe if you choose to donate, and your browser or operating system&apos;s push service
-              if you enable notifications. Those services process data only to provide their services
-              to us.
+              Anthropic to generate Aurora AI replies if you use that feature, Stripe if you choose
+              to donate, and your browser or operating system&apos;s push service if you enable
+              notifications. Those services process data only to provide their services to us.
             </p>
             <p>
-              Where this happens today: synced data is stored in Ireland, and the server code that
-              reads and writes it currently runs in the United States. That means your synced data
-              crosses the Atlantic in the course of ordinary use. We are moving that server code to
-              Europe. The safeguards relied on for those transfers have not yet been reviewed by a
+              Where this happens today: synced data is stored in Ireland, and as of 13 August 2026
+              the server code that reads and writes it runs in Ireland as well. Until that date the
+              server code ran in the United States, so synced data crossed the Atlantic in the course
+              of ordinary use. It no longer does.
+            </p>
+            <p>
+              The exception is Aurora AI. Anthropic processes those messages outside the UK and EU,
+              so if you use Aurora AI, and only then, what you type in that conversation leaves
+              Europe. The safeguards relied on for that transfer have not yet been reviewed by a
               solicitor, and this paragraph will be updated when they have.
+            </p>
+            <p>
+              Supabase and Vercel keep their own short-term technical logs of the requests made to
+              Blossom, and those logs include IP addresses, the same as they would for any website.
+              Blossom&apos;s own code never reads or records your IP address or anything about your
+              device, and we do not use our providers&apos; logs to work out who you are or what you
+              looked at. They exist so the service can be kept running and secure.
             </p>
             <p>
               Regional resources are curated by Blossom&apos;s team. Opening a resource may take you to an
@@ -284,10 +344,12 @@ export default function PrivacyPolicyPage() {
             <h2>Aurora</h2>
             <p>
               Aurora&apos;s ordinary Home suggestions are rule-based. Aurora AI is an optional, signed-in beta
-              feature. Before someone sends their first AI message, Blossom explains that the typed message
-              is sent to Anthropic to generate a reply. Blossom does not automatically send journal entries,
-              medication records, weight or food logs, photos, voice notes, private plans, or other device-only
-              information to Aurora AI.
+              feature. Before someone sends their first AI message, Blossom explains that the message is
+              sent to Anthropic to generate a reply. What travels is the conversation itself: the message
+              you just typed, along with the earlier messages in that same chat so the reply makes sense
+              in context. Nothing else goes with it. Blossom does not automatically send journal entries,
+              medication records, weight or food logs, photos, voice notes, gender-euphoria entries, or
+              any other device-only information to Aurora AI.
             </p>
             <p>
               Aurora AI conversation history stays on the person&apos;s device by default and can be deleted there.

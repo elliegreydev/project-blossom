@@ -266,7 +266,7 @@ export default function AuroraPage() {
           ) : !consent ? (
             <div className={styles.consent}>
               <strong>Before you begin</strong>
-              <p>Your typed messages will be sent to Anthropic so Aurora can reply. Blossom does not automatically send your journal, medication, weight, photos, voice notes, or private plans.</p>
+              <p>This chat is sent to Anthropic so Aurora can reply - the message you type, plus the earlier messages in the same chat so the reply makes sense. Nothing else goes with it. Blossom does not automatically send your journal, medication, weight, photos, voice notes, or euphoria entries.</p>
               <p>Conversation history stays on this device unless you choose to paste it into a new message. You can clear it at any time.</p>
               <button type="button" className={styles.primaryButton} onClick={acceptConsent}>I understand, continue</button>
             </div>

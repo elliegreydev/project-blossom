@@ -28,7 +28,7 @@ const SYNCED_CATEGORIES = [
   "Profile & preferences",
   "Journey milestones & timeline",
   "Medications, dose logs, and supply tracking",
-  "Appointments",
+  "Appointments, including what you prepare for them and private notes",
   "Check-ins",
   "Goals",
   "Journal entries",
@@ -211,14 +211,20 @@ export default function PrivacySettingsPage() {
               signed out, not with sync on, no exception. That covers your
               presentation photos, body/progress photos, and voice practice
               recordings: they only ever exist on the device you took or
-              recorded them on. Your app lock PIN/biometric and accessibility
-              settings also always stay local, since they&apos;re per-device
-              settings rather than account data.
+              recorded them on.
+            </p>
+            <p className={styles.hint}>
+              Some things you write never sync either: your euphoria entries,
+              including anything you&apos;ve sealed as a Time Capsule, your
+              Aurora AI conversations, and any trips you&apos;ve planned. Your
+              app lock PIN/biometric and accessibility settings also always
+              stay local, since they&apos;re per-device settings rather than
+              account data.
             </p>
             <div className={styles.field} style={{ gap: 7 }}>
               <span className={styles.label}>At a glance</span>
               <span className={styles.hint}>Signed out, or sync off: everything stays on this device, no exceptions.</span>
-              <span className={styles.hint}>Signed in with sync on: your text/data content syncs so it follows you across devices - photos and voice recordings still never do.</span>
+              <span className={styles.hint}>Signed in with sync on: the categories listed above sync so they follow you across devices - photos, voice recordings, euphoria entries, Aurora chats and trips still never do.</span>
               <span className={styles.hint}>Exports: created on this device, and only include the sections you select.</span>
             </div>
           </>
@@ -254,7 +260,7 @@ export default function PrivacySettingsPage() {
         <p className={styles.hint}>
           {signedIn ? "Supabase: used for your signed-in account and any data you choose to sync. " : "Supabase: not connected on this device. "}
           {pushEnabled ? "Push notifications: on for this device. " : "Push notifications: off. "}
-          Aurora&apos;s optional AI chat sends only the message you type to Anthropic after you choose to use it; it never receives your Blossom records automatically.
+          Aurora&apos;s optional AI chat sends that conversation to Anthropic after you choose to use it - what you type and the earlier messages in the same chat, and nothing else; it never receives your Blossom records automatically.
         </p>
       </div>
 
