@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.6";
+export const APP_VERSION = "0.5.7";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.7",
+    date: "2026-08-14",
+    title: "Crisis help moved to the top of Home",
+    items: [
+      { tag: "improved", text: "\"Need support right now?\" used to sit in small grey text at the very bottom of Home, below everything else. It's now at the top, right under the greeting, and you can actually see it. Nobody should have to scroll past their medication and their budget to find help." },
+      { tag: "improved", text: "It's pink rather than red, and it stays that way on ordinary days too. Something that looks like an emergency every time you open an app makes the app hard to open." },
+      { tag: "improved", text: "The Keep Blossom running link at the bottom is more visible as well. That was only safe to do once crisis help wasn't sitting underneath it competing for your attention." },
+    ],
+  },
   {
     version: "0.5.6",
     date: "2026-08-14",

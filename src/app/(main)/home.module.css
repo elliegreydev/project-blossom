@@ -312,10 +312,22 @@ a.card:hover {
   }
 }
 
-.supportLink {
-  font-size: 13px;
-  color: var(--text-muted);
+/* Crisis help, moved to the top of Home and given real presence.
+   Pink rather than red on purpose: this sits on screen every ordinary day as
+   well as the bad ones, and a daily emergency banner would make the app heavy
+   to open. Tinted the same way every other Blossom callout is. */
+.crisisChip {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--pink) 26%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--pink) 52%, var(--border));
 }
 
 .auroraReason {
