@@ -28,6 +28,10 @@ export default function CrisisSupportPage() {
   const [subregion, setSubregion] = useState<string>("");
   const [resources, setResources] = useState<RegionResource[] | null>(null);
   const [otherLines, setOtherLines] = useState<RegionResource[]>([]);
+  // How much is sitting behind the region picker. The US has 88 resources
+  // scoped to a state, so somebody on "Whole country" sees three of ninety-one
+  // and has no way of knowing the rest exist.
+  const [hiddenLocal, setHiddenLocal] = useState(0);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -67,6 +71,9 @@ export default function CrisisSupportPage() {
 
       setResources(crisis);
       setOtherLines(reachable);
+      setHiddenLocal(
+        subregion ? 0 : all.filter((r) => r.country === country && r.subregion !== null).length
+      );
     });
   }, [country, subregion]);
 
@@ -127,6 +134,14 @@ export default function CrisisSupportPage() {
                   ))}
                 </select>
               </div>
+            )}
+
+            {hiddenLocal > 0 && (
+              <p className={styles.hint}>
+                Choosing your{" "}
+                {country === "United States" ? "state" : country === "Canada" ? "province" : country === "Australia" ? "state" : "nation"}{" "}
+                above shows {hiddenLocal} more {hiddenLocal === 1 ? "service" : "services"} near you.
+              </p>
             )}
 
             {country && (
