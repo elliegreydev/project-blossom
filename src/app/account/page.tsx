@@ -8,7 +8,7 @@ import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { isHqDevEntry } from "@/lib/devAccess";
 import HqSignInNotice from "@/components/HqSignInNotice";
 import { reportClientError } from "@/lib/clientErrorReport";
-import { isExpectedAuthFailure } from "@/lib/errorShape";
+import { isExpectedAuthFailure, rateLimitWaitSeconds } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/client";
 import {
   enableSync,
@@ -59,6 +59,16 @@ export default function AccountPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  // Seconds until another code can be asked for. Zero means no wait on.
+  const [waitSeconds, setWaitSeconds] = useState(0);
+
+  // Each tick schedules the next one, so the countdown stops on its own rather
+  // than leaving an interval running behind a screen nobody is looking at.
+  useEffect(() => {
+    if (waitSeconds <= 0) return;
+    const timer = setTimeout(() => setWaitSeconds((left) => Math.max(0, left - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [waitSeconds]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -106,10 +116,35 @@ export default function AccountPage() {
       if (!isExpectedAuthFailure(authError)) {
         reportClientError("asking for a sign-in code", authError);
       }
-      setError(authError instanceof Error ? authError.message : "Blossom couldn’t send a code just now.");
+      setError(describeCodeFailure(authError, "send"));
+      startWaitIfRateLimited(authError);
     } finally {
       setWorking(false);
     }
+  }
+
+  /**
+   * Being told to wait is not the same as being told no.
+   *
+   * Supabase's own wording for the wait is "For security purposes, you can only
+   * request this after 51 seconds", which reads like an accusation and doesn't
+   * say the obvious thing: the first code is probably already on its way, and
+   * the reason you can't see it is that it's in spam. So say that instead.
+   */
+  function describeCodeFailure(authError: unknown, kind: "send" | "resend"): string {
+    const wait = rateLimitWaitSeconds(authError);
+    if (wait !== null) {
+      return `A code is already on its way to that address. You can ask for another in ${wait} seconds. It's worth checking your spam folder while you wait, that's usually where it is.`;
+    }
+    if (authError instanceof Error && authError.message.trim() !== "") return authError.message;
+    return kind === "send"
+      ? "Blossom couldn’t send a code just now."
+      : "Blossom couldn’t resend the code just now.";
+  }
+
+  function startWaitIfRateLimited(authError: unknown) {
+    const wait = rateLimitWaitSeconds(authError);
+    if (wait !== null) setWaitSeconds(wait);
   }
 
   async function verifyCode(event: FormEvent<HTMLFormElement>) {
@@ -148,7 +183,15 @@ export default function AccountPage() {
       await requestCode(pendingEmail);
       setMessage("A fresh six-digit code is on its way.");
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Blossom couldn’t resend the code just now.");
+      // Reported the same way as the first request. This is the button people
+      // actually press when an email is slow, so it is the likeliest place to
+      // meet the rate limit, and a failure here that never reached the log was
+      // a failure nobody could see.
+      if (!isExpectedAuthFailure(authError)) {
+        reportClientError("asking for a sign-in code", authError);
+      }
+      setError(describeCodeFailure(authError, "resend"));
+      startWaitIfRateLimited(authError);
     } finally {
       setWorking(false);
     }
@@ -260,8 +303,13 @@ export default function AccountPage() {
               </button>
             </form>
             <div className={styles.codeActions}>
-              <button type="button" className={styles.textButton} onClick={resendCode} disabled={working}>
-                Send a new code
+              <button
+                type="button"
+                className={styles.textButton}
+                onClick={resendCode}
+                disabled={working || waitSeconds > 0}
+              >
+                {waitSeconds > 0 ? `Send a new code (${waitSeconds}s)` : "Send a new code"}
               </button>
               <button
                 type="button"
@@ -299,8 +347,8 @@ export default function AccountPage() {
                 placeholder="you@example.com"
                 required
               />
-              <button type="submit" className={styles.primaryButton} disabled={working}>
-                {working ? "Sending…" : "Email me a code"}
+              <button type="submit" className={styles.primaryButton} disabled={working || waitSeconds > 0}>
+                {working ? "Sending…" : waitSeconds > 0 ? `Email me a code (${waitSeconds}s)` : "Email me a code"}
               </button>
             </form>
           </section>

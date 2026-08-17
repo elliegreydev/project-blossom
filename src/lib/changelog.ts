@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.29";
+export const APP_VERSION = "0.5.30";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.30",
+    date: "2026-08-17",
+    title: "Getting in when the code is slow",
+    items: [
+      { tag: "fix", text: "If you asked for a sign-in code and then asked again before the first one arrived, Blossom refused and didn't explain itself. It now says a code is already on its way, shows you how many seconds until you can ask for another, and points at your spam folder, which is usually where the first one is." },
+      { tag: "fix", text: "Behind the scenes, when something failed Blossom often couldn't say what it was, so problems arrived unnamed and unfixable. That's why the above went unnoticed. It can name them now, which means the next thing that breaks gets found faster." },
+    ],
+  },
   {
     version: "0.5.29",
     date: "2026-08-17",

@@ -174,15 +174,38 @@ export function errorClassOf(error: unknown): string {
  * token() alone would still let "I_told_my_mum_today" through, which is nobody
  * exfiltrating anything (a caller can only send its own words) but is graffiti
  * in Ellie's error log all the same. Every real value is a short code:
- * "23505", "timeout", "fetch_failed", "QuotaExceededError", "http_429". So
- * anything longer than a code, or wordier than one, becomes "unknown".
+ * "23505", "timeout", "fetch_failed", "QuotaExceededError", "http_429".
+ *
+ * THIS USED TO THROW AWAY THE CODES THAT MATTERED MOST.
+ *
+ * The old rules were "no longer than 24 characters, no more than 2 separators",
+ * applied to the token()ed string. Supabase's auth codes are long snake_case
+ * and 17 of the 57 documented ones failed one rule or both, including every
+ * single rate limit and every refresh-token failure. On the night Blossom was
+ * first shown publicly that cost us the two errors we most needed to read: a
+ * person who could not get a sign-in code, and a background sync giving up.
+ * Both arrived as "unknown", and isExpectedAuthFailure had deliberately let the
+ * first one through precisely so it would be seen.
+ *
+ * The mistake was checking after filing. token() turns every space into an
+ * underscore, so by the time it has run, "I told my mum today" and
+ * "over_email_send_rate_limit" are the same shape, and length is the only thing
+ * left to judge by. Checked before filing, they are nothing alike.
+ *
+ * So: a code is one word, in token()'s own charset, with no spaces. And a real
+ * code never mixes capitals with underscores, because the vocabulary is either
+ * snake_case ("over_email_send_rate_limit", "http_429") or CamelCase with no
+ * underscores at all ("QuotaExceededError", "PGRST116"). A sentence filed down
+ * to "I_told_my_mum_today" mixes both, which is what gives it away.
  */
 export function narrowErrorClass(value: unknown): string {
   if (typeof value !== "string") return "unknown";
-  const filed = token(value);
-  if (filed.length > 24) return "unknown";
-  if ((filed.match(/[_.-]/g) ?? []).length > 2) return "unknown";
-  return /^[A-Za-z0-9]/.test(filed) ? filed : "unknown";
+  const raw = value.trim();
+  // Checked on the raw string, before token() can disguise a sentence as one.
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(raw)) return "unknown";
+  if (raw.length > 48) return "unknown";
+  if (/_/.test(raw) && /[A-Z]/.test(raw)) return "unknown";
+  return token(raw);
 }
 
 export function httpErrorClass(status: number): string {
@@ -200,6 +223,36 @@ export function isExpectedAuthFailure(error: unknown): boolean {
   const status = typeof error.status === "number" ? error.status : null;
   if (status === null) return false;
   return status >= 400 && status < 500 && status !== 429;
+}
+
+/**
+ * How long until they can ask for another sign-in code, or null if this wasn't
+ * a rate limit at all.
+ *
+ * Supabase enforces a fixed gap between codes to the same address, separate
+ * from the hourly cap in the project's auth config. It is very easy to trip: a
+ * code takes a minute to land, the person assumes the button didn't work, they
+ * tap it again, and the second tap is refused. Without this they saw a bare
+ * failure and had no idea it was a timer, which is a plausible way to lose
+ * somebody at the door on the day they finally decided to try the app.
+ *
+ * The number is read out of Supabase's own message ("you can only request this
+ * after 51 seconds") when it's there, and falls back to a minute when it isn't,
+ * because a countdown that is roughly right is far better than no countdown.
+ * Capped so a daft upstream value can't disable the button for an hour.
+ */
+export function rateLimitWaitSeconds(error: unknown): number | null {
+  if (!isRecord(error)) return null;
+  const status = typeof error.status === "number" ? error.status : null;
+  const code = typeof error.code === "string" ? error.code : "";
+  const rateLimited = status === 429 || (code.startsWith("over_") && code.includes("rate_limit"));
+  if (!rateLimited) return null;
+
+  const message = typeof error.message === "string" ? error.message : "";
+  const found = /(\d{1,4})\s*second/i.exec(message);
+  const seconds = found ? Number(found[1]) : Number.NaN;
+  if (Number.isFinite(seconds) && seconds > 0 && seconds <= 300) return Math.ceil(seconds);
+  return 60;
 }
 
 // Every first path segment Blossom actually serves. Anything else is somebody

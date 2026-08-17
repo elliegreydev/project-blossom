@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.29",
+  "version": "0.5.30",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,6 +17,7 @@
     "test:referrals": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-referrals.mjs",
     "test:accessibility": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-accessibility.mjs",
     "test:selfdirected": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-self-directed.mjs",
+    "test:errors": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-error-shape.mjs",
     "test:info": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-info-index.mjs"
   },
   "dependencies": {
