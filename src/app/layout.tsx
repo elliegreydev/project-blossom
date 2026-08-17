@@ -72,9 +72,14 @@ export default function RootLayout({
             __html:
               "try{var d=document.documentElement," +
               "t=localStorage.getItem('blossom-theme')," +
-              "a=localStorage.getItem('blossom-appearance');" +
+              "a=localStorage.getItem('blossom-appearance')," +
+              "h=localStorage.getItem('blossom-hue');" +
               "if(t)d.dataset.theme=t;" +
               "if(a){d.dataset.appearance=a;d.style.colorScheme=a==='system'?'light dark':a;}" +
+              // Their chosen hue has to land in the same frame as the theme,
+              // or picking a colour means seeing the default purple flash
+              // first on every single open.
+              "if(h)d.style.setProperty('--accent-hue',h);" +
               "}catch(e){}",
           }}
         />

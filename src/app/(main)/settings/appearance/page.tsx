@@ -7,8 +7,10 @@ import {
   APPEARANCES,
   applyThemeToDocument,
   DEFAULT_APPEARANCE,
+  DEFAULT_HUE,
   DEFAULT_THEME,
   isAppearance,
+  isHue,
   isThemeId,
   THEMES,
   type Appearance,
@@ -25,24 +27,51 @@ const SAMPLES: Record<ThemeId, { bg: string; raised: string; a: string; b: strin
   "low-profile": { bg: "#f4f5f6", raised: "#ffffff", a: "#5a7184", b: "#8b9297" },
   softbound: { bg: "#fbf7f0", raised: "#fffdf9", a: "#e8b4b8", b: "#c08552" },
   "in-bloom": { bg: "#191033", raised: "#241847", a: "#ff5c8a", b: "#34d1e0" },
+  // Replaced at render time with the person's own hue - see swatchFor below.
+  "your-colour": { bg: "", raised: "", a: "", b: "" },
 };
+
+/** The custom theme's swatch has to show their colour, not a fixed sample,
+ *  because the whole point of the card is previewing the choice. Same oklch
+ *  values as the theme itself in globals.css, so it can't drift. */
+function swatchFor(id: ThemeId, hue: number) {
+  if (id !== "your-colour") return SAMPLES[id];
+  return {
+    bg: `oklch(0.985 0.006 ${hue})`,
+    raised: `oklch(0.963 0.013 ${hue})`,
+    a: `oklch(0.74 0.13 ${hue})`,
+    b: `oklch(0.8 0.11 ${hue})`,
+  };
+}
 
 export default function AppearanceSettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
 
   const theme: ThemeId = isThemeId(profile?.theme) ? profile.theme : DEFAULT_THEME;
   const appearance: Appearance = isAppearance(profile?.appearance) ? profile.appearance : DEFAULT_APPEARANCE;
+  const hue: number = isHue(profile?.themeHue) ? profile.themeHue : DEFAULT_HUE;
 
   async function chooseTheme(next: ThemeId) {
     // Paint first, save second. Waiting on the database before the colours
     // change makes tapping a theme feel broken.
-    applyThemeToDocument(next, appearance);
+    applyThemeToDocument(next, appearance, hue);
     await updateProfile({ theme: next });
   }
 
   async function chooseAppearance(next: Appearance) {
-    applyThemeToDocument(theme, next);
+    applyThemeToDocument(theme, next, hue);
     await updateProfile({ appearance: next });
+  }
+
+  // Repaints on every drag frame so the whole app moves under their finger,
+  // then saves once. Writing to Dexie per frame would make the slider stutter.
+  function dragHue(next: number) {
+    applyThemeToDocument("your-colour", appearance, next);
+  }
+
+  async function commitHue(next: number) {
+    applyThemeToDocument("your-colour", appearance, next);
+    await updateProfile({ theme: "your-colour", themeHue: next });
   }
 
   if (!profile) return null;
@@ -59,7 +88,7 @@ export default function AppearanceSettingsPage() {
         </p>
         <div className={styles.themeList}>
           {THEMES.map((t) => {
-            const sample = SAMPLES[t.id];
+            const sample = swatchFor(t.id, hue);
             const active = t.id === theme;
             return (
               <button
@@ -85,6 +114,30 @@ export default function AppearanceSettingsPage() {
             );
           })}
         </div>
+
+        {theme === "your-colour" && (
+          <div className={styles.hueBlock}>
+            <label className={styles.hueLabel} htmlFor="hue">
+              Your colour
+            </label>
+            <input
+              id="hue"
+              type="range"
+              min={0}
+              max={359}
+              value={hue}
+              className={styles.hueSlider}
+              onChange={(e) => dragHue(Number(e.target.value))}
+              onPointerUp={(e) => void commitHue(Number((e.target as HTMLInputElement).value))}
+              onKeyUp={(e) => void commitHue(Number((e.target as HTMLInputElement).value))}
+            />
+            <p className={styles.hint}>
+              Only the colour changes. How readable everything is stays the same wherever
+              you put the slider, and crisis support keeps its own colour so it&apos;s
+              always easy to spot.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className={styles.section}>
