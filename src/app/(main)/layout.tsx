@@ -13,6 +13,7 @@ import WhatsNew from "@/components/WhatsNew";
 import UpdatePrompt from "@/components/UpdatePrompt";
 import TimezoneChangeNotice from "@/components/TimezoneChangeNotice";
 import SyncStatus from "@/components/SyncStatus";
+import StorageUnavailable from "@/components/StorageUnavailable";
 import styles from "./layout.module.css";
 
 // Reading from Dexie is usually instant, so a naive loader would flash for a
@@ -30,18 +31,27 @@ const LOADER_MIN_VISIBLE_MS = 500;
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checkedOnboarding, setCheckedOnboarding] = useState(false);
+  // Set when the local database refuses to open. Until this existed, that
+  // failure had no path out of the loading state at all.
+  const [storageFailed, setStorageFailed] = useState(false);
   const [loaderVisible, setLoaderVisible] = useState(false);
   const [loaderMinElapsed, setLoaderMinElapsed] = useState(false);
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
 
   useEffect(() => {
-    getOrCreateProfile().then((p) => {
-      if (!p.onboardingCompletedAt) {
-        router.replace("/onboarding");
-        return;
-      }
-      setCheckedOnboarding(true);
-    });
+    getOrCreateProfile()
+      .then((p) => {
+        if (!p.onboardingCompletedAt) {
+          router.replace("/onboarding");
+          return;
+        }
+        setCheckedOnboarding(true);
+      })
+      // Blossom is local-first, so a database that will not open is not a
+      // degraded app, it is no app. Without this the rejection was silent and
+      // the loading screen ran forever, which is what somebody actually sat
+      // through rather than being told what was wrong.
+      .catch(() => setStorageFailed(true));
     void syncDeviceTimezone();
     void syncRegionResourcesCache();
   }, [router]);
@@ -59,6 +69,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const timer = setTimeout(() => setLoaderMinElapsed(true), LOADER_MIN_VISIBLE_MS);
     return () => clearTimeout(timer);
   }, [loaderVisible]);
+
+  // Checked before the loading state, so a device that cannot store anything
+  // gets an explanation instead of a spinner that never stops.
+  if (storageFailed) {
+    return <StorageUnavailable onRetry={() => window.location.reload()} />;
+  }
 
   // Checks profile directly rather than via `ready` so it narrows below.
   if (!checkedOnboarding || !profile || (loaderVisible && !loaderMinElapsed)) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import StorageUnavailable from "@/components/StorageUnavailable";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -40,6 +41,7 @@ export default function OnboardingPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
+  const [storageFailed, setStorageFailed] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [pronouns, setPronouns] = useState("");
@@ -70,9 +72,17 @@ export default function OnboardingPage() {
       setLockSensitive(p.sensitiveModulesLocked ?? false);
       setSetUpSync(false);
       setReady(true);
-    });
+    })
+      // This is the very first screen anyone sees, so a device that cannot
+      // store anything failed here before Blossom had said a single word.
+      // It rendered null, which is a blank white page.
+      .catch(() => setStorageFailed(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (storageFailed) {
+    return <StorageUnavailable onRetry={() => window.location.reload()} />;
+  }
 
   if (!ready || !profile) return null;
 

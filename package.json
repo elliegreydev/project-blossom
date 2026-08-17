@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.32",
+  "version": "0.5.33",
   "private": true,
   "scripts": {
     "dev": "next dev",
