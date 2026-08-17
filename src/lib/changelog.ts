@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.31";
+export const APP_VERSION = "0.5.32";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.32",
+    date: "2026-08-18",
+    title: "Sharing the link without it saying too much",
+    items: [
+      { tag: "fix", text: "Sending someone the Blossom link used to produce a bare web address with no preview at all, anywhere you pasted it. There's a proper preview card now, so it looks like a real thing rather than a stray link." },
+      { tag: "improved", text: "The card deliberately doesn't say what Blossom is for. It's the name, the flower and \"a gentle companion for your journey\", and nothing else. A preview turns up wherever a link gets pasted, including group chats you didn't pick, so it shouldn't be the thing that tells a room something about you." },
+    ],
+  },
   {
     version: "0.5.31",
     date: "2026-08-17",
