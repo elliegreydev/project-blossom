@@ -25,8 +25,8 @@ import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
 import SupportCard from "@/components/SupportCard";
-import { essentialsActive, essentialsDaysLeft, filterBlocksForEssentials } from "@/lib/justTheEssentials";
-import { turnOffEssentials } from "@/lib/db";
+import { ESSENTIALS_DURATIONS, essentialsActive, essentialsDaysLeft, filterBlocksForEssentials } from "@/lib/justTheEssentials";
+import { turnOffEssentials, turnOnEssentials } from "@/lib/db";
 import styles from "./home.module.css";
 
 type IntentionKey = "organise" | "prepare" | "reflect" | "calm" | "celebrate" | "support" | "today" | "record";
@@ -201,6 +201,24 @@ export default function HomePage() {
           {activeIntention && <button type="button" className={styles.resetIntention} onClick={() => setIntention(null)}>Back to my Home</button>}
         </div>
         {activeIntention ? <div className={styles.intentionActive}><p>{activeIntention.description}</p><Link href={activeIntention.href} className={styles.intentionAction}>{activeIntention.action}</Link></div> : <p className={styles.intentionCopy}>Choose a temporary lens. Your saved Home layout stays exactly as it is.</p>}
+        {/* Calm down already shows exactly what Just the essentials shows, but
+            it evaporates on reload. Somebody who reaches for it on a bad day
+            often wants it to last longer than one look at the screen, so this
+            offers that here rather than making them find Settings. Only after
+            they've chosen it, so it's never an unprompted suggestion that they
+            might be struggling. */}
+        {intention === "calm" && !quietHome && (
+          <div className={styles.keepQuiet}>
+            <span className={styles.keepQuietLabel}>Keep it like this?</span>
+            <div className={styles.keepQuietRow}>
+              {ESSENTIALS_DURATIONS.filter((d) => d.key !== "indefinite").map((d) => (
+                <button key={d.key} type="button" className={styles.keepQuietButton} onClick={() => void turnOnEssentials(d.key)}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className={styles.intentionChoices}>{(Object.keys(INTENTIONS) as IntentionKey[]).map((key) => <button type="button" key={key} className={intention === key ? styles.intentionSelected : styles.intentionButton} onClick={() => setIntention(key)}>{INTENTIONS[key].label}</button>)}</div>
       </section>
     );
