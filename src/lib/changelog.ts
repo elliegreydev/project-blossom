@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.18";
+export const APP_VERSION = "0.5.19";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.19",
+    date: "2026-08-17",
+    title: "\"What would help right now?\" actually helps now",
+    items: [
+      { tag: "fix", text: "Two pairs of those options did exactly the same thing. Calm down and Check today's tasks gave you an identical Home, as did Celebrate and Record something quickly. Eight buttons, six real choices. They're merged, so every option now does something different." },
+      { tag: "new", text: "Each one says what it does underneath, so you're not tapping to find out." },
+      { tag: "new", text: "They're ordered by what's actually going on - a dose due, an appointment coming up, a Time Capsule ready - and by which ones you tend to reach for. Never by guessing how you're feeling, and all of them are always there." },
+      { tag: "improved", text: "Tapping around the app no longer highlights text blue, and taps register immediately instead of waiting to see if you meant to double-tap. Pinch zoom still works everywhere, and everything you've written is still yours to copy." },
+    ],
+  },
   {
     version: "0.5.18",
     date: "2026-08-17",

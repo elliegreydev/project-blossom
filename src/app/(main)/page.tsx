@@ -26,10 +26,10 @@ import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
 import SupportCard from "@/components/SupportCard";
 import { ESSENTIALS_DURATIONS, essentialsActive, essentialsDaysLeft, filterBlocksForEssentials } from "@/lib/justTheEssentials";
-import { turnOffEssentials, turnOnEssentials } from "@/lib/db";
+import { INTENTIONS, orderIntentions, rememberIntention, type IntentionKey } from "@/lib/intentions";
+import { turnOffEssentials, turnOnEssentials, updateDeviceProfile } from "@/lib/db";
 import styles from "./home.module.css";
 
-type IntentionKey = "organise" | "prepare" | "reflect" | "calm" | "celebrate" | "support" | "today" | "record";
 
 const SHORTCUTS: Record<HomeShortcutKey, { label: string; href: string }> = {
   medication: { label: "Medication", href: "/track/medication" },
@@ -39,16 +39,6 @@ const SHORTCUTS: Record<HomeShortcutKey, { label: string; href: string }> = {
   journey: { label: "Journey", href: "/journey" },
 };
 
-const INTENTIONS: Record<IntentionKey, { label: string; description: string; blocks: HomeBlockKey[]; href: string; action: string }> = {
-  organise: { label: "Organise", description: "Today, appointments and your chosen shortcuts.", blocks: ["focus", "today", "upcoming", "pinned"], href: "/calendar", action: "Open calendar" },
-  prepare: { label: "Prepare", description: "Upcoming plans, medication and practical supplies.", blocks: ["focus", "today", "upcoming", "supplies", "pinned"], href: "/calendar", action: "Review appointments" },
-  reflect: { label: "Reflect", description: "A quieter place for notes and your Journey.", blocks: ["focus", "journey", "pinned", "aurora"], href: "/track/journal", action: "Open journal" },
-  calm: { label: "Calm down", description: "Just the essentials. Nothing else needs your attention right now.", blocks: ["focus", "today", "upcoming"], href: "/track/journal", action: "A quick check-in" },
-  celebrate: { label: "Celebrate", description: "A moment for affirming wins and milestones.", blocks: ["focus", "journey", "pinned"], href: "/track/journal", action: "Record a good moment" },
-  support: { label: "Find support", description: "Verified regional sources and urgent support, when useful.", blocks: ["focus", "aurora", "pinned"], href: "/aurora", action: "Find support" },
-  today: { label: "Check today’s tasks", description: "Your medication and appointments, without the rest of Home.", blocks: ["focus", "today", "upcoming"], href: "/reminders", action: "Open reminders" },
-  record: { label: "Record something quickly", description: "A short route to the thing you want to capture.", blocks: ["focus", "pinned", "journey"], href: "/track/journal", action: "Write a note" },
-};
 
 function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
   if (entry.datePrecision === "none" || !entry.eventDate) return null;
@@ -165,6 +155,22 @@ export default function HomePage() {
   const auroraSuggestion = auroraHiddenForSession ? null : selectAuroraSuggestion({ now, profile, milestones, journeyEvents, medications: meds, medicationLogs: medLogs, medicationSupplies, careSupplies, appointments: appts, journalEntries, checkIns, goals, voiceGoals, voiceSessions, presentationEntries, euphoriaEntries, nudgeStates: auroraNudgeStates });
   const auroraStatus = auroraQuietStatus(profile);
   const desiredBlocks = intention ? new Set(INTENTIONS[intention].blocks) : null;
+
+  const recentIntentions = (profile.recentIntentions ?? []) as IntentionKey[];
+  // Practical facts only - never anything that amounts to guessing how
+  // somebody feels. See the note in src/lib/intentions.ts.
+  const orderedIntentions = orderIntentions({
+    dueToday: todayItems.length,
+    appointmentSoon: upcoming.length > 0,
+    supplyNeedsAttention: supplyHeadsUps.length > 0,
+    timeCapsuleReady: euphoriaEntries.some((e) => e.reopenAt && new Date(e.reopenAt) <= now),
+    recentlyUsed: recentIntentions,
+  });
+
+  function chooseIntention(key: IntentionKey) {
+    setIntention(key);
+    void updateDeviceProfile({ recentIntentions: rememberIntention(recentIntentions, key) });
+  }
   // A lens over the saved layout, never an edit to it - see
   // src/lib/justTheEssentials.ts. Their own order and widths are untouched;
   // this only decides which of their blocks get rendered today.
@@ -219,7 +225,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        <div className={styles.intentionChoices}>{(Object.keys(INTENTIONS) as IntentionKey[]).map((key) => <button type="button" key={key} className={intention === key ? styles.intentionSelected : styles.intentionButton} onClick={() => setIntention(key)}>{INTENTIONS[key].label}</button>)}</div>
+        <div className={styles.intentionChoices}>{orderedIntentions.map((item) => <button type="button" key={item.key} className={intention === item.key ? styles.intentionSelected : styles.intentionButton} onClick={() => chooseIntention(item.key)}><span className={styles.intentionLabel}>{item.label}</span><span className={styles.intentionSummary}>{item.summary}</span></button>)}</div>
       </section>
     );
     if (block === "today") return <section className={styles.section}><h2 className={styles.sectionTitle}>Today</h2>{todayItems.length === 0 ? <div className={styles.emptyRow}><strong>Nothing needs you right now.</strong><span>A quiet day is allowed.</span></div> : todayItems.map((item) => <Link key={item.id} href={item.href} className={`${styles.card} ${item.overdue ? styles.cardOverdue : ""}`}><div className={styles.cardTitle}>{item.label}</div><div className={styles.cardMeta}>{item.overdue ? `Overdue · was due ${item.meta}` : item.meta}</div></Link>)}</section>;

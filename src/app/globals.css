@@ -414,3 +414,54 @@ select {
   --nav-active: oklch(0.8 0.16 var(--accent-hue));
   --focus-ring: oklch(0.75 0.18 var(--accent-hue));
 }
+
+/* ============================================================
+   Feeling like an app rather than a web page
+   ============================================================
+
+   Two small things, and one deliberate omission.
+
+   Controls don't select. Tapping a button and getting a blue highlight, or
+   long-pressing one and being offered "Copy", is the tell that gives away a
+   web app. Applied to controls and labels only - never to content.
+
+   Taps are instant. touch-action: manipulation drops the ~300ms wait that
+   browsers keep in case a second tap was a double-tap-to-zoom.
+
+   What is deliberately NOT here: user-scalable=no, maximum-scale, and any
+   blocking of copy on content. Disabling zoom breaks WCAG 1.4.4 and iOS
+   ignores it anyway, on purpose, because people with low vision need it.
+   Blocking copy would stop somebody copying a crisis phone number, or their
+   own journal entry to send to a therapist, and prevents nothing - a
+   screenshot still exists. Ellie asked for both on 17 Aug and took the safe
+   version instead once the cost was clear. Please don't add them later. */
+button,
+a,
+label,
+summary,
+[role="button"],
+[role="tab"],
+nav {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Anything a person wrote stays selectable, even inside a control, so a
+   journal preview or a phone number in a card can still be copied. */
+input,
+textarea,
+[data-selectable],
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}

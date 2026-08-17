@@ -101,6 +101,10 @@ export interface Profile {
   // something to sync to another device. See src/lib/justTheEssentials.ts.
   lowEnergyMode: boolean;
   lowEnergyUntil: string | null;
+  // Which Home lenses this person actually reaches for, newest first, capped
+  // at three. Device-local and never synced: which lens someone needed on a
+  // given day is not something to copy to another device.
+  recentIntentions: string[];
   // Home is a per-device space. These choices never enter sync or change what
   // another device looks like.
   homePhoneLayout: HomeLayoutConfig;
@@ -1854,6 +1858,7 @@ export const DEFAULT_PROFILE: Profile = {
   gentleMode: false,
   lowEnergyMode: false,
   lowEnergyUntil: null,
+  recentIntentions: [],
   homePhoneLayout: defaultHomeLayout(),
   homeDesktopLayout: defaultHomeLayout(),
   trackPinnedModules: [],
@@ -1939,6 +1944,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.gentleMode === undefined) backfill.gentleMode = false;
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
   if (existing.lowEnergyUntil === undefined) backfill.lowEnergyUntil = null;
+  if (existing.recentIntentions === undefined) backfill.recentIntentions = [];
   if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();
   if (existing.homeDesktopLayout === undefined) backfill.homeDesktopLayout = defaultHomeLayout();
   if (existing.trackPinnedModules === undefined) backfill.trackPinnedModules = [];
@@ -2054,7 +2060,7 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
 // them out of the sync queue so a calmer phone layout never surprises someone
 // on their desktop (or vice versa).
 export async function updateDeviceProfile(
-  patch: Partial<Pick<Profile, "lowEnergyMode" | "lowEnergyUntil" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "lowEnergyUntil" | "recentIntentions" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
 ): Promise<void> {
   await db.profiles.update(LOCAL_PROFILE_ID, patch);
 }
