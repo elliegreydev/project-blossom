@@ -358,7 +358,7 @@ select {
 :root[data-theme="your-colour"] {
   --accent-hue: 295;
 
-  --lavender: oklch(0.74 0.13 var(--accent-hue));
+  --lavender: oklch(0.74 0.19 var(--accent-hue));
   --plum: oklch(0.26 0.05 var(--accent-hue));
 
   --bg: oklch(0.985 0.006 var(--accent-hue));
@@ -369,12 +369,12 @@ select {
   --text-secondary: oklch(0.505 0.032 var(--accent-hue));
   --text-muted: oklch(0.585 0.026 var(--accent-hue));
 
-  --nav-active: oklch(0.5 0.14 var(--accent-hue));
-  --focus-ring: oklch(0.55 0.15 var(--accent-hue));
+  --nav-active: oklch(0.5 0.2 var(--accent-hue));
+  --focus-ring: oklch(0.55 0.21 var(--accent-hue));
   --gradient-brand: linear-gradient(
     135deg,
-    oklch(0.8 0.11 var(--accent-hue)),
-    oklch(0.72 0.13 calc(var(--accent-hue) + 40))
+    oklch(0.8 0.17 var(--accent-hue)),
+    oklch(0.72 0.19 calc(var(--accent-hue) + 40))
   );
 }
 
@@ -383,7 +383,7 @@ select {
    into a glowing background at 2am. */
 @media (prefers-color-scheme: dark) {
   :root[data-theme="your-colour"]:not([data-appearance="light"]) {
-    --lavender: oklch(0.8 0.12 var(--accent-hue));
+    --lavender: oklch(0.8 0.16 var(--accent-hue));
     --plum: oklch(0.22 0.03 var(--accent-hue));
 
     --bg: oklch(0.185 0.022 var(--accent-hue));
@@ -394,13 +394,13 @@ select {
     --text-secondary: oklch(0.79 0.024 var(--accent-hue));
     --text-muted: oklch(0.7 0.024 var(--accent-hue));
 
-    --nav-active: oklch(0.8 0.12 var(--accent-hue));
-    --focus-ring: oklch(0.75 0.13 var(--accent-hue));
+    --nav-active: oklch(0.8 0.16 var(--accent-hue));
+    --focus-ring: oklch(0.75 0.18 var(--accent-hue));
   }
 }
 
 :root[data-theme="your-colour"][data-appearance="dark"] {
-  --lavender: oklch(0.8 0.12 var(--accent-hue));
+  --lavender: oklch(0.8 0.16 var(--accent-hue));
   --plum: oklch(0.22 0.03 var(--accent-hue));
 
   --bg: oklch(0.185 0.022 var(--accent-hue));
@@ -411,6 +411,6 @@ select {
   --text-secondary: oklch(0.79 0.024 var(--accent-hue));
   --text-muted: oklch(0.7 0.024 var(--accent-hue));
 
-  --nav-active: oklch(0.8 0.12 var(--accent-hue));
-  --focus-ring: oklch(0.75 0.13 var(--accent-hue));
+  --nav-active: oklch(0.8 0.16 var(--accent-hue));
+  --focus-ring: oklch(0.75 0.18 var(--accent-hue));
 }
