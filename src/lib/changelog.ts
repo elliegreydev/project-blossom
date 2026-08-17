@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.26";
+export const APP_VERSION = "0.5.27";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.27",
+    date: "2026-08-17",
+    title: "An Info tab, and you can search it",
+    items: [
+      { tag: "new", text: "Blossom's guides and reference material had ended up scattered across six unrelated corners of the app, and none of them was somewhere you'd think to look. There's now an Info tab in the bar at the bottom that gathers all of it." },
+      { tag: "new", text: "You can search it. One box covers the guides, all the support services for every region we cover, and the regional legal notes together, because when you're looking for a helpline you don't know or care which part of the app it lives in." },
+      { tag: "improved", text: "Anything belonging to a module you haven't switched on stays completely hidden, including from search. And if you've renamed a section, the Info tab uses your name for it too." },
+    ],
+  },
   {
     version: "0.5.26",
     date: "2026-08-17",

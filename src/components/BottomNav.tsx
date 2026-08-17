@@ -58,6 +58,16 @@ const TABS = [
     ),
   },
   {
+    href: "/info",
+    label: "Info",
+    icon: (
+      <svg {...ICON_PROPS} className={styles.icon}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 11v5.5M12 7.8v.6" />
+      </svg>
+    ),
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: (
