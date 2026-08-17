@@ -9,6 +9,7 @@ import { essentialsExpiryFor, type EssentialsDuration } from "@/lib/justTheEssen
 import { DEFAULT_APPEARANCE, DEFAULT_HUE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import { snoozeUntil } from "@/lib/support";
+import type { AccessibilityProfile } from "@/lib/accessibilityProfiles";
 import { countsAsContact } from "@/lib/referrals";
 import type {
   ContactMethod,
@@ -21,7 +22,9 @@ export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
 export type ReminderPrivacy = "discreet" | "detailed";
 export type WeightUnit = "auto" | "kg" | "lb" | "st";
-export type AccessibilityProfile = "custom" | "lowVision" | "readingComfort" | "lowCognitiveLoad" | "migraineFriendly" | "largeTouchTargets";
+// Single definition lives with the presets that use it; re-exported so the
+// many existing `from "@/lib/db"` imports keep working.
+export type { AccessibilityProfile };
 export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges";
 export type HomeDensity = "compact" | "standard" | "spacious";
 export type HomeTodayContent = "both" | "medication" | "appointments" | "none";

@@ -2,6 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
+import Toggle from "@/components/Toggle";
 import { db, LOCAL_PROFILE_ID, updateProfile, type AuroraMode } from "@/lib/db";
 import styles from "@/components/settingsForm.module.css";
 
@@ -45,6 +46,30 @@ export default function AuroraSettingsPage() {
             <span className={styles.optionDesc}>{m.desc}</span>
           </button>
         ))}
+      </div>
+
+      {/* Gentle Mode's three behaviours were already written and working -
+          Aurora stops talking about progress, the Body page tucks the numbers
+          and goals away, and the weight prompt stops firing - but nothing in
+          the app could switch it on, so for anybody new it was permanently
+          off. It sits here because Aurora's stance is its most visible effect,
+          though it reaches further than Aurora, which is worth remembering if
+          Settings gets reorganised. */}
+      <div className={styles.toggleRow}>
+        <div className={styles.toggleText}>
+          <span className={styles.toggleTitle}>Gentle Mode</span>
+          <span className={styles.toggleDesc}>
+            For when tracking feels like pressure. Aurora stops mentioning
+            progress, the Body page puts numbers and goals away, and the weight
+            prompt stops. Nothing you&apos;ve recorded is deleted or hidden from
+            you.
+          </span>
+        </div>
+        <Toggle
+          checked={profile.gentleMode}
+          onChange={(value) => void updateProfile({ gentleMode: value })}
+          label="Gentle Mode"
+        />
       </div>
     </div>
   );

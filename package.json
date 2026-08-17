@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.23",
+  "version": "0.5.24",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,7 +14,8 @@
     "test:costs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-running-costs.mjs",
     "test:essentials": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-just-the-essentials.mjs",
     "test:intentions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-intentions.mjs",
-    "test:referrals": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-referrals.mjs"
+    "test:referrals": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-referrals.mjs",
+    "test:accessibility": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-accessibility.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

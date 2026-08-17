@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.23";
+export const APP_VERSION = "0.5.24";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.24",
+    date: "2026-08-17",
+    title: "Settings that were built but you couldn't reach",
+    items: [
+      { tag: "new", text: "Four accessibility settings existed in Blossom with no switch anywhere in the app, so nobody could ever turn them on: stronger contrast, bigger tap targets, easier reading, and less decoration. They all work now, in Settings then Accessibility." },
+      { tag: "new", text: "There are presets there too, if going through them one at a time isn't what you need: low vision, easier reading, less to take in, migraine-friendly, and easier to tap. A preset is only a starting point, so you can change anything afterwards and nothing gets undone." },
+      { tag: "new", text: "Gentle Mode can finally be switched on, in Settings then Aurora. For when tracking feels like pressure: Aurora stops mentioning progress, the Body page puts numbers and goals away, and the weight prompt stops. Nothing you've written is deleted or hidden from you." },
+      { tag: "improved", text: "The privacy policy and terms now tell you how to actually reach us, at support@projectblossom.net, rather than saying contact details were still being finalised. They also point you at the ICO if we get something wrong and you'd rather go over our heads." },
+    ],
+  },
   {
     version: "0.5.23",
     date: "2026-08-17",
