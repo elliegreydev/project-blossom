@@ -42,7 +42,7 @@ const cache = new Map<string, { at: number; body: unknown; ok: boolean }>();
  *  apart from "they've blocked us" or "they changed the shape", which are
  *  three completely different jobs for us, without echoing a third party's
  *  error strings out of our own API. */
-type FailureReason = "timeout" | "blocked" | "upstream_error" | "network" | "bad_shape";
+type FailureReason = "timeout" | "blocked" | "rate_limited" | "upstream_error" | "network" | "bad_shape";
 
 class UpstreamError extends Error {
   constructor(readonly reason: FailureReason) {
@@ -68,11 +68,12 @@ async function fetchJson(path: string): Promise<unknown> {
       error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network"
     );
   }
-  // 403/429 from their Cloudflare means we've been treated as a bot rather
-  // than as the public information tool their usage page invites. Worth
-  // telling apart from a genuine outage, because the fix is a conversation
-  // rather than a retry.
-  if (response.status === 403 || response.status === 429) throw new UpstreamError("blocked");
+  // Kept apart because they land on different desks. 403 is their Cloudflare
+  // treating us as a bot rather than as the public information tool their
+  // usage page invites, which needs a conversation with them. 429 is us
+  // asking too often, which is ours to fix by backing off.
+  if (response.status === 403) throw new UpstreamError("blocked");
+  if (response.status === 429) throw new UpstreamError("rate_limited");
   if (!response.ok) throw new UpstreamError("upstream_error");
   try {
     return await response.json();
