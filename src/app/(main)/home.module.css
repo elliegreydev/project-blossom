@@ -462,3 +462,33 @@ a.card:hover {
     flex-direction: column;
   }
 }
+
+/* The way out, on Home itself. Somebody who turned this on during a bad week
+   shouldn't have to remember which settings page it was buried in. Quiet, but
+   not so quiet it can't be found. */
+.quietNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: stretch;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
+}
+
+.quietNoticeAction {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}

@@ -5,6 +5,7 @@ import Dexie, { type EntityTable } from "dexie";
 // `db` value from this file.
 import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
+import { essentialsExpiryFor, type EssentialsDuration } from "@/lib/justTheEssentials";
 import { DEFAULT_APPEARANCE, DEFAULT_HUE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import { snoozeUntil } from "@/lib/support";
@@ -94,7 +95,12 @@ export interface Profile {
   // plus a Dexie migration. Not worth the blast radius for a flag that cannot
   // change. If Gentle Mode is ever actually built, these are ready for it.
   gentleMode: boolean;
+  // "Just the essentials" - a quieter Home for hard days. The flag says it's
+  // on; the timestamp says when it lapses, or null for "until I turn it off".
+  // Device-local like the rest of the Home settings: which day is hard is not
+  // something to sync to another device. See src/lib/justTheEssentials.ts.
   lowEnergyMode: boolean;
+  lowEnergyUntil: string | null;
   // Home is a per-device space. These choices never enter sync or change what
   // another device looks like.
   homePhoneLayout: HomeLayoutConfig;
@@ -1409,6 +1415,7 @@ function createDb(): BlossomDb {
   }).upgrade(async (tx) => {
     await tx.table("profiles").toCollection().modify((profile: Profile) => {
       profile.lowEnergyMode = false;
+      profile.lowEnergyUntil = null;
     });
   });
   // Gender Euphoria Journal is being pulled back for rework - clears any
@@ -1846,6 +1853,7 @@ export const DEFAULT_PROFILE: Profile = {
   themeHue: DEFAULT_HUE,
   gentleMode: false,
   lowEnergyMode: false,
+  lowEnergyUntil: null,
   homePhoneLayout: defaultHomeLayout(),
   homeDesktopLayout: defaultHomeLayout(),
   trackPinnedModules: [],
@@ -1930,6 +1938,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.themeHue === undefined) backfill.themeHue = DEFAULT_HUE;
   if (existing.gentleMode === undefined) backfill.gentleMode = false;
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
+  if (existing.lowEnergyUntil === undefined) backfill.lowEnergyUntil = null;
   if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();
   if (existing.homeDesktopLayout === undefined) backfill.homeDesktopLayout = defaultHomeLayout();
   if (existing.trackPinnedModules === undefined) backfill.trackPinnedModules = [];
@@ -2014,6 +2023,25 @@ export async function resolvePendingTimezone(choice: "local" | "home"): Promise<
   }
 }
 
+/**
+ * Turn "Just the essentials" on for a chosen length of time.
+ *
+ * Both halves are written together on purpose: setting the flag without
+ * clearing a stale expiry from a previous run would switch it on and then
+ * have it lapse immediately, which reads as the toggle being broken.
+ */
+export async function turnOnEssentials(duration: EssentialsDuration, now: Date = new Date()): Promise<void> {
+  await updateProfile({
+    lowEnergyMode: true,
+    lowEnergyUntil: essentialsExpiryFor(duration, now),
+  });
+}
+
+/** Off, and the expiry cleared with it. */
+export async function turnOffEssentials(): Promise<void> {
+  await updateProfile({ lowEnergyMode: false, lowEnergyUntil: null });
+}
+
 export async function updateProfile(patch: Partial<Profile>): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.transaction("rw", db.profiles, db.syncOutbox, async () => {
@@ -2026,7 +2054,7 @@ export async function updateProfile(patch: Partial<Profile>): Promise<void> {
 // them out of the sync queue so a calmer phone layout never surprises someone
 // on their desktop (or vice versa).
 export async function updateDeviceProfile(
-  patch: Partial<Pick<Profile, "lowEnergyMode" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
+  patch: Partial<Pick<Profile, "lowEnergyMode" | "lowEnergyUntil" | "homePhoneLayout" | "homeDesktopLayout" | "weightBaseline" | "weightBaselineNote" | "trackPinnedModules" | "trackRecentModules">>
 ): Promise<void> {
   await db.profiles.update(LOCAL_PROFILE_ID, patch);
 }
