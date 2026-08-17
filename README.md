@@ -40,6 +40,8 @@ If any of that doesn't hold up, please say so. That's the point of it being here
 
 ## About AI
 
+The full declaration, covering both AI writing the code and Aurora AI inside the app, is at **[projectblossom.net/ai](https://projectblossom.net/ai)**. The short version:
+
 I use AI heavily to write this code. I'm one person, I'm not a developer by trade, and Blossom wouldn't exist without it.
 
 To be straight rather than let you find out from the source: I don't read every line. What I do is decide what goes in and what stays out, and I've said no to plenty. The parts that matter most are covered by tests you can run yourself (`npm run test:sync` and the rest, listed below), and the privacy architecture above is verifiable regardless of who or what typed it. Rough code can't leak what it never uploads.

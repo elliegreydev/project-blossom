@@ -61,6 +61,7 @@ export default function AboutBlossomPage() {
           <ExternalRow href={DISCORD_INVITE_URL} title="Join our Discord" meta="Chat with other people using Blossom" />
           <Row href="/support-blossom" title="Keep Blossom running" meta="Chip in, if you can and want to" />
           <Row href="/about" title="Who's building Blossom" />
+          <Row href="/ai" title="How Blossom is made" meta="Where AI is used, and where it isn't" />
           <Row href="/blog" title="Blog" meta="Updates from the team" />
           <Row href="/roadmap" title="Roadmap" meta="What's here and what's next" />
           <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />

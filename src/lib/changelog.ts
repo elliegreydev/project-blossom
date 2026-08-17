@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.30";
+export const APP_VERSION = "0.5.31";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.31",
+    date: "2026-08-17",
+    title: "Saying plainly where AI is used",
+    items: [
+      { tag: "new", text: "A new page, How Blossom is made, in Settings then About. It says outright that most of Blossom's code is written with AI, and separately explains Aurora AI: what it sends, what it never sends, and that it's optional. People asked, and they were right to ask." },
+      { tag: "improved", text: "It also spells out what AI is never allowed to do here. No dosing guidance, nothing about where to buy anything, and no interpreting a blood result. That rule applied already; now it's written down where you can find it." },
+    ],
+  },
   {
     version: "0.5.30",
     date: "2026-08-17",

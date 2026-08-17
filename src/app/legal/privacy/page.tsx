@@ -373,6 +373,12 @@ export default function PrivacyPolicyPage() {
               legal or similarly significant effects, and it cannot diagnose, prescribe, monitor emergencies, or
               contact anyone on a person&apos;s behalf.
             </p>
+            <p>
+              Separately from the above, most of Blossom&apos;s code is written with the help of AI.
+              That is a fact about how the app is built rather than about your data, so it is not
+              part of this policy, but it is declared in full on{" "}
+              <Link href="/ai">How Blossom is made</Link>.
+            </p>
           </section>
 
           <section>
