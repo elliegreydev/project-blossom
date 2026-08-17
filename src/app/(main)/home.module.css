@@ -492,3 +492,40 @@ a.card:hover {
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+/* Offered under "Calm down" once it's chosen, never before. Two options
+   rather than three: somebody reaching for calm on a bad day doesn't need a
+   permanent-sounding "until I turn it off" put in front of them. That one
+   stays in Settings for people choosing it deliberately. */
+.keepQuiet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
+}
+
+.keepQuietLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.keepQuietRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.keepQuietButton {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--lavender) 44%, var(--border));
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.17";
+export const APP_VERSION = "0.5.18";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.18",
+    date: "2026-08-17",
+    title: "Calm down can stay",
+    items: [
+      { tag: "new", text: "Pick \"Calm down\" on Home and it now offers to keep things that way - just today, or a few days - instead of going back to normal the next time you open the app. Nothing appears until you've chosen it." },
+    ],
+  },
   {
     version: "0.5.17",
     date: "2026-08-17",
