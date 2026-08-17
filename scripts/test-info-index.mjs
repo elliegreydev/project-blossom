@@ -64,7 +64,12 @@ assert.deepEqual(searchInfo("   ", ALL), []);
 // Every word must match, in any order.
 assert.ok(searchInfo("private bloods", ALL).length > 0);
 assert.ok(searchInfo("bloods private", ALL).length > 0, "word order must not matter");
-assert.equal(searchInfo("bloods unicorn", ALL).length, 0, "all terms must match, not any");
+// Was 0 under the old strict-only design. The fallback deliberately changed
+// this: a word that matches nothing should not wipe out the words that do,
+// because the alternative is an empty screen for somebody who mistyped.
+const partial = searchInfo("bloods unicorn", ALL);
+assert.ok(partial.length > 0, "a stray word must not wipe out the useful ones");
+assert.ok(partial.every((e) => /blood|test|hrt|diy/.test(e.keywords)), "results should still be about bloods");
 
 // The words somebody would actually type.
 for (const [query, expected] of [
@@ -78,6 +83,36 @@ for (const [query, expected] of [
   const hit = searchInfo(query, ALL);
   assert.ok(hit.some((e) => e.key === expected), `"${query}" should find ${expected}, got ${hit.map((e) => e.key)}`);
 }
+
+// Natural phrasing. Found by typing real questions into the box rather than
+// keyword-shaped ones: "share with my partner" and "show my doctor" both
+// returned nothing, because "with" and "my" are in no keyword list anywhere.
+assert.ok(searchInfo("share with my partner", ALL).some((e) => e.key === "trusted-circle"));
+assert.ok(searchInfo("show my doctor", ALL).some((e) => e.key === "passport"));
+assert.ok(searchInfo("what do I do if I go quiet", ALL).some((e) => e.key === "safety-checkins"));
+assert.ok(searchInfo("how can I get help right now", ALL).some((e) => e.key === "crisis"));
+
+// The fallback. "put" is in no keyword list anywhere, so the strict pass finds
+// nothing and an empty screen was the alternative.
+const needles = searchInfo("where do I put my needles", ALL);
+assert.ok(needles.some((e) => e.key === "self-directed-info"), "fallback should still find sharps");
+assert.equal(needles[0].key, "self-directed-info", "best match should be first");
+
+// The fallback must never weaken a search that already worked. "crisis"
+// matches exactly, so it must not start dragging in loosely related entries.
+const exactCrisis = searchInfo("crisis", ALL);
+assert.ok(exactCrisis.every((e) => /crisis|support/.test(e.keywords + e.title.toLowerCase())));
+
+// And it must never smuggle a disabled module's content in through the back.
+assert.equal(
+  searchInfo("where do I put my needles", NONE).some((e) => e.module === "selfDirected"),
+  false,
+  "the fallback must respect module gating too"
+);
+
+// A query made entirely of filler finds nothing rather than everything.
+assert.deepEqual(searchInfo("how do i", ALL), []);
+assert.deepEqual(searchInfo("the a an", ALL), []);
 
 // Punctuation and case must not defeat it.
 assert.ok(searchInfo("GP's", ALL).length > 0);

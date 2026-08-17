@@ -34,10 +34,11 @@ export interface InfoEntry {
   module?: ModuleKey;
 }
 
-export type InfoGroup = "support" | "health" | "legal" | "about";
+export type InfoGroup = "support" | "sharing" | "health" | "legal" | "about";
 
 export const INFO_GROUPS: { key: InfoGroup; label: string; blurb: string }[] = [
   { key: "support", label: "Getting support", blurb: "People you can talk to, and services near you" },
+  { key: "sharing", label: "Sharing and safety", blurb: "Letting the right person see the right thing, and being noticed if you go quiet" },
   { key: "health", label: "Health and treatment", blurb: "Starting out, staying safe, looking after it yourself" },
   { key: "legal", label: "Rights and paperwork", blurb: "Where the law is, and what you're entitled to" },
   { key: "about", label: "About Blossom", blurb: "How it works, what it holds, and who builds it" },
@@ -79,6 +80,46 @@ export const INFO_ENTRIES: InfoEntry[] = [
     module: "selfDirected",
   },
   {
+    key: "trusted-circle",
+    title: "Trusted Circle",
+    keywords: "share sharing partner friend family show someone trusted person access permission specific details revoke",
+    summary: "Show one person you trust exactly the parts of Blossom you choose, and take it back whenever.",
+    href: "/settings/circle",
+    group: "sharing",
+  },
+  {
+    key: "bridge",
+    title: "Blossom Bridge",
+    keywords: "share link read only someone without an account doctor clinician send temporary revoke",
+    summary: "Send a read-only link to someone who doesn't use Blossom. Works without them signing up for anything.",
+    href: "/settings/bridge",
+    group: "sharing",
+  },
+  {
+    key: "passport",
+    title: "Blossom Passport",
+    keywords: "doctor appointment gp clinic summary show hand over medications hrt status identity pronouns print",
+    summary: "Turn your own records into something clear to hand to a doctor, with only the parts you pick.",
+    href: "/settings/passport",
+    group: "sharing",
+  },
+  {
+    key: "safety-checkins",
+    title: "Safety check-ins",
+    keywords: "safety check in go quiet nobody notices alone risk trusted contact welfare worried",
+    summary: "A gentle recurring check-in, so somebody notices if you go quiet. Blossom never contacts anyone on your behalf.",
+    href: "/settings/safety-checkins",
+    group: "sharing",
+  },
+  {
+    key: "support-map",
+    title: "Personal Support Map",
+    keywords: "my people contacts places safe spaces who can i call private list favourites",
+    summary: "Your own private list of people, places and organisations that make life easier.",
+    href: "/settings/support-map",
+    group: "sharing",
+  },
+  {
     key: "travel-legal",
     title: "Where you're travelling",
     keywords: "travel abroad holiday flight border legal context laws country safety trip passport",
@@ -112,6 +153,35 @@ export const INFO_ENTRIES: InfoEntry[] = [
   },
 ];
 
+/**
+ * Words that never carry meaning in this index.
+ *
+ * Every typed word has to match, which is right for precision and wrong for
+ * how people actually type. Testing with real phrasing rather than
+ * keyword-shaped queries found it immediately: "share with my partner" and
+ * "show my doctor" both returned nothing, because "with" and "my" appear in no
+ * keyword list anywhere. Somebody asking a question in their own words should
+ * not be punished for it.
+ *
+ * Stripped from the query only, never from the text being searched, so a page
+ * that genuinely says "my" is unaffected.
+ */
+const STOP_WORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "if", "of", "to", "for", "with", "on",
+  "at", "in", "by", "from", "is", "are", "was", "be", "been", "am", "do",
+  "does", "did", "i", "me", "my", "mine", "we", "our", "you", "your", "yours",
+  "it", "its", "this", "that", "these", "those", "there", "here", "how",
+  "what", "when", "where", "who", "can", "could", "should", "would", "will",
+  "get", "getting", "some", "any", "about",
+]);
+
+function queryTerms(query: string): string[] {
+  const all = normalise(query).split(" ").filter(Boolean);
+  const meaningful = all.filter((word) => !STOP_WORDS.has(word));
+  // A query made entirely of filler finds nothing rather than everything.
+  return meaningful.length > 0 ? meaningful : [];
+}
+
 function normalise(value: string): string {
   return value
     .toLowerCase()
@@ -130,24 +200,44 @@ export function visibleEntries(enabledModules: ModuleKey[]): InfoEntry[] {
 }
 
 /**
- * Match on every word typed, in any order, across title, summary and
- * keywords. Deliberately not fuzzy: somebody searching "sharps" wants the
- * sharps section, and a near-miss that returns everything is worse than
- * nothing when the thing being looked for is a crisis line.
+ * Every word first, then a graceful fall back.
+ *
+ * Requiring every word is right when it works: somebody searching "sharps"
+ * wants the sharps section, and a fuzzy match returning everything is worse
+ * than nothing when the thing being looked for is a crisis line.
+ *
+ * But it fails on real phrasing in a way stop words alone cannot fix. "where
+ * do I put my needles" strips down to "put" and "needles", and "put" appears
+ * in no keyword list anywhere, so the strict pass finds nothing at all.
+ * Chasing that with an ever longer stop word list is whack-a-mole.
+ *
+ * So: strict first, and only when that returns nothing, accept entries
+ * matching at least one word, ordered by how many matched. The fallback can
+ * only ever fire when the alternative was an empty screen, so it never
+ * degrades a search that was already working.
  */
 export function searchInfo(query: string, enabledModules: ModuleKey[]): InfoEntry[] {
-  const terms = normalise(query).split(" ").filter(Boolean);
+  const terms = queryTerms(query);
   if (terms.length === 0) return [];
-  return visibleEntries(enabledModules).filter((entry) => {
+
+  const scored = visibleEntries(enabledModules).map((entry) => {
     const haystack = normalise(`${entry.title} ${entry.summary} ${entry.keywords}`);
-    return terms.every((term) => haystack.includes(term));
+    return { entry, matched: terms.filter((term) => haystack.includes(term)).length };
   });
+
+  const exact = scored.filter((row) => row.matched === terms.length);
+  if (exact.length > 0) return exact.map((row) => row.entry);
+
+  return scored
+    .filter((row) => row.matched > 0)
+    .sort((a, b) => b.matched - a.matched)
+    .map((row) => row.entry);
 }
 
 /** Shared with the resource and legal-note matching in the page, so one typed
  *  query behaves the same way against everything it searches. */
 export function matchesQuery(query: string, ...fields: (string | null | undefined)[]): boolean {
-  const terms = normalise(query).split(" ").filter(Boolean);
+  const terms = queryTerms(query);
   if (terms.length === 0) return false;
   const haystack = normalise(fields.filter(Boolean).join(" "));
   return terms.every((term) => haystack.includes(term));

@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.27";
+export const APP_VERSION = "0.5.28";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.28",
+    date: "2026-08-17",
+    title: "Search that understands a question",
+    items: [
+      { tag: "new", text: "Trusted Circle, Blossom Bridge, Passport, safety check-ins and your Support Map are all in the Info tab now, under Sharing and safety, with a plain explanation of what each one actually does. They were built a while ago and were genuinely hard to find, which rather defeated the point of the safety ones." },
+      { tag: "improved", text: "You can search in your own words instead of guessing at keywords. \"Share with my partner\" finds Trusted Circle, \"show my doctor\" finds Passport, and \"where do I put my needles\" finds the sharps section." },
+      { tag: "improved", text: "If nothing matches everything you typed, Blossom shows the closest things rather than an empty screen, best match first. Typing only filler words still finds nothing, which is the correct answer to a question that wasn't one." },
+    ],
+  },
   {
     version: "0.5.27",
     date: "2026-08-17",
