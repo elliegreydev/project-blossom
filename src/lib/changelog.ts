@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.24";
+export const APP_VERSION = "0.5.25";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.25",
+    date: "2026-08-17",
+    title: "Looking after your own HRT",
+    items: [
+      { tag: "new", text: "A new section for people managing their own HRT, whether that's instead of a clinic, alongside one, or while you're still sat on a waiting list. When a clinic's involved, someone else keeps the schedule, holds the record and notices if something looks off. Without one, all three of those are yours, and this is somewhere to put them. Switch it on in Settings, under the modules list." },
+      { tag: "new", text: "There's no dosing advice in it and there never will be, because that isn't ours to give. What's there is the boring stuff: when you started, how long it's been since your last bloods, and everything you've already recorded pulled into one place you can hand to a doctor." },
+      { tag: "new", text: "You can rename the section to anything you like, and the description disappears when you do, so it's just a word on your Track screen and nothing else. You're also asked whether to keep it behind your app lock." },
+      { tag: "new", text: "Optional nudge about bloods, on whatever interval you choose. Blossom only counts how long it's been since the last test you recorded. It doesn't know what you should be testing or how often and won't pretend to." },
+      { tag: "new", text: "Nothing in this section syncs unless you switch it on yourself, in Account and sync. It's off by default." },
+    ],
+  },
   {
     version: "0.5.24",
     date: "2026-08-17",

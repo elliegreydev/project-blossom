@@ -11,6 +11,8 @@ import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import { snoozeUntil } from "@/lib/support";
 import type { AccessibilityProfile } from "@/lib/accessibilityProfiles";
 import { countsAsContact } from "@/lib/referrals";
+import { SELF_DIRECTED_SYNC_CATEGORY } from "@/lib/selfDirected";
+import type { PrescriberStatus } from "@/lib/selfDirected";
 import type {
   ContactMethod,
   ReferralKind,
@@ -73,7 +75,8 @@ export type ModuleKey =
   | "bodyProgress"
   | "budget"
   | "intimacy"
-  | "waitingList";
+  | "waitingList"
+  | "selfDirected";
 
 export interface Profile {
   id: string;
@@ -538,6 +541,32 @@ export interface ReferralUpdate {
   updatedAt: string;
 }
 
+// Self-directed care ---------------------------------------------------------
+// A single row, like the profile. Deliberately NOT profile fields: the profile
+// is the one thing sync can never exclude ("excluding it would strand the
+// choices themselves on one device"), and this is the most sensitive fact in
+// the app. Its own entity means its own sync category, which means it can be
+// left off - and off is the default, which is what the setup copy promises.
+
+export interface SelfDirectedSettings {
+  id: string;
+  /** Renameable, because the default on a home screen is still a disclosure to
+   *  anyone who glances at the phone. Null means use the default. */
+  label: string | null;
+  prescriberStatus: PrescriberStatus | null;
+  /** The date nobody else is holding when there is no clinic, and the first
+   *  thing a doctor asks. */
+  hrtStartedOn: string | null;
+  /** The person's own choice. Blossom never suggests a number, because how
+   *  often anyone should test is a clinical question. */
+  bloodCheckIntervalDays: number | null;
+  setupCompletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const SELF_DIRECTED_ID = "local";
+
 // Wellbeing -------------------------------------------------------------------
 // Journal entries sync like everything else in the account (plaintext over
 // TLS, encrypted at rest by Supabase - not full client-side E2E yet).
@@ -984,7 +1013,8 @@ export type SyncEntity =
   | "support_map_entry"
   | "safety_check_in"
   | "referral"
-  | "referral_update";
+  | "referral_update"
+  | "self_directed";
 
 export interface SyncOutboxItem {
   id: string;
@@ -1051,6 +1081,7 @@ type BlossomDb = Dexie & {
   appointments: EntityTable<Appointment, "id">;
   referrals: EntityTable<Referral, "id">;
   referralUpdates: EntityTable<ReferralUpdate, "id">;
+  selfDirected: EntityTable<SelfDirectedSettings, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
   intimacyEntries: EntityTable<IntimacyEntry, "id">;
   euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
@@ -1932,6 +1963,51 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+
+  // Self-directed care. One more table, nothing altered, so Dexie carries
+  // every existing row across and there is no upgrade function to get wrong.
+  instance.version(30).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    referrals: "id, status, referredOn",
+    referralUpdates: "id, referralId, happenedOn",
+    selfDirected: "id",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    trips: "id, startDate, endDate",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -2234,6 +2310,7 @@ export async function enqueueSnapshot(entities: SyncEntity[]): Promise<void> {
     ["appointment", take("appointment") ? await db.appointments.toArray() : []],
     ["referral", take("referral") ? await db.referrals.toArray() : []],
     ["referral_update", take("referral_update") ? await db.referralUpdates.toArray() : []],
+    ["self_directed", take("self_directed") ? await db.selfDirected.toArray() : []],
     ["check_in", take("check_in") ? await db.checkIns.toArray() : []],
     ["goal", take("goal") ? await db.goals.toArray() : []],
     ["journal_entry", take("journal_entry") ? await db.journalEntries.toArray() : []],
@@ -2877,6 +2954,62 @@ export async function deleteReferralUpdate(id: string): Promise<void> {
     await db.referralUpdates.delete(id);
     await recordSyncChange("referral_update", id, "delete", changedAt);
   });
+}
+
+// Self-directed care ---------------------------------------------------------
+
+export function emptySelfDirected(): SelfDirectedSettings {
+  const now = new Date().toISOString();
+  return {
+    id: SELF_DIRECTED_ID,
+    label: null,
+    prescriberStatus: null,
+    hrtStartedOn: null,
+    bloodCheckIntervalDays: null,
+    setupCompletedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function getSelfDirected(): Promise<SelfDirectedSettings> {
+  return (await db.selfDirected.get(SELF_DIRECTED_ID)) ?? emptySelfDirected();
+}
+
+export async function updateSelfDirected(patch: Partial<SelfDirectedSettings>): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.selfDirected, db.syncOutbox, async () => {
+    const existing = await db.selfDirected.get(SELF_DIRECTED_ID);
+    await db.selfDirected.put({
+      ...(existing ?? emptySelfDirected()),
+      ...patch,
+      id: SELF_DIRECTED_ID,
+      updatedAt: changedAt,
+    });
+    await recordSyncChange("self_directed", SELF_DIRECTED_ID, "upsert", changedAt);
+  });
+}
+
+/**
+ * Turning the section on for the first time.
+ *
+ * Adds its sync category to the excluded list, so the answers stay on this
+ * device unless somebody deliberately turns syncing on for them. Only ever
+ * runs once - setupCompletedAt gates it - so a later decision to sync is never
+ * quietly undone the next time the module is toggled.
+ */
+export async function completeSelfDirectedSetup(
+  input: Pick<SelfDirectedSettings, "prescriberStatus" | "bloodCheckIntervalDays">,
+  keepPrivate: boolean
+): Promise<void> {
+  const now = new Date().toISOString();
+  await updateSelfDirected({ ...input, setupCompletedAt: now });
+  if (!keepPrivate) return;
+  const profile = await db.profiles.get(LOCAL_PROFILE_ID);
+  if (!profile) return;
+  const excluded = profile.syncExcludedCategories ?? [];
+  if (excluded.includes(SELF_DIRECTED_SYNC_CATEGORY)) return;
+  await updateProfile({ syncExcludedCategories: [...excluded, SELF_DIRECTED_SYNC_CATEGORY] });
 }
 
 // Wellbeing -------------------------------------------------------------------
@@ -3749,7 +3882,8 @@ export type DataExportSection =
   | "savedLinks"
   | "supportMap"
   | "intimacy"
-  | "waitingList";
+  | "waitingList"
+  | "selfDirected";
 
 export type DataExportSelection = Record<DataExportSection, boolean>;
 
@@ -3768,6 +3902,9 @@ export const DEFAULT_DATA_EXPORT_SELECTION: DataExportSelection = {
   supportMap: false,
   intimacy: false,
   waitingList: true,
+  // Opt-in, like Support Map and Intimacy. The most sensitive thing here
+  // should never leave by default, including into an export.
+  selfDirected: false,
 };
 
 export async function exportAllData(): Promise<Record<string, unknown>> {
@@ -3784,6 +3921,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     appointments,
     referrals,
     referralUpdates,
+    selfDirected,
     journalEntries,
     euphoriaEntriesRaw,
     socialTransitionPeople,
@@ -3815,6 +3953,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.appointments.toArray(),
     db.referrals.toArray(),
     db.referralUpdates.toArray(),
+    db.selfDirected.toArray(),
     db.journalEntries.toArray(),
     db.euphoriaEntries.toArray(),
     db.socialTransitionPeople.toArray(),
@@ -3871,6 +4010,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     appointments,
     referrals,
     referralUpdates,
+    selfDirected,
     journalEntries,
     euphoriaEntries,
     socialTransitionPeople,
@@ -3916,6 +4056,7 @@ export async function exportSelectedData(selection: DataExportSelection): Promis
     appointments: selection.appointments ? all.appointments : [],
     referrals: selection.waitingList ? all.referrals : [],
     referralUpdates: selection.waitingList ? all.referralUpdates : [],
+    selfDirected: selection.selfDirected ? all.selfDirected : [],
     journalEntries: selection.journal ? all.journalEntries : [],
     checkIns: selection.journal ? all.checkIns : [],
     goals: selection.goals ? all.goals : [],
@@ -3949,6 +4090,7 @@ const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys:
   { section: "medications", label: "Medications & supplies", keys: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"], tables: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"] },
   { section: "appointments", label: "Appointments", keys: ["appointments"], tables: ["appointments"] },
   { section: "waitingList", label: "Waiting lists", keys: ["referrals", "referralUpdates"], tables: ["referrals", "referralUpdates"] },
+  { section: "selfDirected", label: "Self-directed care", keys: ["selfDirected"], tables: ["selfDirected"] },
   { section: "journal", label: "Journal & check-ins", keys: ["journalEntries", "checkIns"], tables: ["journalEntries", "checkIns"] },
   { section: "goals", label: "Goals", keys: ["goals"], tables: ["goals"] },
   { section: "health", label: "Health & body records", keys: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"], tables: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"] },
@@ -4059,6 +4201,7 @@ export async function deleteAllData(): Promise<void> {
       db.appointments,
       db.referrals,
       db.referralUpdates,
+      db.selfDirected,
       db.journalEntries,
       db.intimacyEntries,
       db.euphoriaEntries,
@@ -4100,6 +4243,7 @@ export async function deleteAllData(): Promise<void> {
         db.appointments.clear(),
         db.referrals.clear(),
         db.referralUpdates.clear(),
+        db.selfDirected.clear(),
         db.journalEntries.clear(),
         db.intimacyEntries.clear(),
         db.euphoriaEntries.clear(),

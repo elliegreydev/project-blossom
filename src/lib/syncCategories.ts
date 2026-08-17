@@ -53,6 +53,12 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     entities: ["appointment"],
   },
   {
+    key: "selfDirected",
+    label: "Self-directed care",
+    description: "Whether anyone's monitoring you, and your own notes about it",
+    entities: ["self_directed"],
+  },
+  {
     key: "waiting",
     label: "Waiting lists",
     description: "Referrals, and what you've been told when you chased them",

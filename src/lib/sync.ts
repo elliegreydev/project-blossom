@@ -9,6 +9,8 @@ import {
   emptyAppointmentBuilderData,
   type Referral,
   type ReferralUpdate,
+  type SelfDirectedSettings,
+  SELF_DIRECTED_ID,
   type AuroraMode,
   type CheckIn,
   type CheckInPeriod,
@@ -55,6 +57,7 @@ import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import type { ContactMethod, ReferralKind, ReferralStatus, ReferralUpdateKind } from "@/lib/referrals";
+import type { PrescriberStatus } from "@/lib/selfDirected";
 
 type RemoteRow = Record<string, unknown>;
 
@@ -71,6 +74,7 @@ const SYNC_ORDER: SyncEntity[] = [
   "appointment",
   "referral",
   "referral_update",
+  "self_directed",
   "check_in",
   "goal",
   "aurora_nudge",
@@ -103,6 +107,7 @@ const TABLES: Record<SyncEntity, string> = {
   appointment: "appointments",
   referral: "referrals",
   referral_update: "referral_updates",
+  self_directed: "self_directed_settings",
   check_in: "check_ins",
   goal: "goals",
   aurora_nudge: "aurora_interaction_log",
@@ -460,6 +465,21 @@ async function localPayload(
           }
         : null;
     }
+    case "self_directed": {
+      const item = await db.selfDirected.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: userId,
+            label: item.label,
+            prescriber_status: item.prescriberStatus,
+            hrt_started_on: item.hrtStartedOn,
+            blood_check_interval_days: item.bloodCheckIntervalDays,
+            setup_completed_at: item.setupCompletedAt,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
     case "check_in": {
       const item = await db.checkIns.get(recordId);
       return item
@@ -760,6 +780,9 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
       return;
     case "referral_update":
       await db.referralUpdates.delete(id);
+      return;
+    case "self_directed":
+      await db.selfDirected.delete(SELF_DIRECTED_ID);
       return;
     case "check_in":
       await db.checkIns.delete(id);
@@ -1073,6 +1096,21 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         createdAt,
         updatedAt: changedAt,
       } satisfies ReferralUpdate);
+      return;
+    }
+    case "self_directed": {
+      // Always the local single row, never the server's id. One row per
+      // device, one row per account, same row.
+      await db.selfDirected.put({
+        id: SELF_DIRECTED_ID,
+        label: nullableString(row.label),
+        prescriberStatus: nullableString(row.prescriber_status) as PrescriberStatus | null,
+        hrtStartedOn: nullableString(row.hrt_started_on),
+        bloodCheckIntervalDays: nullableNumber(row.blood_check_interval_days),
+        setupCompletedAt: nullableString(row.setup_completed_at),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies SelfDirectedSettings);
       return;
     }
     case "check_in": {

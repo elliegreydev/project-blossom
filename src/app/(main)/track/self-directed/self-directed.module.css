@@ -1,0 +1,164 @@
+/* Self-directed care.
+ *
+ * Deliberately the quietest surface in the app. No accent-coloured hero, no
+ * badges, nothing that draws an eye across a room. Somebody may be reading
+ * this on a bus, and the section is renameable precisely because its existence
+ * is the sensitive part. */
+
+.intro {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.intro strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.overview {
+  padding: 15px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overviewLine {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text-primary);
+}
+
+.overviewMeta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* The one prompt allowed any weight, because it is the only thing here anyone
+ * can act on. Still lavender rather than a warning colour: nothing has gone
+ * wrong, it has just been a while. */
+.prompt {
+  padding: 13px 15px;
+  border-radius: var(--radius-sm, 12px);
+  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg-sunken));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.promptTitle {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.promptBody {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover {
+  border-color: color-mix(in srgb, var(--lavender) 34%, var(--border));
+}
+
+.linkTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.linkMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+  flex: none;
+}
+
+/* Setup ------------------------------------------------------------------- */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 560px;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.questionTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.questionBody {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.choice {
+  text-align: left;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  min-height: 46px;
+}
+
+.choice:hover {
+  border-color: color-mix(in srgb, var(--lavender) 34%, var(--border));
+}
+
+.choice[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--lavender) 62%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+}
+
+.footnote {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
