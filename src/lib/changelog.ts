@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.21";
+export const APP_VERSION = "0.5.28";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,80 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.28",
+    date: "2026-08-17",
+    title: "Search that understands a question",
+    items: [
+      { tag: "new", text: "Trusted Circle, Blossom Bridge, Passport, safety check-ins and your Support Map are all in the Info tab now, under Sharing and safety, with a plain explanation of what each one actually does. They were built a while ago and were genuinely hard to find, which rather defeated the point of the safety ones." },
+      { tag: "improved", text: "You can search in your own words instead of guessing at keywords. \"Share with my partner\" finds Trusted Circle, \"show my doctor\" finds Passport, and \"where do I put my needles\" finds the sharps section." },
+      { tag: "improved", text: "If nothing matches everything you typed, Blossom shows the closest things rather than an empty screen, best match first. Typing only filler words still finds nothing, which is the correct answer to a question that wasn't one." },
+    ],
+  },
+  {
+    version: "0.5.27",
+    date: "2026-08-17",
+    title: "An Info tab, and you can search it",
+    items: [
+      { tag: "new", text: "Blossom's guides and reference material had ended up scattered across six unrelated corners of the app, and none of them was somewhere you'd think to look. There's now an Info tab in the bar at the bottom that gathers all of it." },
+      { tag: "new", text: "You can search it. One box covers the guides, all the support services for every region we cover, and the regional legal notes together, because when you're looking for a helpline you don't know or care which part of the app it lives in." },
+      { tag: "improved", text: "Anything belonging to a module you haven't switched on stays completely hidden, including from search. And if you've renamed a section, the Info tab uses your name for it too." },
+    ],
+  },
+  {
+    version: "0.5.26",
+    date: "2026-08-17",
+    title: "Practical things nobody tells you",
+    items: [
+      { tag: "new", text: "An information page inside Self-directed care. Bridging prescriptions and why your GP is allowed to write one, getting bloods done without a GP and roughly what that costs, storing vials, sharps disposal, and what actually happens if a package gets stopped at the border." },
+      { tag: "new", text: "Still no dosing advice and nothing telling you where to buy anything. What is there was researched and sourced rather than written from memory, and anything we could not confirm was cut instead of hedged." },
+      { tag: "new", text: "A short list of places that do cover the rest, kept clearly separate and clearly marked as other people's work rather than ours. The two that cover suppliers say so on the label." },
+      { tag: "improved", text: "One thing worth pulling out: if a package is seized you have one month to respond, it is set in law, and there is no provision for late challenges. Sitting on the letter is the one move that costs you every option." },
+    ],
+  },
+  {
+    version: "0.5.25",
+    date: "2026-08-17",
+    title: "Looking after your own HRT",
+    items: [
+      { tag: "new", text: "A new section for people managing their own HRT, whether that's instead of a clinic, alongside one, or while you're still sat on a waiting list. When a clinic's involved, someone else keeps the schedule, holds the record and notices if something looks off. Without one, all three of those are yours, and this is somewhere to put them. Switch it on in Settings, under the modules list." },
+      { tag: "new", text: "There's no dosing advice in it and there never will be, because that isn't ours to give. What's there is the boring stuff: when you started, how long it's been since your last bloods, and everything you've already recorded pulled into one place you can hand to a doctor." },
+      { tag: "new", text: "You can rename the section to anything you like, and the description disappears when you do, so it's just a word on your Track screen and nothing else. You're also asked whether to keep it behind your app lock." },
+      { tag: "new", text: "Optional nudge about bloods, on whatever interval you choose. Blossom only counts how long it's been since the last test you recorded. It doesn't know what you should be testing or how often and won't pretend to." },
+      { tag: "new", text: "Nothing in this section syncs unless you switch it on yourself, in Account and sync. It's off by default." },
+    ],
+  },
+  {
+    version: "0.5.24",
+    date: "2026-08-17",
+    title: "Settings that were built but you couldn't reach",
+    items: [
+      { tag: "new", text: "Four accessibility settings existed in Blossom with no switch anywhere in the app, so nobody could ever turn them on: stronger contrast, bigger tap targets, easier reading, and less decoration. They all work now, in Settings then Accessibility." },
+      { tag: "new", text: "There are presets there too, if going through them one at a time isn't what you need: low vision, easier reading, less to take in, migraine-friendly, and easier to tap. A preset is only a starting point, so you can change anything afterwards and nothing gets undone." },
+      { tag: "new", text: "Gentle Mode can finally be switched on, in Settings then Aurora. For when tracking feels like pressure: Aurora stops mentioning progress, the Body page puts numbers and goals away, and the weight prompt stops. Nothing you've written is deleted or hidden from you." },
+      { tag: "improved", text: "The privacy policy and terms now tell you how to actually reach us, at support@projectblossom.net, rather than saying contact details were still being finalised. They also point you at the ICO if we get something wrong and you'd rather go over our heads." },
+    ],
+  },
+  {
+    version: "0.5.23",
+    date: "2026-08-17",
+    title: "Two things called nearly the same name",
+    items: [
+      { tag: "improved", text: "The Home layout preset called \"Essentials only\" is now \"Day to day\". It sat right next to the Just the essentials setting and did almost the opposite thing: the preset rewrites your Home for good, while Just the essentials is temporary and puts itself back." },
+    ],
+  },
+  {
+    version: "0.5.22",
+    date: "2026-08-17",
+    title: "Somewhere to put the wait",
+    items: [
+      { tag: "new", text: "Waiting lists. A place for a referral: when it was sent, who sent it, the reference number, and what they said the last time you rang. If a service ever tells you there's no record of you, this is the thing you can point at. Switch it on in Settings, under the modules list." },
+      { tag: "new", text: "You can log every call. Who you spoke to, how you contacted them, and what they actually said. \"I spoke to Sam on the 12th\" is a lot harder to wave away than \"I rang a while back\"." },
+      { tag: "new", text: "Not knowing when you were referred is a proper answer, not a blank box. Loads of people don't. Blossom will suggest asking your GP, because that date is worth having." },
+      { tag: "new", text: "Optional nudges to check in, every month, three months or six. Off unless you pick one, and the notification never names the service." },
+      { tag: "improved", text: "Referrals and everything logged against them go into your PDF export, so you can print the lot and take it with you." },
+    ],
+  },
   {
     version: "0.5.21",
     date: "2026-08-17",

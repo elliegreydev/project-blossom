@@ -1,4 +1,7 @@
-import type { Appointment, Medication, MedicationLog, NotifiedReminder, Profile, SafetyCheckIn } from "./db";
+import type { Appointment, Medication, MedicationLog, NotifiedReminder, Profile, Referral, SafetyCheckIn } from "./db";
+// Explicit .ts extension so scripts/test-reminders.mjs can resolve this under
+// node's type stripping, which has no bundler to guess it. Matches aurora.ts.
+import { daysBetween, isChaseDue } from "./referrals.ts";
 
 export interface PendingReminder {
   key: string;
@@ -48,10 +51,11 @@ export function zonedNow(now: Date, timeZone: string): { minuteOfDay: number; we
 }
 
 
-// A deliberate copy of localDateKey from ./dates. This module keeps ZERO
-// runtime imports so scripts/test-reminders.mjs can run it under plain node
-// with no bundler, which is why it can't just import the shared helper. If
-// you change the shared one, change this too - they must agree.
+// A deliberate copy of localDateKey from ./dates. This module is loaded by
+// scripts/test-reminders.mjs under plain node with no bundler, so anything it
+// imports at runtime has to carry an explicit .ts extension (see the referrals
+// import above). This copy predates that and is left alone rather than churned;
+// if you change the shared one, change this too - they must agree.
 function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -193,6 +197,56 @@ export function dueAppointmentReminders(
       detailedTitle: "Appointment reminder",
       detailedBody: `${appt.title} coming up.`,
     }));
+}
+
+/**
+ * Nudges to check in on a referral.
+ *
+ * Unlike every other reminder here, this one has no time of day attached. A
+ * referral becomes worth chasing on a *day*, so it fires once for the day it
+ * comes due rather than being pinned to a clock and re-nagged 45 minutes
+ * later. Somebody cannot ring a clinic twice in an evening about a five year
+ * wait, and pretending otherwise would just get notifications turned off.
+ *
+ * The key carries the interval number rather than the due date, so an ignored
+ * nudge comes back one interval later instead of firing once and going silent
+ * forever. Logging a call moves lastChasedOn, which moves the base date, which
+ * quietly resets the whole sequence.
+ *
+ * Nothing fires unless a person chose an interval. See referrals.ts.
+ */
+export function dueReferralChaseReminders(
+  referrals: Referral[],
+  notified: NotifiedReminder[],
+  now: Date
+): PendingReminder[] {
+  const notifiedKeys = new Set(notified.map((n) => n.key));
+  const today = localDateKey(now);
+
+  const out: PendingReminder[] = [];
+  for (const referral of referrals) {
+    if (!referral.chaseEveryDays || referral.chaseEveryDays <= 0) continue;
+    if (!isChaseDue(referral, today)) continue;
+
+    const base = referral.lastChasedOn ?? referral.referredOn ?? referral.createdAt.slice(0, 10);
+    const elapsed = daysBetween(base, today);
+    if (elapsed === null) continue;
+    const interval = Math.floor(elapsed / referral.chaseEveryDays);
+    const key = `referral-chase:${referral.id}|${interval}`;
+    if (notifiedKeys.has(key)) continue;
+
+    // Even "detailed" stays vague about what the service is. A clinic name on
+    // a lock screen outs somebody to whoever is stood next to them, and the
+    // person set this reminder months ago in a completely different room.
+    out.push({
+      key,
+      discreetTitle: "A gentle reminder",
+      discreetBody: "There's something you wanted to check on when you get a chance.",
+      detailedTitle: "Worth checking in",
+      detailedBody: `It's been a while since you heard anything about ${referral.serviceName}.`,
+    });
+  }
+  return out;
 }
 
 // Copy here is deliberate: it suggests, never claims to alert anyone on the

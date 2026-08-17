@@ -54,6 +54,8 @@ export default function SearchPage() {
   const checkIns = useLiveQuery(() => db.checkIns.toArray(), []);
   const goals = useLiveQuery(() => db.goals.toArray(), []);
   const bloodTestEntries = useLiveQuery(() => db.bloodTestEntries.toArray(), []);
+  const referrals = useLiveQuery(() => db.referrals.toArray(), []);
+  const referralUpdates = useLiveQuery(() => db.referralUpdates.toArray(), []);
   const voiceGoals = useLiveQuery(() => db.voiceGoals.toArray(), []);
   const voiceSessions = useLiveQuery(() => db.voiceSessions.toArray(), []);
   const presentationEntries = useLiveQuery(() => db.presentationEntries.toArray(), []);
@@ -74,6 +76,8 @@ export default function SearchPage() {
     checkIns === undefined ||
     goals === undefined ||
     bloodTestEntries === undefined ||
+    referrals === undefined ||
+    referralUpdates === undefined ||
     voiceGoals === undefined ||
     voiceSessions === undefined ||
     presentationEntries === undefined ||
@@ -161,6 +165,35 @@ export default function SearchPage() {
       for (const g of goals) {
         if (matches(q, g.title, g.target)) {
           results.push({ id: `goal-${g.id}`, group: "Goals", title: g.title, snippet: g.target, href: "/track/goals" });
+        }
+      }
+    }
+
+    if (enabled("waitingList")) {
+      for (const r of referrals) {
+        if (matches(q, r.serviceName, r.referenceNumber, r.referredBy, r.note)) {
+          results.push({
+            id: `referral-${r.id}`,
+            group: "Waiting lists",
+            title: r.serviceName,
+            snippet: r.referenceNumber ? `Ref ${r.referenceNumber}` : null,
+            href: "/track/waiting-list",
+          });
+        }
+      }
+      // What a service actually said is the searchable part. "They told me
+      // June 2023" is the sentence somebody comes back looking for, and it
+      // lives on the update rather than the referral.
+      for (const u of referralUpdates) {
+        if (matches(q, u.body, u.spokeTo)) {
+          const parent = referrals.find((r) => r.id === u.referralId);
+          results.push({
+            id: `referralUpdate-${u.id}`,
+            group: "Waiting lists",
+            title: parent?.serviceName ?? "A referral",
+            snippet: u.body,
+            href: "/track/waiting-list",
+          });
         }
       }
     }

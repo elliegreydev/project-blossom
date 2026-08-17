@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { dueMedicationReminders, dueAppointmentReminders, isQuietHours } from "../src/lib/reminders.ts";
+import { dueMedicationReminders, dueAppointmentReminders, dueReferralChaseReminders, isQuietHours } from "../src/lib/reminders.ts";
 
 const NOW = new Date("2026-07-16T12:00:00.000Z");
 
@@ -221,5 +221,65 @@ assert.equal(isQuietHours(atLocalTime(23, 0), true, null, "07:00"), false, "no s
 // America/New_York in July, which is outside a 22:00-07:00 window.
 assert.equal(isQuietHours(NOW, true, "22:00", "07:00", "America/New_York"), false, "08:00 America/New_York is outside 22:00-07:00");
 assert.equal(isQuietHours(NOW, true, "07:00", "09:00", "America/New_York"), true, "08:00 America/New_York is inside 07:00-09:00");
+
+// Referral chase nudges ------------------------------------------------------
+// NOW is 16 July 2026. These use local date keys, so build them from NOW the
+// same way the medication tests do rather than hardcoding a UTC date.
+function localKey(offsetDays) {
+  const d = new Date(NOW.getTime() + offsetDays * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const referral = {
+  id: "r1",
+  serviceName: "Nottingham Gender Clinic",
+  status: "waiting",
+  referredOn: localKey(-400),
+  chaseEveryDays: null,
+  lastChasedOn: null,
+  createdAt: NOW.toISOString(),
+};
+
+// Silent unless somebody asked for it. This is the whole default.
+assert.deepEqual(dueReferralChaseReminders([referral], [], NOW), []);
+
+const withInterval = { ...referral, chaseEveryDays: 91 };
+const fired = dueReferralChaseReminders([withInterval], [], NOW);
+assert.equal(fired.length, 1);
+assert.ok(fired[0].key.startsWith("referral-chase:r1|"));
+
+// Discreet copy must never name the service. Somebody's lock screen is not a
+// private place, and this reminder was set months before it goes off.
+assert.equal(fired[0].discreetBody.includes("Nottingham"), false, "clinic name leaked into discreet copy");
+assert.equal(fired[0].discreetTitle.includes("Gender"), false);
+assert.ok(fired[0].detailedBody.includes("Nottingham Gender Clinic"));
+
+// Already told once in this window: stays quiet.
+assert.deepEqual(dueReferralChaseReminders([withInterval], [{ key: fired[0].key, firedAt: NOW.toISOString(), count: 1 }], NOW), []);
+
+// ...but comes back a window later, rather than firing once and giving up.
+const laterKey = dueReferralChaseReminders(
+  [withInterval],
+  [{ key: fired[0].key, firedAt: NOW.toISOString(), count: 1 }],
+  new Date(NOW.getTime() + 91 * 86400000)
+);
+assert.equal(laterKey.length, 1, "an ignored nudge should return next interval");
+assert.notEqual(laterKey[0].key, fired[0].key, "the interval number should have moved on");
+
+// Logging a call resets the sequence.
+assert.deepEqual(
+  dueReferralChaseReminders([{ ...withInterval, lastChasedOn: localKey(-1) }], [], NOW),
+  [],
+  "a call logged yesterday should not be chased again today"
+);
+
+// Closed referrals never nag, whatever interval is set.
+for (const status of ["booked", "seen", "discharged", "withdrawn"]) {
+  assert.deepEqual(dueReferralChaseReminders([{ ...withInterval, status }], [], NOW), [], `${status} nagged`);
+}
+
+// An unknown referral date still produces a nudge, counted from creation.
+const noDate = { ...referral, referredOn: null, chaseEveryDays: 30, createdAt: new Date(NOW.getTime() - 60 * 86400000).toISOString() };
+assert.equal(dueReferralChaseReminders([noDate], [], NOW).length, 1, "unknown referral date should still be chaseable");
 
 console.log("reminders.ts tests passed");

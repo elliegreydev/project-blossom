@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, recordTrackModuleVisit, type ModuleKey } from "@/lib/db";
+import { sectionLabel } from "@/lib/selfDirected";
 import styles from "./track.module.css";
 
 const ICON_PROPS = {
@@ -45,6 +46,32 @@ const TRACKERS: {
       <svg {...ICON_PROPS}>
         <path d="M6 4h9l4 4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
         <path d="M14 4v5h5M8.5 13h7M8.5 16.5h5" />
+      </svg>
+    ),
+  },
+  {
+    module: "selfDirected",
+    href: "/track/self-directed",
+    title: "Self-directed care",
+    desc: "The jobs a clinic would do, if there isn't one",
+    tint: "var(--mint)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 20.5s-7-4.3-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 3.1c0 5.1-7 9.4-7 9.4Z" />
+        <path d="M9.4 12.2h1.8l.8-1.7 1 3 .8-1.3h1.8" />
+      </svg>
+    ),
+  },
+  {
+    module: "waitingList",
+    href: "/track/waiting-list",
+    title: "Waiting lists",
+    desc: "Referrals, chasing them, and where you are",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7v5.4l3.2 2" />
       </svg>
     ),
   },
@@ -235,7 +262,23 @@ const SHARING: { href: string; title: string; desc: string; tint: string; icon: 
 
 export default function TrackPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
+  const selfDirected = useLiveQuery(() => db.selfDirected.get("local"), []);
   if (!profile) return null;
+
+  // Self-directed care is renameable, and the point of that is that the chosen
+  // word is the one on screen. A hardcoded title here would leave
+  // "Self-directed care" sat on the Track page for anyone glancing at the
+  // phone, which is exactly what renaming exists to avoid.
+  const customLabel = sectionLabel(selfDirected?.label);
+  const renamed = Boolean((selfDirected?.label ?? "").trim());
+  const titleFor = (tool: typeof TRACKERS[number]) =>
+    tool.module === "selfDirected" ? customLabel : tool.title;
+  // Renaming to something bland is pointless if the line underneath still
+  // reads "the jobs a clinic would do, if there isn't one". Somebody who
+  // renamed this did so to make it unremarkable at a glance, so the
+  // description goes too.
+  const descFor = (tool: typeof TRACKERS[number]) =>
+    tool.module === "selfDirected" && renamed ? "" : tool.desc;
 
   const visible = TRACKERS.filter((t) => profile.enabledModules.includes(t.module));
   const pinnedModules = profile.trackPinnedModules ?? [];
@@ -249,7 +292,7 @@ export default function TrackPage() {
   function ToolCard({ tool }: { tool: typeof TRACKERS[number] }) {
     return <Link href={tool.href} className={styles.card} onClick={() => void recordTrackModuleVisit(tool.module)}>
       <div className={styles.cardIcon} style={{ background: `color-mix(in srgb, ${tool.tint} 30%, var(--bg))` }}>{tool.icon}</div>
-      <div className={styles.cardText}><div className={styles.cardTitle}>{tool.title}</div><div className={styles.cardDesc}>{tool.desc}</div></div>
+      <div className={styles.cardText}><div className={styles.cardTitle}>{titleFor(tool)}</div>{descFor(tool) && <div className={styles.cardDesc}>{descFor(tool)}</div>}</div>
       <svg className={styles.cardArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
     </Link>;
   }

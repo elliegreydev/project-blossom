@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, markReminderNotified, notifiedReminderState } from "@/lib/db";
-import { dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, dueSafetyCheckInReminders, dueWeightReminders, isQuietHours } from "@/lib/reminders";
+import { dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, dueReferralChaseReminders, dueSafetyCheckInReminders, dueWeightReminders, isQuietHours } from "@/lib/reminders";
 
 const CHECK_INTERVAL_MS = 30 * 1000;
 
@@ -18,17 +18,18 @@ export default function LocalReminderService() {
   const medicationLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
   const appointments = useLiveQuery(() => db.appointments.toArray(), []);
   const safetyCheckIns = useLiveQuery(() => db.safetyCheckIns.toArray(), []);
+  const referrals = useLiveQuery(() => db.referrals.toArray(), []);
 
-  const latest = useRef({ profile, medications, medicationLogs, appointments, safetyCheckIns });
+  const latest = useRef({ profile, medications, medicationLogs, appointments, safetyCheckIns, referrals });
   useEffect(() => {
-    latest.current = { profile, medications, medicationLogs, appointments, safetyCheckIns };
-  }, [profile, medications, medicationLogs, appointments, safetyCheckIns]);
+    latest.current = { profile, medications, medicationLogs, appointments, safetyCheckIns, referrals };
+  }, [profile, medications, medicationLogs, appointments, safetyCheckIns, referrals]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     async function check() {
-      const { profile, medications, medicationLogs, appointments, safetyCheckIns } = latest.current;
+      const { profile, medications, medicationLogs, appointments, safetyCheckIns, referrals } = latest.current;
       if (!profile?.notificationsEnabled || Notification.permission !== "granted") return;
       if (!medications || !medicationLogs || !appointments) return;
 
@@ -39,6 +40,7 @@ export default function LocalReminderService() {
       const pending = [
         ...dueMedicationReminders(medications, medicationLogs, notified, now),
         ...dueAppointmentReminders(appointments, notified, now),
+        ...(referrals ? dueReferralChaseReminders(referrals, notified, now) : []),
         ...(profile.safetyCheckInsEnabled && safetyCheckIns
           ? dueSafetyCheckInReminders(safetyCheckIns, notified, now)
           : []),

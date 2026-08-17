@@ -16,8 +16,9 @@ export default function TermsPage() {
         </header>
 
         <div className={styles.draftNotice}>
-          These describe Blossom as it works today. Our registered legal contact details are still to
-          be added, and these terms have not yet been reviewed by a solicitor.
+          These describe Blossom as it works today. They have not yet been reviewed by a solicitor,
+          and Grey Studios has no published postal address yet. You can reach us any time at
+          support@projectblossom.net.
         </div>
 
         <div className={styles.body}>
@@ -181,8 +182,11 @@ export default function TermsPage() {
           <section>
             <h2>Governing law and contact</h2>
             <p>
-              These terms are intended to be governed by the laws of England and Wales. The final legal
-              entity and contact details will be added after review and before wider public release.
+              These terms are intended to be governed by the laws of England and Wales. Blossom is run
+              by Grey Studios, and you can reach us at{" "}
+              <a href="mailto:support@projectblossom.net">support@projectblossom.net</a>. We do not
+              publish a postal address, so ask at that address if you need one for a formal request
+              and we will give it to you directly.
             </p>
           </section>
         </div>

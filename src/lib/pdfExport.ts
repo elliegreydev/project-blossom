@@ -1,6 +1,8 @@
 import { jsPDF, GState } from "jspdf";
 import type {
   Appointment,
+  Referral,
+  ReferralUpdate,
   BloodTestEntry,
   BodyEntry,
   CareSupply,
@@ -42,6 +44,8 @@ interface ExportShape {
   medicationSupplies: MedicationSupply[];
   careSupplies: CareSupply[];
   appointments: Appointment[];
+  referrals?: Referral[];
+  referralUpdates?: ReferralUpdate[];
   journalEntries: JournalEntry[];
   checkIns: CheckIn[];
   goals: Goal[];
@@ -364,6 +368,40 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.subheading(goal.title);
     d.meta([goal.status, goal.category ?? "", goal.target ?? ""].filter(Boolean).join(" · "));
     d.spacer(4);
+  }
+
+  // Waiting lists. The point of this feature printed out: dates, references,
+  // and a dated log of every call. Nothing here is Blossom's own claim about a
+  // waiting time - it's what the person recorded being told, which is exactly
+  // what makes it worth putting in front of a service.
+  d.heading("Waiting lists and referrals");
+  const referrals = data.referrals ?? [];
+  if (referrals.length === 0) {
+    d.emptyNote("None added.");
+  } else {
+    for (const referral of referrals) {
+      d.subheading(referral.serviceName);
+      d.meta(
+        [
+          referral.referredOn ? `Referred ${fmtDate(referral.referredOn)}` : "Referral date not recorded",
+          referral.referenceNumber ? `Ref ${referral.referenceNumber}` : "",
+          referral.referredBy ? `By ${referral.referredBy}` : "",
+          referral.status,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      );
+      if (referral.note) d.meta(referral.note);
+      const log = (data.referralUpdates ?? [])
+        .filter((update) => update.referralId === referral.id)
+        .sort((a, b) => a.happenedOn.localeCompare(b.happenedOn));
+      for (const update of log) {
+        d.meta(
+          `${fmtDate(update.happenedOn)} · ${update.kind}${update.spokeTo ? ` · ${update.spokeTo}` : ""}: ${update.body}`
+        );
+      }
+      d.spacer(6);
+    }
   }
 
   // Blood tests, grouped by test name

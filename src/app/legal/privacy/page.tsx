@@ -16,10 +16,9 @@ export default function PrivacyPolicyPage() {
         </header>
 
         <div className={styles.draftNotice}>
-          This describes Blossom exactly as it works today. Two things are still outstanding and are
-          marked where they appear: our registered legal contact details, and the exact retention
-          periods for support cases, logs and backups. This policy has not yet been reviewed by a
-          solicitor.
+          This describes Blossom exactly as it works today. One thing is still outstanding and is
+          marked where it appears: the exact retention periods for support cases, logs and backups.
+          This policy has not yet been reviewed by a solicitor.
         </div>
 
         <div className={styles.body}>
@@ -54,9 +53,16 @@ export default function PrivacyPolicyPage() {
               same company.
             </p>
             <p>
-              Our registered legal contact details are being finalised for beta and will be added
-              here before wider public release. Until then, use the support route in the app for
-              privacy questions or requests.
+              For anything to do with your data, including asking for a copy of it, correcting it,
+              or asking us to delete it, email{" "}
+              <a href="mailto:support@projectblossom.net">support@projectblossom.net</a>. You can
+              also use the support route inside the app, which reaches the same people. You do not
+              need an account to email us, and you do not have to explain why you are asking.
+            </p>
+            <p>
+              Grey Studios does not yet have a published postal address. If you need one, for a
+              complaint or a formal request, ask at the address above and we will provide it
+              directly.
             </p>
           </section>
 
@@ -379,7 +385,18 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2>Contact</h2>
-            <p>Legal contact details will be added before Blossom&apos;s wider public release.</p>
+            <p>
+              Email <a href="mailto:support@projectblossom.net">support@projectblossom.net</a> for
+              anything at all, including data requests, complaints, or just to ask what we hold.
+              Inside the app, Settings then Contact support reaches the same inbox.
+            </p>
+            <p>
+              If you are in the UK and you are not happy with how we have handled something, you can
+              complain to the Information Commissioner&apos;s Office at{" "}
+              <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noreferrer noopener">ico.org.uk</a>.
+              You are welcome to go to them directly, though we would rather have the chance to put
+              it right first.
+            </p>
           </section>
         </div>
 
