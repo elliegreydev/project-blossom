@@ -37,19 +37,48 @@ const FAILURE_CACHE_MS = 5 * 60 * 1000;
 
 const cache = new Map<string, { at: number; body: unknown; ok: boolean }>();
 
+/** A coarse label for why a lookup failed. Deliberately a fixed vocabulary
+ *  rather than the upstream error text: it's enough to tell "they're down"
+ *  apart from "they've blocked us" or "they changed the shape", which are
+ *  three completely different jobs for us, without echoing a third party's
+ *  error strings out of our own API. */
+type FailureReason = "timeout" | "blocked" | "upstream_error" | "network" | "bad_shape";
+
+class UpstreamError extends Error {
+  constructor(readonly reason: FailureReason) {
+    super(reason);
+  }
+}
+
 async function fetchJson(path: string): Promise<unknown> {
-  const response = await fetch(`${ORIGIN}${path}`, {
-    headers: {
-      accept: "application/json",
-      // Identifying ourselves so they can see who the traffic is, and block us
-      // if they ever want to. An anonymous scraper is a worse neighbour.
-      "user-agent": "Blossom/1.0 (+https://projectblossom.net; trans support app)",
-    },
-    signal: AbortSignal.timeout(8000),
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`clinic index responded ${response.status}`);
-  return response.json();
+  let response: Response;
+  try {
+    response = await fetch(`${ORIGIN}${path}`, {
+      headers: {
+        accept: "application/json",
+        // Identifying ourselves so they can see who the traffic is, and block
+        // us if they ever want to. An anonymous scraper is a worse neighbour.
+        "user-agent": "Blossom/1.0 (+https://projectblossom.net; trans support app)",
+      },
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store",
+    });
+  } catch (error) {
+    throw new UpstreamError(
+      error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network"
+    );
+  }
+  // 403/429 from their Cloudflare means we've been treated as a bot rather
+  // than as the public information tool their usage page invites. Worth
+  // telling apart from a genuine outage, because the fix is a conversation
+  // rather than a retry.
+  if (response.status === 403 || response.status === 429) throw new UpstreamError("blocked");
+  if (!response.ok) throw new UpstreamError("upstream_error");
+  try {
+    return await response.json();
+  } catch {
+    throw new UpstreamError("bad_shape");
+  }
 }
 
 export async function GET(request: Request) {
@@ -88,15 +117,17 @@ export async function GET(request: Request) {
         : { available: true, clinic: parseClinicDetail(raw) };
     cache.set(key, { at: now, body, ok: true });
     return NextResponse.json(body);
-  } catch {
-    const body = { available: false };
+  } catch (error) {
+    const reason: FailureReason = error instanceof UpstreamError ? error.reason : "network";
+    const body = { available: false, reason };
     cache.set(key, { at: now, body, ok: false });
-    // Deliberately not reported as an error when it's just them being down -
-    // that's their documented normal. Reported at a low level so a permanent
-    // breakage (a schema change, a moved endpoint) is still visible to us.
+    // Their usage page says there's no uptime guarantee, so them being down is
+    // documented normal rather than an incident. Reported anyway so a
+    // permanent breakage - a schema change, a moved endpoint, or us being
+    // blocked - is visible rather than silently degrading to "no context".
     reportError({
       operation: "reading clinic waiting-time context",
-      errorClass: "clinic_index_unavailable",
+      errorClass: `clinic_index_${reason}`,
       detail: `GET ${path}`,
       accountRef: null,
       context: { route: "/api/clinic-index", method: "GET" },
