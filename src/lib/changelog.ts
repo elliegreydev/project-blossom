@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.22";
+export const APP_VERSION = "0.5.23";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.23",
+    date: "2026-08-17",
+    title: "Two things called nearly the same name",
+    items: [
+      { tag: "improved", text: "The Home layout preset called \"Essentials only\" is now \"Day to day\". It sat right next to the Just the essentials setting and did almost the opposite thing: the preset rewrites your Home for good, while Just the essentials is temporary and puts itself back." },
+    ],
+  },
   {
     version: "0.5.22",
     date: "2026-08-17",

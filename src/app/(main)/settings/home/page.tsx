@@ -24,9 +24,9 @@ const SHORTCUTS: Array<{ key: HomeShortcutKey; title: string }> = [
   { key: "medication", title: "Medication" }, { key: "calendar", title: "Calendar" }, { key: "journal", title: "Journal & check-ins" }, { key: "goals", title: "Goals" }, { key: "journey", title: "Journey" },
 ];
 
-function preset(kind: "default" | "essentials" | "reflective" | "health" | "blank"): HomeLayoutConfig {
+function preset(kind: "default" | "dayToDay" | "reflective" | "health" | "blank"): HomeLayoutConfig {
   const base = defaultHomeLayout();
-  if (kind === "essentials") return { ...base, visibleBlocks: ["focus", "today", "upcoming", "pinned"], order: ["focus", "today", "upcoming", "pinned"], density: "compact" };
+  if (kind === "dayToDay") return { ...base, visibleBlocks: ["focus", "today", "upcoming", "pinned"], order: ["focus", "today", "upcoming", "pinned"], density: "compact" };
   if (kind === "reflective") return { ...base, visibleBlocks: ["focus", "pinned", "journey", "aurora"], order: ["focus", "pinned", "journey", "aurora"], pinnedTools: ["journal", "journey"], density: "spacious" };
   if (kind === "health") return { ...base, visibleBlocks: ["focus", "today", "upcoming", "supplies", "pinned"], order: ["focus", "today", "upcoming", "supplies", "pinned"], pinnedTools: ["medication", "calendar"], todayContent: "both" };
   if (kind === "blank") return { ...base, visibleBlocks: ["focus"], order: ["focus"], pinnedTools: [] };
@@ -75,9 +75,15 @@ export default function HomeSettingsPage() {
     <ScreenHeader title="Home screen" backHref="/settings" />
     <p className={styles.intro}>Make this device’s Home exactly as useful or quiet as you want. These choices stay here and never change another device.</p>
 
-    {/* Deliberately above the layout editor, and worded to separate it from
-        the "Essentials only" preset below, which permanently rewrites a
-        layout. This one changes nothing and undoes itself. */}
+    {/* Deliberately above the layout editor, and kept clearly apart from the
+        presets below, which permanently rewrite a layout. This one changes
+        nothing and undoes itself.
+
+        The preset that used to sit closest to this was called "Essentials
+        only", a hair away from "Just the essentials" and doing something
+        almost opposite - one rewrites your Home for good, the other is a
+        temporary lens that restores itself. Renamed to "Day to day". If you
+        add a preset, keep it away from this feature's wording. */}
     <section className={styles.section}>
       <h2>Just the essentials</h2>
       <p className={styles.intro}>
@@ -111,7 +117,7 @@ export default function HomeSettingsPage() {
     <div className={styles.tabs}><button type="button" className={device === "phone" ? styles.activeTab : styles.tab} onClick={() => setDevice("phone")}>Phone</button><button type="button" className={device === "desktop" ? styles.activeTab : styles.tab} onClick={() => setDevice("desktop")}>Desktop</button></div>
 
     <section className={styles.section}><h2>Start with a layout</h2><div className={styles.presets}>
-      {(["default", "essentials", "reflective", "health", "blank"] as const).map((kind) => <button key={kind} type="button" className={styles.preset} onClick={() => save(preset(kind))}><strong>{{ default: "Blossom default", essentials: "Essentials only", reflective: "Reflective space", health: "Health-focused", blank: "Blank canvas" }[kind]}</strong><span>{{ default: "A balanced Home starting point.", essentials: "Today, appointments and your pinned tools.", reflective: "Journey, writing and a little space.", health: "Medication, appointments and practical supplies.", blank: "Start with only the intention picker." }[kind]}</span></button>)}
+      {(["default", "dayToDay", "reflective", "health", "blank"] as const).map((kind) => <button key={kind} type="button" className={styles.preset} onClick={() => save(preset(kind))}><strong>{{ default: "Blossom default", dayToDay: "Day to day", reflective: "Reflective space", health: "Health-focused", blank: "Blank canvas" }[kind]}</strong><span>{{ default: "A balanced Home starting point.", dayToDay: "Today, appointments and your pinned tools.", reflective: "Journey, writing and a little space.", health: "Medication, appointments and practical supplies.", blank: "Start with only the intention picker." }[kind]}</span></button>)}
     </div></section>
 
     <section className={styles.section}><h2>Presentation</h2><div className={styles.choices}>{(["compact", "standard", "spacious"] as const).map((density) => <button key={density} type="button" className={layout.density === density ? styles.choiceActive : styles.choice} onClick={() => patch({ density })}>{density[0].toUpperCase() + density.slice(1)}</button>)}</div></section>
