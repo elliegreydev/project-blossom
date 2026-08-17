@@ -563,3 +563,39 @@ a.card:hover {
   line-height: 1.35;
   color: var(--text-muted);
 }
+
+/* Home check-in. Five faces, one tap.
+   No streak, no "you missed yesterday", no score out of five presented back.
+   The design principle is "no streaks, no pressure", and a mood tracker is
+   exactly where that gets broken first. */
+.moodRow {
+  display: flex;
+  gap: 7px;
+}
+
+.moodButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline, var(--border));
+  background: var(--surface, var(--bg-raised));
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  min-height: 62px;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.moodButton span:first-child { font-size: 21px; line-height: 1; }
+
+.moodButton:hover {
+  border-color: color-mix(in srgb, var(--primary, var(--lavender)) 45%, var(--border));
+  color: var(--text-primary);
+}

@@ -37,7 +37,7 @@ export default function BloodTestsPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Blood tests" backHref="/track" />
+      <ScreenHeader title="Blood tests" backHref="/care" />
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Your results</div>

@@ -75,7 +75,7 @@ export const INFO_ENTRIES: InfoEntry[] = [
     keywords:
       "diy self directed bridging prescription gmc gp bloods private test storage vials expiry sharps needles disposal seizure customs border harm reduction",
     summary: "Bridging prescriptions, bloods without a GP, storage, sharps, and where people get their information.",
-    href: "/track/self-directed/info",
+    href: "/care/self-directed/info",
     group: "health",
     module: "selfDirected",
   },

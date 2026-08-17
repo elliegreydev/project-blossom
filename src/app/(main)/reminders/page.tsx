@@ -130,7 +130,7 @@ export default function RemindersPage() {
           <div className={styles.sectionTitle}>Time Capsule ready</div>
           <div className={styles.list}>
             {readyCapsules.map((c) => (
-              <Link key={c.id} href="/track/journal" className={styles.item}>
+              <Link key={c.id} href="/care/journal" className={styles.item}>
                 <span className={styles.itemTitle}>{c.title || "You left yourself something"}</span>
                 <span className={styles.itemMeta}>Ready to open</span>
               </Link>
@@ -144,7 +144,7 @@ export default function RemindersPage() {
           <div className={styles.sectionTitle}>Due today</div>
           <div className={styles.list}>
             {dueDoses.map((d) => (
-              <Link key={d.id} href="/track/medication" className={styles.item}>
+              <Link key={d.id} href="/care/medication" className={styles.item}>
                 <div className={styles.itemRow}>
                   <span className={styles.itemTitle}>{d.title}</span>
                   <span className={styles.itemMeta}>{d.overdue ? "Overdue" : d.meta}</span>
@@ -160,7 +160,7 @@ export default function RemindersPage() {
           <div className={styles.sectionTitle}>Coming up</div>
           <div className={styles.list}>
             {upcomingAppts.map((a) => (
-              <Link key={a.id} href="/calendar" className={styles.item}>
+              <Link key={a.id} href="/plan" className={styles.item}>
                 <div className={styles.itemRow}>
                   <span className={styles.itemTitle}>{a.title}</span>
                   <span className={styles.itemMeta}>{dateTimeLabel(a.appointmentAt)}</span>

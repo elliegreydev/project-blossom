@@ -236,7 +236,7 @@ const KNOWN_ROUTE_SEGMENTS = new Set([
  * The first path segment and no more.
  *
  * Deeper would be more useful to debug with and is not worth what it costs.
- * "/track/intimacy" or "/settings/safety-checkins" sitting in a log next to an
+ * "/care/intimacy" or "/settings/safety-checkins" sitting in a log next to an
  * account reference says something about a person that the failure itself
  * never needed to say. The second segment is also where every share token and
  * ticket id lives, and those are secrets. One segment is enough to know which

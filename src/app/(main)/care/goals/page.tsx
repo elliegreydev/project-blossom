@@ -46,7 +46,7 @@ export default function GoalsPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Goals" backHref="/track" />
+      <ScreenHeader title="Goals" backHref="/care" />
 
       {(active.length > 0 || done.length > 0) && (
         <div className={local.segmented}>

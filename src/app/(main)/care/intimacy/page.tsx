@@ -36,13 +36,13 @@ export default function IntimacyPage() {
   const visibleEntries = entries.filter((entry) => !isPendingRemoval(entry.id));
 
   if (!profile.enabledModules.includes("intimacy")) {
-    return <div className={feature.screen}><ScreenHeader title="Intimacy & wellbeing" backHref="/track" /><div className={feature.empty}><div className={feature.emptyTitle}>This space is turned off</div><div className={feature.emptySubtitle}>You can enable it whenever it feels useful. Nothing is assumed.</div><Link href="/settings/modules" className={feature.addButton}>Choose modules</Link></div></div>;
+    return <div className={feature.screen}><ScreenHeader title="Intimacy & wellbeing" backHref="/care" /><div className={feature.empty}><div className={feature.emptyTitle}>This space is turned off</div><div className={feature.emptySubtitle}>You can enable it whenever it feels useful. Nothing is assumed.</div><Link href="/settings/modules" className={feature.addButton}>Choose modules</Link></div></div>;
   }
 
   return (
     <SensitiveModuleGate>
       <div className={feature.screen}>
-        <ScreenHeader title="Intimacy & wellbeing" backHref="/track" />
+        <ScreenHeader title="Intimacy & wellbeing" backHref="/care" />
         <p className={feature.pageSubtitle} style={{ marginTop: -10 }}>A private place to keep only what feels useful to remember. No counts, streaks, reminders or judgement.</p>
 
         <div className={styles.privacyNote}>Stored only on this device. It stays out of sync, Home, search and notifications.</div>

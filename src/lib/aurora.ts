@@ -132,7 +132,7 @@ function upcomingAppointment(context: AuroraContext): Candidate | null {
     title: `A little space before ${when}`,
     message: `You have an appointment ${when}. If it helps, you could gather any questions or notes you want to bring.`,
     actionLabel: "View calendar",
-    href: "/calendar",
+    href: "/plan",
     priority: 100,
     cooldownDays: 3,
   };
@@ -184,7 +184,7 @@ function supplyNeedsAttention(context: AuroraContext): Candidate | null {
     title: "One of your supplies could use a look",
     message: "There is a supply record that may be running low or coming up for review. You can check it whenever you are ready.",
     actionLabel: "Review supplies",
-    href: "/track/medication",
+    href: "/care/medication",
     priority: 95,
     cooldownDays: 3,
   };
@@ -248,7 +248,7 @@ function openMedicationLog(context: AuroraContext): Candidate | null {
     title: "Your medication log is still open",
     message: "A scheduled entry has not been logged yet. You can update it whenever you are ready.",
     actionLabel: "Open medication",
-    href: "/track/medication",
+    href: "/care/medication",
     priority: 90,
     cooldownDays: 1,
   };
@@ -282,7 +282,7 @@ function upcomingMedication(context: AuroraContext): Candidate | null {
     title: "A medication reminder is close",
     message: `Your next scheduled medication time is ${timing}. You can open it whenever you need to.`,
     actionLabel: "Open medication",
-    href: "/track/medication",
+    href: "/care/medication",
     priority: 85,
     cooldownDays: 1,
   };
@@ -312,7 +312,7 @@ function wellbeingCheckIn(context: AuroraContext): Candidate | null {
     title: "How have things been feeling?",
     message: "It has been a little while. If it feels useful, there is space to notice how you have been.",
     actionLabel: "Check in",
-    href: "/track/journal",
+    href: "/care/journal",
     priority: 70,
     cooldownDays: thresholdDays,
   };
@@ -333,7 +333,7 @@ function waitingGoal(context: AuroraContext): Candidate | null {
     title: "A goal has been waiting quietly",
     message: "You can revisit it, change it, or leave it alone. It is still yours either way.",
     actionLabel: "View goals",
-    href: "/track/goals",
+    href: "/care/goals",
     priority: 60,
     cooldownDays: 14,
   };
@@ -385,7 +385,7 @@ function voicePracticeWaiting(context: AuroraContext): Candidate | null {
     title: "Your practice goal is still there",
     message: "Whenever it feels right, there is space to log a session. Skipping stretches of time is completely fine.",
     actionLabel: "Open voice practice",
-    href: "/track/voice",
+    href: "/care/voice",
     priority: 55,
     cooldownDays: thresholdDays,
   };
@@ -406,7 +406,7 @@ function presentationWantToTry(context: AuroraContext): Candidate | null {
     title: "Your want-to-try list is still there",
     message: `You have ${wantToTryCount} idea${wantToTryCount === 1 ? "" : "s"} saved for whenever feels right. No timeline, no pressure to act on any of it.`,
     actionLabel: "Open presentation",
-    href: "/track/presentation",
+    href: "/care/presentation",
     priority: 45,
     cooldownDays: 21,
   };
@@ -430,7 +430,7 @@ function readyTimeCapsule(context: AuroraContext): Candidate | null {
     title: "You left yourself something for today",
     message: "A moment you sealed for later is ready to open, whenever you feel like it.",
     actionLabel: "Open it",
-    href: "/track/journal",
+    href: "/care/journal",
     priority: 65,
     cooldownDays: 3650,
   };
@@ -449,7 +449,7 @@ function onThisDayMemory(context: AuroraContext): Candidate | null {
       id: `journal:${entry.id}`,
       date: new Date(entry.createdAt),
       text: entry.bodyText,
-      href: "/track/journal",
+      href: "/care/journal",
     })),
     ...[...context.milestones, ...context.journeyEvents]
       .filter((entry) => entry.datePrecision === "exact" && entry.eventDate)
@@ -465,7 +465,7 @@ function onThisDayMemory(context: AuroraContext): Candidate | null {
         id: `presentation:${entry.id}`,
         date: new Date(entry.date),
         text: entry.note,
-        href: "/track/presentation",
+        href: "/care/presentation",
       })),
   ];
 

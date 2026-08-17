@@ -25,7 +25,7 @@ const TRACKERS: {
 }[] = [
   {
     module: "medication",
-    href: "/track/medication",
+    href: "/care/medication",
     title: "Medication",
     desc: "Schedules, doses, and history",
     tint: "var(--mint)",
@@ -38,7 +38,7 @@ const TRACKERS: {
   },
   {
     module: "journal",
-    href: "/track/journal",
+    href: "/care/journal",
     title: "Journal & check-ins",
     desc: "Notes, reflections, and how you feel",
     tint: "var(--lavender)",
@@ -51,7 +51,7 @@ const TRACKERS: {
   },
   {
     module: "selfDirected",
-    href: "/track/self-directed",
+    href: "/care/self-directed",
     title: "Self-directed care",
     desc: "The jobs a clinic would do, if there isn't one",
     tint: "var(--mint)",
@@ -64,7 +64,7 @@ const TRACKERS: {
   },
   {
     module: "waitingList",
-    href: "/track/waiting-list",
+    href: "/care/waiting-list",
     title: "Waiting lists",
     desc: "Referrals, chasing them, and where you are",
     tint: "var(--sky)",
@@ -77,7 +77,7 @@ const TRACKERS: {
   },
   {
     module: "goals",
-    href: "/track/goals",
+    href: "/care/goals",
     title: "Goals",
     desc: "Things you're working towards",
     tint: "var(--sky)",
@@ -91,7 +91,7 @@ const TRACKERS: {
   },
   {
     module: "bloodTests",
-    href: "/track/blood-tests",
+    href: "/care/blood-tests",
     title: "Blood tests",
     desc: "A private, descriptive record of your results",
     tint: "var(--pink)",
@@ -104,7 +104,7 @@ const TRACKERS: {
   },
   {
     module: "voicePractice",
-    href: "/track/voice",
+    href: "/care/voice",
     title: "Voice practice",
     desc: "Practice goals and session notes, at your own pace",
     tint: "var(--lavender)",
@@ -117,7 +117,7 @@ const TRACKERS: {
   },
   {
     module: "presentation",
-    href: "/track/presentation",
+    href: "/care/presentation",
     title: "Presentation",
     desc: "Outfits, hair, makeup, and things you want to try",
     tint: "var(--mint)",
@@ -130,7 +130,7 @@ const TRACKERS: {
   },
   {
     module: "bodyProgress",
-    href: "/track/body",
+    href: "/care/body",
     title: "Body & progress",
     desc: "A quiet, private place to notice change",
     tint: "var(--sky)",
@@ -143,7 +143,7 @@ const TRACKERS: {
   },
   {
     module: "budget",
-    href: "/track/budget",
+    href: "/care/budget",
     title: "Budget",
     desc: "Transition costs and savings goals, kept private",
     tint: "var(--mint)",
@@ -156,7 +156,7 @@ const TRACKERS: {
   },
   {
     module: "intimacy",
-    href: "/track/intimacy",
+    href: "/care/intimacy",
     title: "Intimacy & wellbeing",
     desc: "Private notes, in your own words",
     tint: "var(--pink)",
@@ -301,10 +301,10 @@ export default function TrackPage() {
     <div className={styles.screen}>
       <header className={styles.pageHeader}>
         <div className={styles.eyebrow}>Your tools</div>
-        <h1 className={styles.title}>Track</h1>
-        <p className={styles.subtitle}>Choose the space that feels useful today.</p>
+        <h1 className={styles.title}>Care</h1>
+        <p className={styles.subtitle}>Here's your care at a glance.</p>
       </header>
-      {(profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && <Link href="/track/care" className={styles.careOverview}><div><span className={styles.careEyebrow}>A calmer overview</span><strong>Care overview</strong><span>Medication, appointments, supplies and blood tests together.</span></div><span aria-hidden="true">→</span></Link>}
+      {(profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && <Link href="/care/overview" className={styles.careOverview}><div><span className={styles.careEyebrow}>A calmer overview</span><strong>Care overview</strong><span>Medication, appointments, supplies and blood tests together.</span></div><span aria-hidden="true">→</span></Link>}
 
       {pinned.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>My spaces</h2><Link href="/settings/modules">Edit</Link></div><div className={styles.cards}>{pinned.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
       {recent.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>Recently used</h2></div><div className={styles.cards}>{recent.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}

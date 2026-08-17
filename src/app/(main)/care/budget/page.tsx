@@ -73,7 +73,7 @@ export default function BudgetPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Budget" backHref="/track" />
+      <ScreenHeader title="Budget" backHref="/care" />
       <p className={styles.pageSubtitle} style={{ marginTop: -10 }}>
         A private record of transition-related costs and savings goals. Nothing here is compared
         against anyone else&apos;s numbers or pace - it&apos;s just yours.

@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.28";
+export const APP_VERSION = "0.5.29";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.29",
+    date: "2026-08-17",
+    title: "That was a sun, not a gear",
+    items: [
+      { tag: "fix", text: "The Settings icon at the bottom of the screen was a small circle with eight lines radiating out of it, which is the brightness symbol in more or less every app ever made. Somebody spotted it within an hour of Blossom being shown to anyone outside the beta. It's a cog now." },
+    ],
+  },
   {
     version: "0.5.28",
     date: "2026-08-17",

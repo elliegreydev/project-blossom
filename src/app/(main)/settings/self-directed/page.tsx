@@ -27,7 +27,7 @@ export default function SelfDirectedSettingsPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title={label} backHref="/track/self-directed" />
+      <ScreenHeader title={label} backHref="/care/self-directed" />
 
       <div className={styles.field}>
         <span className={styles.label}>What this section is called</span>

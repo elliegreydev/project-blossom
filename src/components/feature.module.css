@@ -6,12 +6,14 @@
   padding: max(30px, var(--safe-top)) 20px 36px;
 }
 
+/* Her sheet groups by heading and whitespace rather than by rules. The
+   divider went because on a dark ground a hairline across every section
+   reads as clutter, and the heading already does the separating. */
 .section {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 17px;
-  border-top: 1px solid var(--border);
+  padding-top: 20px;
 }
 
 .sectionTitle {
@@ -45,8 +47,8 @@
 .item {
   padding: 15px 16px;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
+  border: 1px solid var(--outline, var(--border));
+  background: var(--surface, var(--bg-raised));
   display: flex;
   flex-direction: column;
   gap: 4px;

@@ -142,7 +142,7 @@ export default function SettingsPage() {
         </div>
         <p className={styles.note}>
           Trusted Circle, Bridge, your support map, Passport and safety check-ins now live in{" "}
-          <Link href="/track">Track</Link>.
+          <Link href="/care">Care</Link>.
         </p>
       </div>
 

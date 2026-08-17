@@ -65,7 +65,7 @@ export default function VoicePracticePage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Voice practice" backHref="/track" />
+      <ScreenHeader title="Voice practice" backHref="/care" />
 
       <div className={local.segmented}>
         <button

@@ -134,7 +134,7 @@ export default function WaitingListPage() {
 
   return (
     <div className={feature.screen}>
-      <ScreenHeader title="Waiting lists" backHref="/track" />
+      <ScreenHeader title="Waiting lists" backHref="/care" />
 
       <div className={feature.section}>
         <div className={feature.sectionTitle}>Your referrals</div>

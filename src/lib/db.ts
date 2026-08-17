@@ -27,7 +27,7 @@ export type WeightUnit = "auto" | "kg" | "lb" | "st";
 // Single definition lives with the presets that use it; re-exported so the
 // many existing `from "@/lib/db"` imports keep working.
 export type { AccessibilityProfile };
-export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges";
+export type HomeBlockKey = "focus" | "today" | "upcoming" | "supplies" | "pinned" | "journey" | "aurora" | "nudges" | "checkin";
 export type HomeDensity = "compact" | "standard" | "spacious";
 export type HomeTodayContent = "both" | "medication" | "appointments" | "none";
 export type HomeShortcutKey = "medication" | "calendar" | "journal" | "goals" | "journey";
@@ -41,12 +41,12 @@ export interface HomeLayoutConfig {
   blockWidths: Record<HomeBlockKey, "wide" | "half">;
 }
 
-export const HOME_BLOCK_KEYS: HomeBlockKey[] = ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"];
+export const HOME_BLOCK_KEYS: HomeBlockKey[] = ["focus", "today", "upcoming", "checkin", "supplies", "pinned", "journey", "aurora", "nudges"];
 
 export function defaultHomeLayout(): HomeLayoutConfig {
   return {
-    visibleBlocks: ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"],
-    order: ["focus", "today", "upcoming", "pinned", "supplies", "journey", "aurora", "nudges"],
+    visibleBlocks: ["focus", "today", "upcoming", "checkin", "supplies", "pinned", "journey", "aurora", "nudges"],
+    order: ["focus", "today", "upcoming", "checkin", "pinned", "supplies", "journey", "aurora", "nudges"],
     density: "standard",
     todayContent: "both",
     pinnedTools: [],
@@ -54,6 +54,7 @@ export function defaultHomeLayout(): HomeLayoutConfig {
       focus: "wide",
       today: "half",
       upcoming: "half",
+      checkin: "wide",
       supplies: "half",
       pinned: "half",
       journey: "wide",

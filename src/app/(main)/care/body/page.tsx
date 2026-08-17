@@ -81,7 +81,7 @@ export default function BodyProgressPage() {
   return (
     <SensitiveModuleGate>
       <div className={styles.screen}>
-        <ScreenHeader title="Body & progress" backHref="/track" />
+        <ScreenHeader title="Body & progress" backHref="/care" />
 
         <section className={styles.section}>
           <div className={local.trackingHeading}>

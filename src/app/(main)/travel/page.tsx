@@ -56,7 +56,7 @@ export default function TravelPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Travel" backHref="/track" />
+      <ScreenHeader title="Travel" backHref="/care" />
 
       <p className={styles.intro}>
         Somewhere to keep the practical bits of a trip: what to pack, what your reminders will do,
