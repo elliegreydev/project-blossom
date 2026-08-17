@@ -71,9 +71,19 @@ const TABS = [
     href: "/settings",
     label: "Settings",
     icon: (
+      // A cog, not a sun. The difference is entirely in the teeth: a sun's rays
+      // are thin, rounded and detached from the disc, so the old icon (a dot
+      // with eight radiating capped lines) read as a brightness control to
+      // everyone who saw it. Teeth are blunt, blocky and joined to the rim, and
+      // the middle is a hole rather than a dot.
       <svg {...ICON_PROPS} className={styles.icon}>
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4" />
+        <circle cx="12" cy="12" r="6.4" />
+        <circle cx="12" cy="12" r="2.6" />
+        <path
+          strokeWidth={2.8}
+          strokeLinecap="butt"
+          d="M18.4 12 20.5 12M16.53 16.53 18.01 18.01M12 18.4 12 20.5M7.47 16.53 5.99 18.01M5.6 12 3.5 12M7.47 7.47 5.99 5.99M12 5.6 12 3.5M16.53 7.47 18.01 5.99"
+        />
       </svg>
     ),
   },
