@@ -1,0 +1,125 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg, #14101b);
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--elevated, #251a2b);
+  border: 1px solid var(--outline, #38235f);
+  border-radius: var(--radius, 18px);
+  padding: 28px 26px 24px;
+  color: var(--text, #f3e9f7);
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--secondary, #c99bff);
+  margin-bottom: 12px;
+}
+
+.card h1 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+
+.card p {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-muted, #b9a7c6);
+  margin: 0 0 16px;
+}
+
+/* Tinted with the brand rather than a flat grey panel, so it reads as part of
+   Blossom and not as a browser error. */
+.warning {
+  border-radius: var(--radius-sm, 12px);
+  padding: 14px 16px;
+  margin: 0 0 22px;
+  background: color-mix(in srgb, var(--primary, #ff7dba) 12%, var(--elevated, #251a2b));
+  border: 1px solid color-mix(in srgb, var(--primary, #ff7dba) 34%, transparent);
+}
+
+.warning strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+  color: var(--text, #f3e9f7);
+}
+
+.warning p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #b9a7c6);
+}
+
+.input {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm, 12px);
+  border: 1px solid var(--outline, #38235f);
+  background: var(--surface, #181320);
+  color: var(--text, #f3e9f7);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--primary, #ff7dba);
+  outline-offset: 2px;
+}
+
+.button {
+  margin-top: 6px;
+  padding: 13px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius-sm, 12px);
+  background: var(--primary, #ff7dba);
+  color: var(--on-primary, #24101b);
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.error {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--primary, #ff7dba);
+}
+
+.footnote {
+  margin: 20px 0 0;
+  font-size: 13px;
+  color: var(--text-muted, #b9a7c6);
+}
+
+.card a {
+  color: var(--secondary, #c99bff);
+}

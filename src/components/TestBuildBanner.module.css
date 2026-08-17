@@ -1,0 +1,46 @@
+/* Sits above everything, including the app lock, so it is visible on the very
+   first screen a tester sees. Kept to one slim line: it has to be permanent,
+   and a permanent banner that eats the screen would make the app it is
+   labelling worse to test. */
+.banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--text, #f3e9f7);
+  background: color-mix(in srgb, var(--secondary, #c99bff) 22%, var(--elevated, #251a2b));
+  border-bottom: 1px solid color-mix(in srgb, var(--secondary, #c99bff) 40%, transparent);
+  padding-top: max(7px, env(safe-area-inset-top));
+}
+
+.banner strong {
+  font-weight: 600;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary, #ff7dba);
+}
+
+.link {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+  color: var(--secondary, #c99bff);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+@media (max-width: 380px) {
+  .link {
+    display: none;
+  }
+}

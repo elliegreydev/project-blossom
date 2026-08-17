@@ -13,6 +13,7 @@ import WhatsNew from "@/components/WhatsNew";
 import UpdatePrompt from "@/components/UpdatePrompt";
 import TimezoneChangeNotice from "@/components/TimezoneChangeNotice";
 import SyncStatus from "@/components/SyncStatus";
+import TestBuildBanner from "@/components/TestBuildBanner";
 import styles from "./layout.module.css";
 
 // Reading from Dexie is usually instant, so a naive loader would flash for a
@@ -97,5 +98,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 
-  return profile.appLockEnabled ? <AppLockGate>{shell}</AppLockGate> : shell;
+  return (
+    <>
+      <TestBuildBanner />
+      {profile.appLockEnabled ? <AppLockGate>{shell}</AppLockGate> : shell}
+    </>
+  );
 }
