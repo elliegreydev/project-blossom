@@ -95,7 +95,7 @@ export default function SafetyCheckInsPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Safety check-ins" backHref="/track" />
+      <ScreenHeader title="Safety check-ins" backHref="/care" />
 
       <div className={styles.toggleRow}>
         <div className={styles.toggleText}>

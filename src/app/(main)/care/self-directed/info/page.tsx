@@ -66,7 +66,7 @@ export default function SelfDirectedInfoPage() {
 
   return (
     <div className={feature.screen}>
-      <ScreenHeader title="Practical things" backHref="/track/self-directed" />
+      <ScreenHeader title="Practical things" backHref="/care/self-directed" />
 
       <p className={styles.intro}>
         Written and checked by us, sourced where it matters, and deliberately

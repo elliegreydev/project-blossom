@@ -45,13 +45,13 @@ export default function QuickAdd() {
   function handlePress() {
     // On a screen with an obvious primary add action, go straight to it.
     if (pathname.startsWith("/journey")) return setSheet("milestone");
-    if (pathname.startsWith("/track/medication")) return setSheet("medication");
-    if (pathname.startsWith("/track/journal")) return setSheet("journal");
-    if (pathname.startsWith("/track/blood-tests")) return setSheet("bloodTest");
-    if (pathname.startsWith("/track/voice")) return setSheet("voiceSession");
-    if (pathname.startsWith("/track/presentation")) return setSheet("presentation");
-    if (pathname.startsWith("/track/body")) return setSheet("bodyEntry");
-    if (pathname.startsWith("/calendar")) return setSheet("appointment");
+    if (pathname.startsWith("/care/medication")) return setSheet("medication");
+    if (pathname.startsWith("/care/journal")) return setSheet("journal");
+    if (pathname.startsWith("/care/blood-tests")) return setSheet("bloodTest");
+    if (pathname.startsWith("/care/voice")) return setSheet("voiceSession");
+    if (pathname.startsWith("/care/presentation")) return setSheet("presentation");
+    if (pathname.startsWith("/care/body")) return setSheet("bodyEntry");
+    if (pathname.startsWith("/plan")) return setSheet("appointment");
     setMenuOpen((v) => !v);
   }
 
@@ -104,7 +104,7 @@ export default function QuickAdd() {
               className={styles.menuItem}
               onClick={() => {
                 setMenuOpen(false);
-                router.push("/track/goals");
+                router.push("/care/goals");
               }}
             >
               Add goal

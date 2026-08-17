@@ -112,7 +112,7 @@ export default function SearchPage() {
     if (enabled("medication") && !sensitiveLocked) {
       for (const med of medications) {
         if (matches(q, med.name, med.route)) {
-          results.push({ id: `medication-${med.id}`, group: "Medication", title: med.name, snippet: med.route, href: "/track/medication" });
+          results.push({ id: `medication-${med.id}`, group: "Medication", title: med.name, snippet: med.route, href: "/care/medication" });
         }
       }
     }
@@ -125,7 +125,7 @@ export default function SearchPage() {
             group: "Appointments",
             title: a.title,
             snippet: [a.location, dateLabel(a.appointmentAt)].filter(Boolean).join(" · "),
-            href: "/calendar",
+            href: "/plan",
           });
         }
       }
@@ -134,7 +134,7 @@ export default function SearchPage() {
     if (enabled("journal") && !sensitiveLocked) {
       for (const j of journalEntries) {
         if (matches(q, j.bodyText)) {
-          results.push({ id: `journal-${j.id}`, group: "Journal & check-ins", title: "Journal entry", snippet: truncate(j.bodyText), href: "/track/journal" });
+          results.push({ id: `journal-${j.id}`, group: "Journal & check-ins", title: "Journal entry", snippet: truncate(j.bodyText), href: "/care/journal" });
         }
       }
       for (const e of euphoriaEntries) {
@@ -144,7 +144,7 @@ export default function SearchPage() {
             group: "Journal & check-ins",
             title: e.title || "Euphoria moment",
             snippet: e.bodyText && truncate(e.bodyText),
-            href: "/track/journal",
+            href: "/care/journal",
           });
         }
       }
@@ -155,7 +155,7 @@ export default function SearchPage() {
             group: "Journal & check-ins",
             title: `Check-in · ${dateLabel(c.createdAt)}`,
             snippet: c.note && truncate(c.note),
-            href: "/track/journal",
+            href: "/care/journal",
           });
         }
       }
@@ -164,7 +164,7 @@ export default function SearchPage() {
     if (enabled("goals")) {
       for (const g of goals) {
         if (matches(q, g.title, g.target)) {
-          results.push({ id: `goal-${g.id}`, group: "Goals", title: g.title, snippet: g.target, href: "/track/goals" });
+          results.push({ id: `goal-${g.id}`, group: "Goals", title: g.title, snippet: g.target, href: "/care/goals" });
         }
       }
     }
@@ -177,7 +177,7 @@ export default function SearchPage() {
             group: "Waiting lists",
             title: r.serviceName,
             snippet: r.referenceNumber ? `Ref ${r.referenceNumber}` : null,
-            href: "/track/waiting-list",
+            href: "/care/waiting-list",
           });
         }
       }
@@ -192,7 +192,7 @@ export default function SearchPage() {
             group: "Waiting lists",
             title: parent?.serviceName ?? "A referral",
             snippet: u.body,
-            href: "/track/waiting-list",
+            href: "/care/waiting-list",
           });
         }
       }
@@ -206,7 +206,7 @@ export default function SearchPage() {
             group: "Blood tests",
             title: b.testName,
             snippet: [b.value, b.unit].filter(Boolean).join(" ") || null,
-            href: "/track/blood-tests",
+            href: "/care/blood-tests",
           });
         }
       }
@@ -215,7 +215,7 @@ export default function SearchPage() {
     if (enabled("voicePractice")) {
       for (const v of voiceGoals) {
         if (matches(q, v.title, v.category)) {
-          results.push({ id: `voiceGoal-${v.id}`, group: "Voice practice", title: v.title, snippet: v.category, href: "/track/voice" });
+          results.push({ id: `voiceGoal-${v.id}`, group: "Voice practice", title: v.title, snippet: v.category, href: "/care/voice" });
         }
       }
       for (const s of voiceSessions) {
@@ -225,7 +225,7 @@ export default function SearchPage() {
             group: "Voice practice",
             title: `Practice session · ${dateLabel(s.createdAt)}`,
             snippet: s.note && truncate(s.note),
-            href: "/track/voice",
+            href: "/care/voice",
           });
         }
       }
@@ -239,7 +239,7 @@ export default function SearchPage() {
             group: "Presentation",
             title: `${p.category.charAt(0).toUpperCase()}${p.category.slice(1)} · ${dateLabel(p.date)}`,
             snippet: p.note && truncate(p.note),
-            href: "/track/presentation",
+            href: "/care/presentation",
           });
         }
       }
@@ -254,7 +254,7 @@ export default function SearchPage() {
             group: "Body & progress",
             title: `Body note · ${dateLabel(b.date)}`,
             snippet: b.note && truncate(b.note),
-            href: "/track/body",
+            href: "/care/body",
           });
         }
       }
@@ -268,13 +268,13 @@ export default function SearchPage() {
             group: "Budget",
             title: e.description || `${e.category.toUpperCase()} expense`,
             snippet: dateLabel(e.date),
-            href: "/track/budget",
+            href: "/care/budget",
           });
         }
       }
       for (const g of budgetGoals) {
         if (matches(q, g.label)) {
-          results.push({ id: `budgetGoal-${g.id}`, group: "Budget", title: g.label, snippet: "Savings goal", href: "/track/budget" });
+          results.push({ id: `budgetGoal-${g.id}`, group: "Budget", title: g.label, snippet: "Savings goal", href: "/care/budget" });
         }
       }
     }

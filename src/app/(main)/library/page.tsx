@@ -58,7 +58,7 @@ export default function InfoPage() {
   return (
     <div className={feature.screen}>
       <header>
-        <h1 className={feature.pageTitle}>Info</h1>
+        <h1 className={feature.pageTitle}>Library</h1>
         <p className={feature.pageSubtitle}>
           Guides, support services and the practical stuff, all searchable.
         </p>

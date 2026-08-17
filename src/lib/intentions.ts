@@ -41,7 +41,7 @@ export const INTENTION_LIST: Intention[] = [
     summary: "Today, appointments and your shortcuts",
     description: "Today, appointments and your chosen shortcuts.",
     blocks: ["focus", "today", "upcoming", "pinned"],
-    href: "/calendar",
+    href: "/plan",
     action: "Open calendar",
   },
   {
@@ -50,7 +50,7 @@ export const INTENTION_LIST: Intention[] = [
     summary: "Plans, medication and supplies",
     description: "Upcoming plans, medication and practical supplies.",
     blocks: ["focus", "today", "upcoming", "supplies", "pinned"],
-    href: "/calendar",
+    href: "/plan",
     action: "Review appointments",
   },
   {
@@ -59,7 +59,7 @@ export const INTENTION_LIST: Intention[] = [
     summary: "Writing, and a little space",
     description: "A quieter place for notes and your Journey.",
     blocks: ["focus", "journey", "pinned", "aurora"],
-    href: "/track/journal",
+    href: "/care/journal",
     action: "Open journal",
   },
   {
@@ -68,7 +68,7 @@ export const INTENTION_LIST: Intention[] = [
     summary: "Wins, milestones and a place to record one",
     description: "A moment for affirming wins and milestones, and somewhere to add another.",
     blocks: ["focus", "journey", "pinned"],
-    href: "/track/journal",
+    href: "/care/journal",
     action: "Record a good moment",
   },
   {

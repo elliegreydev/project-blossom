@@ -138,7 +138,7 @@ export default function JournalPage() {
   return (
     <SensitiveModuleGate>
     <div className={styles.screen}>
-      <ScreenHeader title="Journal & check-ins" backHref="/track" />
+      <ScreenHeader title="Journal & check-ins" backHref="/care" />
 
       <div className={local.segmented}>
         <button

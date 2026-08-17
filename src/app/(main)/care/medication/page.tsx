@@ -154,7 +154,7 @@ export default function MedicationPage() {
   return (
     <SensitiveModuleGate>
     <div className={styles.screen}>
-      <ScreenHeader title="Medication" backHref="/track" />
+      <ScreenHeader title="Medication" backHref="/care" />
 
       {meds.length > 0 && (
         <button type="button" className={styles.addButton} onClick={() => setManualDoseOpen(true)}>

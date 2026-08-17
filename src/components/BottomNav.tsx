@@ -38,8 +38,8 @@ const TABS = [
     ),
   },
   {
-    href: "/track",
-    label: "Track",
+    href: "/care",
+    label: "Care",
     icon: (
       <svg {...ICON_PROPS} className={styles.icon}>
         <rect x="5" y="4" width="14" height="17" rx="2.2" />
@@ -48,8 +48,8 @@ const TABS = [
     ),
   },
   {
-    href: "/calendar",
-    label: "Calendar",
+    href: "/plan",
+    label: "Plan",
     icon: (
       <svg {...ICON_PROPS} className={styles.icon}>
         <rect x="4" y="5.5" width="16" height="14.5" rx="2.2" />
@@ -58,8 +58,8 @@ const TABS = [
     ),
   },
   {
-    href: "/info",
-    label: "Info",
+    href: "/library",
+    label: "Library",
     icon: (
       <svg {...ICON_PROPS} className={styles.icon}>
         <circle cx="12" cy="12" r="8.5" />

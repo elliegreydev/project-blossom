@@ -11,21 +11,21 @@ const STEPS: { key: string; title: string; body: string; href: string; actionLab
     key: "baseline-labs",
     title: "Get baseline bloodwork",
     body: "Before you start, or right at the beginning, it's worth having a snapshot of where things are now - so later results actually mean something to you.",
-    href: "/track/blood-tests",
+    href: "/care/blood-tests",
     actionLabel: "Open Blood tests",
   },
   {
     key: "track-medication",
     title: "Set up your medication tracker",
     body: "Log what you're taking and when, so you've got your own private record - not shared with anyone unless you choose to.",
-    href: "/track/medication",
+    href: "/care/medication",
     actionLabel: "Open Medication",
   },
   {
     key: "injection-rotation",
     title: "If it's an injection, know about site rotation",
     body: "Rotating where you inject helps avoid soreness and scarring over time. Blossom can remind you which site you used last.",
-    href: "/track/medication",
+    href: "/care/medication",
     actionLabel: "Open Medication",
   },
   {
@@ -64,7 +64,7 @@ export default function GettingStartedPage() {
 
   return (
     <div className={styles.screen}>
-      <ScreenHeader title="Starting HRT safely" backHref="/track" />
+      <ScreenHeader title="Starting HRT safely" backHref="/care" />
       <p className={styles.pageSubtitle} style={{ marginTop: -10 }}>
         A few practical things worth having in place when you're starting a regimen - prescribed or
         self-directed. This is logistics, never medical advice: Blossom doesn&apos;t give dosing guidance

@@ -153,7 +153,7 @@ export default function TrustedCirclePage() {
 
   return (
     <div className={formStyles.screen}>
-      <ScreenHeader title="Trusted Circle" backHref="/track" />
+      <ScreenHeader title="Trusted Circle" backHref="/care" />
       <p className={formStyles.hint}>
         Share specific parts of your account with people you choose - never your whole account by
         default. Only the categories below can ever be shared; journal entries, blood tests,

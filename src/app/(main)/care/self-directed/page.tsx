@@ -179,7 +179,7 @@ export default function SelfDirectedPage() {
   if (!setUp) {
     return (
       <div className={feature.screen}>
-        <ScreenHeader title={label} backHref="/track" />
+        <ScreenHeader title={label} backHref="/care" />
         <Setup onDone={() => setJustFinished(true)} />
       </div>
     );
@@ -202,7 +202,7 @@ export default function SelfDirectedPage() {
 
   return (
     <div className={feature.screen}>
-      <ScreenHeader title={label} backHref="/track" />
+      <ScreenHeader title={label} backHref="/care" />
 
       <p className={styles.intro}>
         When a clinic&apos;s involved, someone else keeps the schedule, holds the
@@ -221,7 +221,7 @@ export default function SelfDirectedPage() {
 
       {/* Above the person's own record on purpose. Somebody arriving here for
           the first time is usually looking for information, not a dashboard. */}
-      <Link href="/track/self-directed/info" className={styles.link}>
+      <Link href="/care/self-directed/info" className={styles.link}>
         <span>
           <span className={styles.linkTitle}>Practical things</span>
           <span className={styles.promptBody} style={{ display: "block", marginTop: 3 }}>
@@ -260,28 +260,28 @@ export default function SelfDirectedPage() {
           you&apos;re the one keeping track.
         </p>
         <div className={styles.links}>
-          <Link href="/track/medication" className={styles.link}>
+          <Link href="/care/medication" className={styles.link}>
             <span className={styles.linkTitle}>What you take</span>
             <span className={styles.linkMeta}>
               {activeMeds === 0 ? "Nothing added yet" : `${activeMeds} active`}
             </span>
           </Link>
-          <Link href="/track/blood-tests" className={styles.link}>
+          <Link href="/care/blood-tests" className={styles.link}>
             <span className={styles.linkTitle}>Blood tests</span>
             <span className={styles.linkMeta}>
               {bloodTests.length === 0 ? "None recorded" : `${bloodTests.length} recorded`}
             </span>
           </Link>
-          <Link href="/track/care" className={styles.link}>
+          <Link href="/care/overview" className={styles.link}>
             <span className={styles.linkTitle}>Supplies</span>
             <span className={styles.linkMeta}>Needles, sharps bins, what&apos;s left</span>
           </Link>
-          <Link href="/track/body" className={styles.link}>
+          <Link href="/care/body" className={styles.link}>
             <span className={styles.linkTitle}>Changes over time</span>
             <span className={styles.linkMeta}>Yours to notice</span>
           </Link>
           {stillWaiting > 0 && (
-            <Link href="/track/waiting-list" className={styles.link}>
+            <Link href="/care/waiting-list" className={styles.link}>
               <span className={styles.linkTitle}>Waiting lists</span>
               <span className={styles.linkMeta}>
                 {stillWaiting} still open
