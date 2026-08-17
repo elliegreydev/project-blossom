@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isHqDevEntry } from "@/lib/devAccess";
-import HqSignInNotice from "@/components/HqSignInNotice";
+import DevSignInNotice from "@/components/DevSignInNotice";
 import styles from "../../account/account.module.css";
 
 export default function BetaJoinPage() {
@@ -116,7 +116,7 @@ export default function BetaJoinPage() {
             </Link>
           </section>
         ) : !user && hqOnlySignIn ? (
-          <HqSignInNotice purpose="beta" />
+          <DevSignInNotice purpose="beta" />
         ) : !user ? (
           pendingEmail ? (
             <section className={styles.card}>

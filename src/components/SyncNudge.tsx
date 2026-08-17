@@ -1,5 +1,6 @@
 "use client";
 
+import { isHqDevEntry } from "@/lib/devAccess";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -50,6 +51,11 @@ export default function SyncNudge() {
   }
 
   if (!ready || !profile || dismissed) return null;
+  // Nothing to nudge towards on the test build, where there are no
+  // accounts. Inviting a tester to "keep Blossom across devices" and
+  // landing them on a screen that says accounts do not exist here is a
+  // round trip to nowhere.
+  if (isHqDevEntry()) return null;
   if (profile.syncEnabled && signedIn && syncState?.ownerId) return null;
 
   return (

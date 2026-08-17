@@ -6,7 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { isHqDevEntry } from "@/lib/devAccess";
-import HqSignInNotice from "@/components/HqSignInNotice";
+import DevSignInNotice from "@/components/DevSignInNotice";
 import { reportClientError } from "@/lib/clientErrorReport";
 import { isExpectedAuthFailure } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/client";
@@ -229,7 +229,7 @@ export default function AccountPage() {
         </header>
 
         {!user && hqOnlySignIn ? (
-          <HqSignInNotice purpose="account" />
+          <DevSignInNotice purpose="account" />
         ) : !user && pendingEmail ? (
           <section className={styles.card}>
             <div className={styles.cardHeading}>
