@@ -25,6 +25,8 @@ import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
 import SupportCard from "@/components/SupportCard";
+import { essentialsActive, essentialsDaysLeft, filterBlocksForEssentials } from "@/lib/justTheEssentials";
+import { turnOffEssentials } from "@/lib/db";
 import styles from "./home.module.css";
 
 type IntentionKey = "organise" | "prepare" | "reflect" | "calm" | "celebrate" | "support" | "today" | "record";
@@ -163,6 +165,12 @@ export default function HomePage() {
   const auroraSuggestion = auroraHiddenForSession ? null : selectAuroraSuggestion({ now, profile, milestones, journeyEvents, medications: meds, medicationLogs: medLogs, medicationSupplies, careSupplies, appointments: appts, journalEntries, checkIns, goals, voiceGoals, voiceSessions, presentationEntries, euphoriaEntries, nudgeStates: auroraNudgeStates });
   const auroraStatus = auroraQuietStatus(profile);
   const desiredBlocks = intention ? new Set(INTENTIONS[intention].blocks) : null;
+  // A lens over the saved layout, never an edit to it - see
+  // src/lib/justTheEssentials.ts. Their own order and widths are untouched;
+  // this only decides which of their blocks get rendered today.
+  const quietHome = essentialsActive(profile.lowEnergyMode, profile.lowEnergyUntil, now);
+  const quietDaysLeft = essentialsDaysLeft(profile.lowEnergyUntil, now);
+
   const orderedBlocks = [...selectedLayout.order, ...Object.keys(selectedLayout.blockWidths) as HomeBlockKey[]]
     .filter((block, index, all) => all.indexOf(block) === index)
     .filter((block): block is HomeBlockKey => ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"].includes(block))
@@ -215,7 +223,25 @@ export default function HomePage() {
         too, and a daily emergency banner would make the app heavy to open. */}
     <Link href="/crisis-support" className={styles.crisisChip}>Need support right now?</Link>
     <AppNotice />
-    <div className={styles.homeBlocks}>{orderedBlocks.map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
-    <SupportCard />
+    {quietHome && (
+      // The way out has to live here, not only in Settings. Somebody who
+      // turned this on during a bad week shouldn't have to remember which
+      // settings page it was buried in to get their Home back.
+      <div className={styles.quietNotice}>
+        <span>
+          Just the essentials is on.
+          {quietDaysLeft !== null && quietDaysLeft > 0
+            ? ` Back to normal in ${quietDaysLeft === 1 ? "a day" : `${quietDaysLeft} days`}.`
+            : ""}
+        </span>
+        <button type="button" className={styles.quietNoticeAction} onClick={() => void turnOffEssentials()}>
+          Show everything
+        </button>
+      </div>
+    )}
+    <div className={styles.homeBlocks}>{filterBlocksForEssentials(orderedBlocks, quietHome).map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
+    {/* Asking for money on a day somebody has told us is hard is the wrong
+        instinct, so the whole donation entry point steps back too. */}
+    {!quietHome && <SupportCard />}
   </div>;
 }

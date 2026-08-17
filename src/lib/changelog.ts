@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.16";
+export const APP_VERSION = "0.5.17";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.17",
+    date: "2026-08-17",
+    title: "Just the essentials",
+    items: [
+      { tag: "new", text: "For harder days. Home keeps what's due and what's coming, and everything else steps back - no supply warnings, no journey history, no nudges, and nothing asking you for anything. Settings, then Home screen." },
+      { tag: "new", text: "You choose how long: just today, a few days, or until you turn it off. When a timed one runs out your Home simply comes back, with no announcement about how your day is going." },
+      { tag: "improved", text: "Your Home layout is never changed by this. It's kept exactly as you built it and returns the moment you turn it off - and there's a way to turn it off on Home itself, so you never have to go looking." },
+    ],
+  },
   {
     version: "0.5.16",
     date: "2026-08-17",

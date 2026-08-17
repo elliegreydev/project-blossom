@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "test:aurora-ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-aurora-ai-safety.mjs",
     "test:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-sync-policy.mjs",
     "test:reminders": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-reminders.mjs",
-    "test:costs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-running-costs.mjs"
+    "test:costs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-running-costs.mjs",
+    "test:essentials": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-just-the-essentials.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
-import { db, defaultHomeLayout, LOCAL_PROFILE_ID, updateDeviceProfile, type HomeBlockKey, type HomeLayoutConfig, type HomeShortcutKey } from "@/lib/db";
+import { db, defaultHomeLayout, LOCAL_PROFILE_ID, turnOffEssentials, turnOnEssentials, updateDeviceProfile, type HomeBlockKey, type HomeLayoutConfig, type HomeShortcutKey } from "@/lib/db";
+import { ESSENTIALS_DURATIONS, essentialsActive, essentialsDaysLeft } from "@/lib/justTheEssentials";
 import styles from "./home.module.css";
 
 type Device = "phone" | "desktop";
@@ -66,9 +67,47 @@ export default function HomeSettingsPage() {
     patch({ pinnedTools: layout.pinnedTools.includes(key) ? layout.pinnedTools.filter((item) => item !== key) : [...layout.pinnedTools, key] });
   }
 
+  const now = new Date();
+  const quietOn = essentialsActive(profile.lowEnergyMode, profile.lowEnergyUntil, now);
+  const quietDaysLeft = essentialsDaysLeft(profile.lowEnergyUntil, now);
+
   return <div className={styles.screen}>
     <ScreenHeader title="Home screen" backHref="/settings" />
     <p className={styles.intro}>Make this device’s Home exactly as useful or quiet as you want. These choices stay here and never change another device.</p>
+
+    {/* Deliberately above the layout editor, and worded to separate it from
+        the "Essentials only" preset below, which permanently rewrites a
+        layout. This one changes nothing and undoes itself. */}
+    <section className={styles.section}>
+      <h2>Just the essentials</h2>
+      <p className={styles.intro}>
+        For harder days. Home keeps what’s due and what’s coming, and everything
+        else steps back. Your layout is kept exactly as it is and comes back when
+        you turn this off. Medication reminders carry on as normal.
+      </p>
+      {quietOn ? (
+        <div className={styles.essentialsOn}>
+          <span>
+            On now.
+            {quietDaysLeft !== null && quietDaysLeft > 0
+              ? ` Back to normal in ${quietDaysLeft === 1 ? "a day" : `${quietDaysLeft} days`}.`
+              : " Until you turn it off."}
+          </span>
+          <button type="button" className={styles.choice} onClick={() => void turnOffEssentials()}>
+            Show everything
+          </button>
+        </div>
+      ) : (
+        <div className={styles.presets}>
+          {ESSENTIALS_DURATIONS.map((d) => (
+            <button key={d.key} type="button" className={styles.preset} onClick={() => void turnOnEssentials(d.key)}>
+              <strong>{d.label}</strong>
+              <span>{d.hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
     <div className={styles.tabs}><button type="button" className={device === "phone" ? styles.activeTab : styles.tab} onClick={() => setDevice("phone")}>Phone</button><button type="button" className={device === "desktop" ? styles.activeTab : styles.tab} onClick={() => setDevice("desktop")}>Desktop</button></div>
 
     <section className={styles.section}><h2>Start with a layout</h2><div className={styles.presets}>
