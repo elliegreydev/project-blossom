@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -24,6 +26,14 @@ export default function SupportSettingsPage() {
   const legalContext = legalContextFor(cachedLegalNotes, profile.region, profile.subregion);
   const placeLabel = [profile.subregion, profile.region].filter(Boolean).join(", ");
 
+  // This page has no region picker of its own - it follows the saved profile.
+  // So anybody who skipped the region step, or chose "prefer not to say" for
+  // their state, silently sees only the national entries and has no way of
+  // knowing the local ones exist. In the US that is 88 of 91 services hidden.
+  const hiddenLocal = profile.region && !profile.subregion
+    ? cachedResources.filter((r) => r.country === profile.region && r.subregion !== null).length
+    : 0;
+
   return (
     <div className={formStyles.screen}>
       <ScreenHeader title="Help & support" backHref="/settings/about" />
@@ -38,6 +48,14 @@ export default function SupportSettingsPage() {
         <div className={featureStyles.sectionTitle}>
           {placeLabel ? `${placeLabel} resources` : "Resources"}
         </div>
+        {hiddenLocal > 0 && (
+          <p className={formStyles.hint}>
+            There {hiddenLocal === 1 ? "is" : "are"} {hiddenLocal} more{" "}
+            {hiddenLocal === 1 ? "service" : "services"} for your part of {profile.region}.{" "}
+            <Link href="/settings/profile" className={styles.moreLink}>Add it to your profile</Link>{" "}
+            to see them.
+          </p>
+        )}
 
         {legalContext && (
           <div className={styles.legalContext}>

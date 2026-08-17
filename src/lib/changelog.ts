@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.20";
+export const APP_VERSION = "0.5.21";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.21",
+    date: "2026-08-17",
+    title: "Local services you couldn't see",
+    items: [
+      { tag: "fix", text: "Most support services are listed for a specific state, province or nation, and if you hadn't picked yours you'd never have known they were there. In the US that was 88 of 91 services invisible. Both support pages now tell you how many are waiting and how to see them." },
+      { tag: "fix", text: "One Las Vegas service had shut down and its website was gone. It's been replaced with The LGBTQ Center of Southern Nevada, which runs trans-specific groups and a health centre." },
+    ],
+  },
   {
     version: "0.5.20",
     date: "2026-08-17",
