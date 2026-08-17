@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.15";
+export const APP_VERSION = "0.5.16";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.16",
+    date: "2026-08-17",
+    title: "Your colour, actually colourful",
+    items: [
+      { tag: "improved", text: "The colour slider was washed out. Every shade was held at the same low intensity, which made purples and oranges far duller than they needed to be. They're as rich as your screen can show now, and the slider itself previews it properly." },
+    ],
+  },
   {
     version: "0.5.15",
     date: "2026-08-17",

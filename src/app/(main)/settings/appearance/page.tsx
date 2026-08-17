@@ -40,8 +40,8 @@ function swatchFor(id: ThemeId, hue: number) {
   return {
     bg: `oklch(0.985 0.006 ${hue})`,
     raised: `oklch(0.963 0.013 ${hue})`,
-    a: `oklch(0.74 0.13 ${hue})`,
-    b: `oklch(0.8 0.11 ${hue})`,
+    a: `oklch(0.74 0.19 ${hue})`,
+    b: `oklch(0.8 0.16 ${hue})`,
   };
 }
 
