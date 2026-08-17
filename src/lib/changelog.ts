@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.19";
+export const APP_VERSION = "0.5.20";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.20",
+    date: "2026-08-17",
+    title: "Seven new ideas on the roadmap",
+    items: [
+      { tag: "new", text: "Biggest one: somewhere to keep the wait itself - referral dates, which service, when you last chased, and what you're entitled to while you wait. Years of people's lives currently have nowhere to go in Blossom." },
+      { tag: "new", text: "Also added: hair removal tracking, a nudge when your bloods were last done a long time ago, an emergency card for A&E, help for when a prescription doesn't arrive, and regular checks that every support service we list still exists." },
+      { tag: "new", text: "And one about pausing, stopping or changing direction. Blossom assumes one direction of travel, and it shouldn't. Your pace means whatever pace you're going." },
+    ],
+  },
   {
     version: "0.5.19",
     date: "2026-08-17",

@@ -128,6 +128,13 @@ const ROADMAP_THEMES: Record<string, Theme> = {
   "social-anonymous-posts": "social",
   "social-organisation-pages": "social",
   "social-advanced-features": "social",
+  "waiting-list-tracker": "health",
+  "hair-removal-tracker": "daily",
+  "blood-test-monitoring": "health",
+  "emergency-medical-card": "health",
+  "prescription-continuity": "health",
+  "your-pace-any-direction": "daily",
+  "resource-freshness-checks": "community",
 };
 
 function themeFor(item: RoadmapItem): Theme {
