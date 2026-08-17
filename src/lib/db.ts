@@ -82,11 +82,14 @@ export interface Profile {
   // any theme in either appearance - see src/lib/themes.ts.
   theme: ThemeId;
   appearance: Appearance;
-  // A deliberately quieter presentation for people who find tracking or
-  // progress information stressful. It never changes the underlying records.
+  // INERT. Gentle Mode and Low-Energy Mode were both pulled before release
+  // and are still listed on the roadmap as unbuilt. Nothing in the app can set
+  // either of these, so both are permanently false: the reads that remain (in
+  // aurora.ts, reminders.ts and track/body) are no-ops kept only because
+  // removing them means touching the sync payload, which carries gentle_mode,
+  // plus a Dexie migration. Not worth the blast radius for a flag that cannot
+  // change. If Gentle Mode is ever actually built, these are ready for it.
   gentleMode: boolean;
-  // An even smaller Home view for low-capacity days. This is deliberately
-  // device-local: it is a temporary presentation choice, not account data.
   lowEnergyMode: boolean;
   // Home is a per-device space. These choices never enter sync or change what
   // another device looks like.
@@ -133,6 +136,8 @@ export interface Profile {
   largeTouchTargets: boolean;
   readingComfort: boolean;
   reduceVisualNoise: boolean;
+  // INERT, same story: accessibility profiles were pulled and are still on
+  // the roadmap. Always "custom"; nothing reads it for behaviour.
   accessibilityProfile: AccessibilityProfile;
   // Local reminders (see src/lib/reminders.ts). Device-local only, mirrors the
   // user's own opt-in rather than the raw Notification.permission value so the

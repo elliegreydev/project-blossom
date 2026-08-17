@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.13";
+export const APP_VERSION = "0.5.14";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.14",
+    date: "2026-08-17",
+    title: "The roadmap was behind the app",
+    items: [
+      { tag: "fix", text: "Six things Blossom already does were still listed as not built: the appointment prep space, source and review dates on support resources, syncing for more trackers, the euphoria journal, the Home screen layout editor, and the \"what would help right now\" picker. They're in Available now, where they belong." },
+      { tag: "improved", text: "Finished work is labelled \"Recently shipped\" rather than \"Recently added\", which made things that were already built read like fresh promises." },
+      { tag: "improved", text: "The local-first storage entry now names the only part still outstanding, encrypted backups, instead of listing three things that shipped months ago alongside it." },
+    ],
+  },
   {
     version: "0.5.13",
     date: "2026-08-14",

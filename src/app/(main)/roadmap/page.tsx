@@ -139,7 +139,16 @@ function RoadmapItemRow({ item }: { item: RoadmapItem }) {
     <article className={styles.item}>
       <div className={styles.itemHeading}>
         <h3>{item.title}</h3>
-        {item.is_recent && <span className={styles.recent}>Recently added</span>}
+        {/* The same flag means two different things depending on where the
+            item sits. In "Available now" it marks something newly built, which
+            is what /ideas already calls "Recently shipped". Anywhere else it
+            marks a newly added plan. Saying "added" for finished work made
+            shipped features read like fresh promises. */}
+        {item.is_recent && (
+          <span className={styles.recent}>
+            {item.stage === "available" ? "Recently shipped" : "Recently added"}
+          </span>
+        )}
       </div>
       <p>{item.description}</p>
     </article>
