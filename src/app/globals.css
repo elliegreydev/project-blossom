@@ -11,6 +11,27 @@
   --bg-raised: #f7f3f8;
   --border: #ece5ee;
 
+  /* ------------------------------------------------------------------
+     2026 redesign tokens. Ellie's palette, ported.
+     Her sheet specifies one dark world; these are the light counterparts,
+     derived to hold the same relationships rather than naively inverted.
+     The accents in particular are NOT her values here, deliberately:
+     #FF7DBA reads 2.28:1 as text on a light ground, which fails outright.
+     #B81F63 holds the same hue at 5.94:1 and passes. Her exact values are
+     used in the dark blocks below, where they measure 8.36:1 and are
+     genuinely excellent.
+     ------------------------------------------------------------------ */
+  --surface: #f7f1f9;
+  --elevated: #f0e8f4;
+  --outline: #e4d6ec;
+
+  --primary: #b81f63;
+  --secondary: #6b32b8;
+  --positive: #1f7a55;
+  --informative: #3a4fa8;
+  /* Text that sits ON a --primary fill. */
+  --on-primary: #ffffff;
+
   /* Text */
   --text-primary: var(--plum);
   --text-secondary: #6b5d74;
@@ -68,6 +89,15 @@
       --bg: #1b151f;
       --bg-raised: #241c29;
       --border: #342a3a;
+      --surface: #181320;
+      --elevated: #251A2B;
+      --outline: #38235F;
+      --primary: #FF7DBA;
+      --secondary: #C99BFF;
+      --positive: #7EC8AA;
+      --informative: #A6B5FF;
+      --on-primary: #24101B;
+
       --text-primary: #f1ecf3;
       --text-secondary: #b8aec0;
       --text-muted: #a398aa;
@@ -80,6 +110,15 @@
     --bg: #1b151f;
     --bg-raised: #241c29;
     --border: #342a3a;
+    --surface: #181320;
+    --elevated: #251A2B;
+    --outline: #38235F;
+    --primary: #FF7DBA;
+    --secondary: #C99BFF;
+    --positive: #7EC8AA;
+    --informative: #A6B5FF;
+    --on-primary: #24101B;
+
     --text-primary: #f1ecf3;
     --text-secondary: #b8aec0;
     --text-muted: #a398aa;
