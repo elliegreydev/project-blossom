@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ScreenHeader from "@/components/ScreenHeader";
 import { db, LOCAL_PROFILE_ID, updateProfile } from "@/lib/db";
@@ -49,7 +50,13 @@ export default function AppearanceSettingsPage() {
 
   const theme: ThemeId = isThemeId(profile?.theme) ? profile.theme : DEFAULT_THEME;
   const appearance: Appearance = isAppearance(profile?.appearance) ? profile.appearance : DEFAULT_APPEARANCE;
-  const hue: number = isHue(profile?.themeHue) ? profile.themeHue : DEFAULT_HUE;
+  const savedHue: number = isHue(profile?.themeHue) ? profile.themeHue : DEFAULT_HUE;
+  // The slider is a controlled input, and the saved value only catches up
+  // after a write to Dexie. Without somewhere to hold the in-progress value,
+  // every re-render snaps the thumb back to where it started and it fights
+  // the finger dragging it. This holds the drag; null means "use the saved one".
+  const [draftHue, setDraftHue] = useState<number | null>(null);
+  const hue = draftHue ?? savedHue;
 
   async function chooseTheme(next: ThemeId) {
     // Paint first, save second. Waiting on the database before the colours
@@ -66,12 +73,14 @@ export default function AppearanceSettingsPage() {
   // Repaints on every drag frame so the whole app moves under their finger,
   // then saves once. Writing to Dexie per frame would make the slider stutter.
   function dragHue(next: number) {
+    setDraftHue(next);
     applyThemeToDocument("your-colour", appearance, next);
   }
 
   async function commitHue(next: number) {
     applyThemeToDocument("your-colour", appearance, next);
     await updateProfile({ theme: "your-colour", themeHue: next });
+    setDraftHue(null);
   }
 
   if (!profile) return null;
