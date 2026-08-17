@@ -219,6 +219,19 @@ export default function SelfDirectedPage() {
         you want.
       </p>
 
+      {/* Above the person's own record on purpose. Somebody arriving here for
+          the first time is usually looking for information, not a dashboard. */}
+      <Link href="/track/self-directed/info" className={styles.link}>
+        <span>
+          <span className={styles.linkTitle}>Practical things</span>
+          <span className={styles.promptBody} style={{ display: "block", marginTop: 3 }}>
+            Bridging prescriptions, bloods without a GP, storage, sharps, and
+            where people get their information.
+          </span>
+        </span>
+        <span className={styles.linkMeta}>Read</span>
+      </Link>
+
       <div className={feature.section}>
         <div className={feature.sectionTitle}>Where you are</div>
         <div className={styles.overview}>

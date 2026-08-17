@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.25";
+export const APP_VERSION = "0.5.26";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.26",
+    date: "2026-08-17",
+    title: "Practical things nobody tells you",
+    items: [
+      { tag: "new", text: "An information page inside Self-directed care. Bridging prescriptions and why your GP is allowed to write one, getting bloods done without a GP and roughly what that costs, storing vials, sharps disposal, and what actually happens if a package gets stopped at the border." },
+      { tag: "new", text: "Still no dosing advice and nothing telling you where to buy anything. What is there was researched and sourced rather than written from memory, and anything we could not confirm was cut instead of hedged." },
+      { tag: "new", text: "A short list of places that do cover the rest, kept clearly separate and clearly marked as other people's work rather than ours. The two that cover suppliers say so on the label." },
+      { tag: "improved", text: "One thing worth pulling out: if a package is seized you have one month to respond, it is set in law, and there is no provision for late challenges. Sitting on the letter is the one move that costs you every option." },
+    ],
+  },
   {
     version: "0.5.25",
     date: "2026-08-17",
