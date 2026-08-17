@@ -338,3 +338,79 @@ select {
 :root[data-reduce-visual-noise="true"] [data-blossom-decoration] {
   display: none;
 }
+
+/* ============================================================
+   "Your colour" - the one theme a person builds themselves.
+   ============================================================
+
+   Only the hue is theirs. Every lightness and chroma below is fixed, and
+   written in oklch because oklch lightness is perceptually uniform: L=0.25
+   text looks equally dark at every hue on the wheel. So whatever colour
+   somebody lands on, the contrast between text and background is the same as
+   it was at the default. There is no setting here that can make Blossom
+   unreadable, which is the entire reason this is a hue slider and not three
+   colour pickers.
+
+   --pink, --mint and --sky deliberately do NOT follow the hue. They are the
+   semantic colours, and --pink is the crisis chip at the top of Home. A
+   palette that could tint crisis help into the background would be the one
+   genuinely dangerous thing a theme could do. */
+:root[data-theme="your-colour"] {
+  --accent-hue: 295;
+
+  --lavender: oklch(0.74 0.13 var(--accent-hue));
+  --plum: oklch(0.26 0.05 var(--accent-hue));
+
+  --bg: oklch(0.985 0.006 var(--accent-hue));
+  --bg-raised: oklch(0.963 0.013 var(--accent-hue));
+  --border: oklch(0.918 0.019 var(--accent-hue));
+
+  --text-primary: oklch(0.26 0.045 var(--accent-hue));
+  --text-secondary: oklch(0.505 0.032 var(--accent-hue));
+  --text-muted: oklch(0.585 0.026 var(--accent-hue));
+
+  --nav-active: oklch(0.5 0.14 var(--accent-hue));
+  --focus-ring: oklch(0.55 0.15 var(--accent-hue));
+  --gradient-brand: linear-gradient(
+    135deg,
+    oklch(0.8 0.11 var(--accent-hue)),
+    oklch(0.72 0.13 calc(var(--accent-hue) + 40))
+  );
+}
+
+/* Dark is not the light palette inverted. Text and background swap ends of
+   the lightness scale while chroma stays low, so a vivid hue doesn't turn
+   into a glowing background at 2am. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="your-colour"]:not([data-appearance="light"]) {
+    --lavender: oklch(0.8 0.12 var(--accent-hue));
+    --plum: oklch(0.22 0.03 var(--accent-hue));
+
+    --bg: oklch(0.185 0.022 var(--accent-hue));
+    --bg-raised: oklch(0.235 0.028 var(--accent-hue));
+    --border: oklch(0.315 0.032 var(--accent-hue));
+
+    --text-primary: oklch(0.945 0.014 var(--accent-hue));
+    --text-secondary: oklch(0.79 0.024 var(--accent-hue));
+    --text-muted: oklch(0.7 0.024 var(--accent-hue));
+
+    --nav-active: oklch(0.8 0.12 var(--accent-hue));
+    --focus-ring: oklch(0.75 0.13 var(--accent-hue));
+  }
+}
+
+:root[data-theme="your-colour"][data-appearance="dark"] {
+  --lavender: oklch(0.8 0.12 var(--accent-hue));
+  --plum: oklch(0.22 0.03 var(--accent-hue));
+
+  --bg: oklch(0.185 0.022 var(--accent-hue));
+  --bg-raised: oklch(0.235 0.028 var(--accent-hue));
+  --border: oklch(0.315 0.032 var(--accent-hue));
+
+  --text-primary: oklch(0.945 0.014 var(--accent-hue));
+  --text-secondary: oklch(0.79 0.024 var(--accent-hue));
+  --text-muted: oklch(0.7 0.024 var(--accent-hue));
+
+  --nav-active: oklch(0.8 0.12 var(--accent-hue));
+  --focus-ring: oklch(0.75 0.13 var(--accent-hue));
+}

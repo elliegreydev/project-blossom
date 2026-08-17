@@ -146,3 +146,65 @@
   line-height: 1.55;
   margin: 0 2px 40px;
 }
+
+/* The hue slider, shown only once "Your colour" is the chosen theme. */
+.hueBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 15px 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 11%, var(--bg-raised));
+}
+
+.hueLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* The track is the whole wheel, so the control shows what it does before it's
+   touched. Written out in oklch at the same lightness and chroma the theme
+   uses, so the swatch under the thumb is the colour you actually get. */
+.hueSlider {
+  width: 100%;
+  height: 22px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    oklch(0.74 0.13 0), oklch(0.74 0.13 60), oklch(0.74 0.13 120),
+    oklch(0.74 0.13 180), oklch(0.74 0.13 240), oklch(0.74 0.13 300),
+    oklch(0.74 0.13 359)
+  );
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.hueSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 3px solid var(--text-primary);
+  cursor: grab;
+}
+
+.hueSlider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 3px solid var(--text-primary);
+  cursor: grab;
+}
+
+.hueSlider:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}

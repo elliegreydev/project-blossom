@@ -34,12 +34,39 @@ export const THEMES = [
     name: "In Bloom",
     description: "Deep violet with hot pink and cyan. Loud, and not sorry about it.",
   },
+  {
+    id: "your-colour",
+    name: "Your colour",
+    description: "Pick any colour you like and Blossom builds itself around it.",
+  },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 export type Appearance = "system" | "light" | "dark";
 
 export const DEFAULT_THEME: ThemeId = "classic";
+
+/**
+ * The hue behind the "Your colour" theme, 0-359 on the colour wheel.
+ *
+ * Only the hue is the person's to choose. Every lightness and chroma in that
+ * theme is fixed in globals.css using oklch, which is perceptually uniform:
+ * the same lightness looks equally light at every hue. That's the whole
+ * safety property. Sliders for background and text separately would let
+ * somebody build a palette they can't read - probably on a good day, and then
+ * need the app on a bad one - and there'd be no way back except finding
+ * Settings they can no longer see.
+ *
+ * The semantic colours stay out of it too. Crisis help is pink because it is
+ * always pink; a custom palette must never be able to hide the one thing on
+ * Home that somebody might be looking for in a hurry.
+ */
+export const DEFAULT_HUE = 295;
+export const HUE_STORAGE_KEY = "blossom-hue";
+
+export function isHue(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 359;
+}
 export const DEFAULT_APPEARANCE: Appearance = "system";
 
 export const APPEARANCES: { id: Appearance; name: string; description: string }[] = [
@@ -63,11 +90,19 @@ export function isAppearance(value: unknown): value is Appearance {
 export const THEME_STORAGE_KEY = "blossom-theme";
 export const APPEARANCE_STORAGE_KEY = "blossom-appearance";
 
-export function applyThemeToDocument(theme: ThemeId, appearance: Appearance): void {
+export function applyThemeToDocument(theme: ThemeId, appearance: Appearance, hue?: number): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.dataset.appearance = appearance;
+  if (isHue(hue)) {
+    root.style.setProperty("--accent-hue", String(hue));
+    try {
+      localStorage.setItem(HUE_STORAGE_KEY, String(hue));
+    } catch {
+      // Same as below: it still applies for this session.
+    }
+  }
   // Keeps native form controls and scrollbars in step with the choice.
   root.style.colorScheme = appearance === "system" ? "light dark" : appearance;
   try {

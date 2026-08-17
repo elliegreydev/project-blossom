@@ -5,7 +5,7 @@ import Dexie, { type EntityTable } from "dexie";
 // `db` value from this file.
 import type { ResourceCategory } from "./regionResources";
 import { localDateKey, todayLocalDateKey } from "@/lib/dates";
-import { DEFAULT_APPEARANCE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
+import { DEFAULT_APPEARANCE, DEFAULT_HUE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import { snoozeUntil } from "@/lib/support";
 
@@ -82,6 +82,10 @@ export interface Profile {
   // any theme in either appearance - see src/lib/themes.ts.
   theme: ThemeId;
   appearance: Appearance;
+  // The hue behind the "Your colour" theme, 0-359. Device-local like the
+  // theme itself: someone might want one colour on their phone and another
+  // on a laptop, and it never leaves the device either way.
+  themeHue: number;
   // INERT. Gentle Mode and Low-Energy Mode were both pulled before release
   // and are still listed on the roadmap as unbuilt. Nothing in the app can set
   // either of these, so both are permanently false: the reads that remain (in
@@ -1839,6 +1843,7 @@ export const DEFAULT_PROFILE: Profile = {
   reminderPrivacy: "discreet",
   theme: DEFAULT_THEME,
   appearance: DEFAULT_APPEARANCE,
+  themeHue: DEFAULT_HUE,
   gentleMode: false,
   lowEnergyMode: false,
   homePhoneLayout: defaultHomeLayout(),
@@ -1922,6 +1927,7 @@ export async function getOrCreateProfile(): Promise<Profile> {
   if (existing.accessibilityProfile === undefined) backfill.accessibilityProfile = "custom";
   if (existing.notificationsEnabled === undefined) backfill.notificationsEnabled = false;
   if (existing.timezone === undefined) backfill.timezone = null;
+  if (existing.themeHue === undefined) backfill.themeHue = DEFAULT_HUE;
   if (existing.gentleMode === undefined) backfill.gentleMode = false;
   if (existing.lowEnergyMode === undefined) backfill.lowEnergyMode = false;
   if (existing.homePhoneLayout === undefined) backfill.homePhoneLayout = defaultHomeLayout();

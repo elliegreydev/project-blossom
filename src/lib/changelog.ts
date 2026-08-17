@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.14";
+export const APP_VERSION = "0.5.15";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.15",
+    date: "2026-08-17",
+    title: "Make it your colour",
+    items: [
+      { tag: "new", text: "A sixth theme called Your colour, with a slider for the whole colour wheel. Pick a colour you like and Blossom rebuilds itself around it, light and dark both." },
+      { tag: "improved", text: "You can't make it unreadable. Only the colour changes; how light or dark the text and background are stays fixed wherever you put the slider. Crisis support keeps its own colour too, so nothing you choose can make it hard to spot." },
+    ],
+  },
   {
     version: "0.5.14",
     date: "2026-08-17",
