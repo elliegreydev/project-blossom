@@ -50,9 +50,9 @@
      system face. Body text stays Inter throughout for readability. */
   --font-display: var(--font-manrope), var(--font-inter), sans-serif;
 
-  /* Shape */
-  --radius: 15px;
-  --radius-sm: 10px;
+  /* Shape. Rounder than before, matching the 2026 sheet. */
+  --radius: 18px;
+  --radius-sm: 12px;
   --radius-pill: 999px;
 
   /* Motion */

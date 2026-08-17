@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  addCheckIn,
   db,
   LOCAL_PROFILE_ID,
   dismissAuroraNudge,
@@ -17,7 +18,18 @@ import {
   type Milestone,
   type JourneyEvent,
 } from "@/lib/db";
+import { todayLocalDateKey } from "@/lib/dates";
 import { auroraQuietStatus, selectAuroraSuggestion } from "@/lib/aurora";
+
+/* Ellie's Home mockup, in her order and her words. The scale runs calm to
+   anxious rather than bad to good, because "how are you" is not a score. */
+const HOME_MOODS: { value: number; label: string; face: string }[] = [
+  { value: 5, label: "Calm", face: "😌" },
+  { value: 4, label: "Good", face: "🙂" },
+  { value: 3, label: "Okay", face: "😐" },
+  { value: 2, label: "Not great", face: "🙁" },
+  { value: 1, label: "Anxious", face: "😰" },
+];
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
 import BetaNudge from "@/components/BetaNudge";
@@ -177,10 +189,34 @@ export default function HomePage() {
   const quietHome = essentialsActive(profile.lowEnergyMode, profile.lowEnergyUntil, now);
   const quietDaysLeft = essentialsDaysLeft(profile.lowEnergyUntil, now);
 
-  const orderedBlocks = [...selectedLayout.order, ...Object.keys(selectedLayout.blockWidths) as HomeBlockKey[]]
+  // Blocks introduced after the layout system shipped. Anyone whose saved
+  // layout predates one of these still sees it.
+  const NEWER_BLOCKS: HomeBlockKey[] = ["checkin"];
+
+  // One a day is the point at which a prompt stops being a kindness, so the
+  // block acknowledges the check-in rather than asking again.
+  const checkedInToday = (checkIns ?? []).some(
+    (entry) => entry.createdAt.slice(0, 10) === todayLocalDateKey()
+  );
+
+  async function quickCheckIn(mood: number) {
+    await addCheckIn({ mood, energy: null, confidence: null, stress: null, comfort: null, note: null, period: null });
+  }
+
+  // NEWER_BLOCKS has to be in the source array as well as the filter. An
+  // existing profile has neither `order` nor `blockWidths` entry for a block
+  // added later, so filtering alone never sees it and the block silently does
+  // not exist for anybody who already uses Blossom.
+  const orderedBlocks = [...selectedLayout.order, ...Object.keys(selectedLayout.blockWidths) as HomeBlockKey[], ...NEWER_BLOCKS]
     .filter((block, index, all) => all.indexOf(block) === index)
-    .filter((block): block is HomeBlockKey => ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"].includes(block))
-    .filter((block) => selectedLayout.visibleBlocks.includes(block))
+    .filter((block): block is HomeBlockKey => ["focus", "today", "upcoming", "checkin", "supplies", "pinned", "journey", "aurora", "nudges"].includes(block))
+    // A block added after somebody saved their layout is absent from both
+    // their `order` and their `visibleBlocks`, so filtering strictly on what
+    // they saved would hide every future block from every existing user. New
+    // keys are treated as visible until they deliberately turn one off, which
+    // is why NEWER_BLOCKS exists rather than a Dexie migration rewriting
+    // everybody's saved layout underneath them.
+    .filter((block) => selectedLayout.visibleBlocks.includes(block) || NEWER_BLOCKS.includes(block))
     .filter((block) => !desiredBlocks || desiredBlocks.has(block));
   const activeIntention = intention ? INTENTIONS[intention] : null;
 
@@ -230,6 +266,38 @@ export default function HomePage() {
     );
     if (block === "today") return <section className={styles.section}><h2 className={styles.sectionTitle}>Today</h2>{todayItems.length === 0 ? <div className={styles.emptyRow}><strong>Nothing needs you right now.</strong><span>A quiet day is allowed.</span></div> : todayItems.map((item) => <Link key={item.id} href={item.href} className={`${styles.card} ${item.overdue ? styles.cardOverdue : ""}`}><div className={styles.cardTitle}>{item.label}</div><div className={styles.cardMeta}>{item.overdue ? `Overdue · was due ${item.meta}` : item.meta}</div></Link>)}</section>;
     if (block === "upcoming") return <section className={styles.section}><h2 className={styles.sectionTitle}>Coming up</h2>{upcoming.length === 0 ? <div className={styles.emptyRow}><strong>Nothing scheduled yet.</strong><span>Appointments will appear here when they’re useful.</span></div> : upcoming.map((appointment) => <Link key={appointment.id} href="/plan" className={styles.card}><div className={styles.cardTitle}>{appointment.title}</div><div className={styles.cardMeta}>{new Date(appointment.appointmentAt).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {timeLabel(appointment.appointmentAt)}</div></Link>)}</section>;
+    if (block === "checkin") return (
+      <section className={styles.section} aria-labelledby="home-checkin-title">
+        <h2 id="home-checkin-title" className={styles.sectionTitle}>How are you feeling?</h2>
+        {checkedInToday ? (
+          <div className={styles.emptyRow}>
+            <strong>Checked in today.</strong>
+            <span>Come back tomorrow, or add another whenever you want.</span>
+          </div>
+        ) : (
+          <>
+            {/* Five faces, one tap, saved immediately. The full check-in with
+                notes and influences lives in the Journal; this is the version
+                you can do while the kettle boils. Deliberately no streak and
+                no "you missed a day", per the design principle. */}
+            <div className={styles.moodRow}>
+              {HOME_MOODS.map((mood) => (
+                <button
+                  key={mood.value}
+                  type="button"
+                  className={styles.moodButton}
+                  onClick={() => void quickCheckIn(mood.value)}
+                >
+                  <span aria-hidden="true">{mood.face}</span>
+                  <span>{mood.label}</span>
+                </button>
+              ))}
+            </div>
+            <Link href="/care/journal" className={styles.link}>Add more detail</Link>
+          </>
+        )}
+      </section>
+    );
     if (block === "supplies") return <section className={styles.section} aria-labelledby="supply-heads-up-title"><div className={styles.linkRow}><div><div className={styles.eyebrow}>Supplies</div><h2 id="supply-heads-up-title" className={styles.sectionTitle}>A small supply heads-up</h2></div><Link href="/care/medication" className={styles.link}>Review</Link></div>{supplyHeadsUps.length === 0 ? <div className={styles.emptyRow}><strong>Nothing needs checking.</strong><span>Supply heads-ups appear only when they may help.</span></div> : supplyHeadsUps.map((supply) => <Link key={supply.id} href="/care/medication" className={styles.card}><div className={styles.cardTitle}>{supply.label}</div><div className={styles.cardMeta}>{supply.meta}</div></Link>)}</section>;
     if (block === "pinned") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Shortcuts</div><h2 className={styles.sectionTitle}>Pinned tools</h2></div><Link href="/settings/home" className={styles.link}>Edit</Link></div>{selectedLayout.pinnedTools.length === 0 ? <div className={styles.emptyRow}><strong>Nothing pinned yet.</strong><span>Choose shortcuts in Home screen settings.</span></div> : <div className={styles.pinnedGrid}>{selectedLayout.pinnedTools.map((key) => <Link key={key} href={SHORTCUTS[key].href} className={styles.pinnedTool}>{SHORTCUTS[key].label}</Link>)}</div>}</section>;
     if (block === "journey") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Journey</div><h2 className={styles.sectionTitle}>Recent activity</h2></div><Link href="/journey" className={styles.link}>View all</Link></div>{recentJourney.length === 0 ? <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div> : recentJourney.map((entry) => <div key={entry.id} className={styles.card}><div className={styles.cardTitle}>{entry.title}</div>{formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}</div>)}</section>;
