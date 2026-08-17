@@ -9,6 +9,13 @@ import { essentialsExpiryFor, type EssentialsDuration } from "@/lib/justTheEssen
 import { DEFAULT_APPEARANCE, DEFAULT_HUE, DEFAULT_THEME, isAppearance, isThemeId, type Appearance, type ThemeId } from "@/lib/themes";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
 import { snoozeUntil } from "@/lib/support";
+import { countsAsContact } from "@/lib/referrals";
+import type {
+  ContactMethod,
+  ReferralKind,
+  ReferralStatus,
+  ReferralUpdateKind,
+} from "@/lib/referrals";
 
 export type AuroraMode = "quiet" | "gentle" | "supportive" | "disabled";
 export type HrtStatus = "on" | "considering" | "not_tracking" | null;
@@ -62,7 +69,8 @@ export type ModuleKey =
   | "presentation"
   | "bodyProgress"
   | "budget"
-  | "intimacy";
+  | "intimacy"
+  | "waitingList";
 
 export interface Profile {
   id: string;
@@ -474,6 +482,55 @@ export interface Appointment {
   // reminder is configured. Undefined on rows created before this field
   // existed - callers treat that the same as null.
   reminderMinutesBefore: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Waiting lists ---------------------------------------------------------------
+// A referral, and a log of everything that's happened to it. See
+// src/lib/referrals.ts for the reasoning; the short version is that this is
+// the paperwork somebody never got given, and the thing they can point at when
+// a service says there's no record of them.
+//
+// Every date here is a "YYYY-MM-DD" key rather than a timestamp, because a
+// referral happened on a day, not at a moment, and storing a moment is how you
+// end up telling somebody in Britain they were referred the day before they
+// were.
+
+export interface Referral {
+  id: string;
+  serviceName: string;
+  kind: ReferralKind;
+  /** Null is a first-class answer. Plenty of people genuinely don't know when
+   *  their GP sent it, and that's the reason to chase, not a reason to be
+   *  locked out of the form. */
+  referredOn: string | null;
+  referredBy: string | null;
+  referenceNumber: string | null;
+  status: ReferralStatus;
+  /** Days between check-in nudges, or null for none. Null is the default:
+   *  an unrequested notification about your gender clinic wait is a horrible
+   *  surprise to get on a bus. */
+  chaseEveryDays: number | null;
+  lastChasedOn: string | null;
+  /** Optional link to Trans Clinic Index, so the page can show what the
+   *  service last published. Just an id - no figures are cached on the row,
+   *  because a figure copied onto a record here would never be updated again. */
+  clinicIndexId: number | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReferralUpdate {
+  id: string;
+  referralId: string;
+  /** "YYYY-MM-DD" - the day it happened, not the day it was typed in. */
+  happenedOn: string;
+  kind: ReferralUpdateKind;
+  contactMethod: ContactMethod | null;
+  spokeTo: string | null;
+  body: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -922,7 +979,9 @@ export type SyncEntity =
   | "budget_entry"
   | "budget_goal"
   | "support_map_entry"
-  | "safety_check_in";
+  | "safety_check_in"
+  | "referral"
+  | "referral_update";
 
 export interface SyncOutboxItem {
   id: string;
@@ -987,6 +1046,8 @@ type BlossomDb = Dexie & {
   careSupplies: EntityTable<CareSupply, "id">;
   careSupplyAdjustments: EntityTable<CareSupplyAdjustment, "id">;
   appointments: EntityTable<Appointment, "id">;
+  referrals: EntityTable<Referral, "id">;
+  referralUpdates: EntityTable<ReferralUpdate, "id">;
   journalEntries: EntityTable<JournalEntry, "id">;
   intimacyEntries: EntityTable<IntimacyEntry, "id">;
   euphoriaEntries: EntityTable<EuphoriaEntry, "id">;
@@ -1824,6 +1885,50 @@ function createDb(): BlossomDb {
     syncOutbox: "id, entity, changedAt",
     syncMeta: "key",
   });
+
+  // Waiting lists. Adding tables only, so Dexie carries every existing
+  // row across untouched and there's no upgrade function to get wrong.
+  instance.version(29).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    referrals: "id, status, referredOn",
+    referralUpdates: "id, referralId, happenedOn",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    trips: "id, startDate, endDate",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
   return instance;
 }
 
@@ -2124,6 +2229,8 @@ export async function enqueueSnapshot(entities: SyncEntity[]): Promise<void> {
     ["care_supply", take("care_supply") ? await db.careSupplies.toArray() : []],
     ["care_supply_adjustment", take("care_supply_adjustment") ? await db.careSupplyAdjustments.toArray() : []],
     ["appointment", take("appointment") ? await db.appointments.toArray() : []],
+    ["referral", take("referral") ? await db.referrals.toArray() : []],
+    ["referral_update", take("referral_update") ? await db.referralUpdates.toArray() : []],
     ["check_in", take("check_in") ? await db.checkIns.toArray() : []],
     ["goal", take("goal") ? await db.goals.toArray() : []],
     ["journal_entry", take("journal_entry") ? await db.journalEntries.toArray() : []],
@@ -2671,6 +2778,101 @@ export async function deleteAppointment(id: string): Promise<void> {
   await db.transaction("rw", db.appointments, db.syncOutbox, async () => {
     await db.appointments.delete(id);
     await recordSyncChange("appointment", id, "delete", changedAt);
+  });
+}
+
+// Waiting lists ---------------------------------------------------------------
+
+export type ReferralInput = Pick<
+  Referral,
+  | "serviceName"
+  | "kind"
+  | "referredOn"
+  | "referredBy"
+  | "referenceNumber"
+  | "status"
+  | "chaseEveryDays"
+  | "clinicIndexId"
+  | "note"
+>;
+
+export async function addReferral(input: ReferralInput): Promise<Referral> {
+  const now = new Date().toISOString();
+  const referral: Referral = { id: newId(), lastChasedOn: null, createdAt: now, updatedAt: now, ...input };
+  await db.transaction("rw", db.referrals, db.syncOutbox, async () => {
+    await db.referrals.add(referral);
+    await recordSyncChange("referral", referral.id, "upsert", now);
+  });
+  return referral;
+}
+
+export async function updateReferral(id: string, patch: Partial<Referral>): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.referrals, db.syncOutbox, async () => {
+    await db.referrals.update(id, { ...patch, updatedAt: changedAt });
+    await recordSyncChange("referral", id, "upsert", changedAt);
+  });
+}
+
+/** Removes the referral and everything logged against it. An update whose
+ *  referral is gone is unreachable in the UI but would still sit in the
+ *  export and sync forever, so the children go too - and each one gets its
+ *  own delete queued, or another device would keep them. */
+export async function deleteReferral(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.referrals, db.referralUpdates, db.syncOutbox, async () => {
+    const children = await db.referralUpdates.where("referralId").equals(id).toArray();
+    for (const child of children) {
+      await db.referralUpdates.delete(child.id);
+      await recordSyncChange("referral_update", child.id, "delete", changedAt);
+    }
+    await db.referrals.delete(id);
+    await recordSyncChange("referral", id, "delete", changedAt);
+  });
+}
+
+export type ReferralUpdateInput = Pick<
+  ReferralUpdate,
+  "referralId" | "happenedOn" | "kind" | "contactMethod" | "spokeTo" | "body"
+>;
+
+/**
+ * Log something that happened, and move the chase clock on if it was you who
+ * made contact.
+ *
+ * Doing both in one transaction is the point. If logging a call didn't reset
+ * the clock, the app would go on telling somebody to ring a clinic they rang
+ * this morning, which is the fastest way to get a reminder switched off for
+ * good.
+ */
+export async function addReferralUpdate(input: ReferralUpdateInput): Promise<ReferralUpdate> {
+  const now = new Date().toISOString();
+  const update: ReferralUpdate = { id: newId(), createdAt: now, updatedAt: now, ...input };
+  await db.transaction("rw", db.referrals, db.referralUpdates, db.syncOutbox, async () => {
+    await db.referralUpdates.add(update);
+    await recordSyncChange("referral_update", update.id, "upsert", now);
+
+    if (countsAsContact(update.kind)) {
+      const referral = await db.referrals.get(update.referralId);
+      // Only ever moves forward. Adding a call you forgot to log from March
+      // shouldn't undo one you logged in July.
+      if (referral && (!referral.lastChasedOn || update.happenedOn > referral.lastChasedOn)) {
+        await db.referrals.update(update.referralId, {
+          lastChasedOn: update.happenedOn,
+          updatedAt: now,
+        });
+        await recordSyncChange("referral", update.referralId, "upsert", now);
+      }
+    }
+  });
+  return update;
+}
+
+export async function deleteReferralUpdate(id: string): Promise<void> {
+  const changedAt = new Date().toISOString();
+  await db.transaction("rw", db.referralUpdates, db.syncOutbox, async () => {
+    await db.referralUpdates.delete(id);
+    await recordSyncChange("referral_update", id, "delete", changedAt);
   });
 }
 
@@ -3543,7 +3745,8 @@ export type DataExportSection =
   | "budget"
   | "savedLinks"
   | "supportMap"
-  | "intimacy";
+  | "intimacy"
+  | "waitingList";
 
 export type DataExportSelection = Record<DataExportSection, boolean>;
 
@@ -3561,6 +3764,7 @@ export const DEFAULT_DATA_EXPORT_SELECTION: DataExportSelection = {
   savedLinks: true,
   supportMap: false,
   intimacy: false,
+  waitingList: true,
 };
 
 export async function exportAllData(): Promise<Record<string, unknown>> {
@@ -3575,6 +3779,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     careSupplies,
     careSupplyAdjustments,
     appointments,
+    referrals,
+    referralUpdates,
     journalEntries,
     euphoriaEntriesRaw,
     socialTransitionPeople,
@@ -3604,6 +3810,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.careSupplies.toArray(),
     db.careSupplyAdjustments.toArray(),
     db.appointments.toArray(),
+    db.referrals.toArray(),
+    db.referralUpdates.toArray(),
     db.journalEntries.toArray(),
     db.euphoriaEntries.toArray(),
     db.socialTransitionPeople.toArray(),
@@ -3658,6 +3866,8 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     careSupplies,
     careSupplyAdjustments,
     appointments,
+    referrals,
+    referralUpdates,
     journalEntries,
     euphoriaEntries,
     socialTransitionPeople,
@@ -3701,6 +3911,8 @@ export async function exportSelectedData(selection: DataExportSelection): Promis
     careSupplies: selection.medications ? all.careSupplies : [],
     careSupplyAdjustments: selection.medications ? all.careSupplyAdjustments : [],
     appointments: selection.appointments ? all.appointments : [],
+    referrals: selection.waitingList ? all.referrals : [],
+    referralUpdates: selection.waitingList ? all.referralUpdates : [],
     journalEntries: selection.journal ? all.journalEntries : [],
     checkIns: selection.journal ? all.checkIns : [],
     goals: selection.goals ? all.goals : [],
@@ -3733,6 +3945,7 @@ const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys:
   { section: "journey", label: "Journey", keys: ["milestones", "journeyEvents"], tables: ["milestones", "journeyEvents"] },
   { section: "medications", label: "Medications & supplies", keys: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"], tables: ["medications", "medicationLogs", "medicationSupplies", "medicationSupplyAdjustments", "careSupplies", "careSupplyAdjustments"] },
   { section: "appointments", label: "Appointments", keys: ["appointments"], tables: ["appointments"] },
+  { section: "waitingList", label: "Waiting lists", keys: ["referrals", "referralUpdates"], tables: ["referrals", "referralUpdates"] },
   { section: "journal", label: "Journal & check-ins", keys: ["journalEntries", "checkIns"], tables: ["journalEntries", "checkIns"] },
   { section: "goals", label: "Goals", keys: ["goals"], tables: ["goals"] },
   { section: "health", label: "Health & body records", keys: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"], tables: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"] },
@@ -3841,6 +4054,8 @@ export async function deleteAllData(): Promise<void> {
       db.careSupplies,
       db.careSupplyAdjustments,
       db.appointments,
+      db.referrals,
+      db.referralUpdates,
       db.journalEntries,
       db.intimacyEntries,
       db.euphoriaEntries,
@@ -3880,6 +4095,8 @@ export async function deleteAllData(): Promise<void> {
         db.careSupplies.clear(),
         db.careSupplyAdjustments.clear(),
         db.appointments.clear(),
+        db.referrals.clear(),
+        db.referralUpdates.clear(),
         db.journalEntries.clear(),
         db.intimacyEntries.clear(),
         db.euphoriaEntries.clear(),

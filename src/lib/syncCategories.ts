@@ -53,6 +53,12 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     entities: ["appointment"],
   },
   {
+    key: "waiting",
+    label: "Waiting lists",
+    description: "Referrals, and what you've been told when you chased them",
+    entities: ["referral", "referral_update"],
+  },
+  {
     key: "journey",
     label: "Journey and goals",
     description: "Milestones, your timeline, and what you're working towards",

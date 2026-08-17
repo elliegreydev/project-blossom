@@ -1,0 +1,219 @@
+/* The wait, printed the size of a fact.
+ *
+ * Everything here is deliberately quiet. There is no progress bar, no
+ * accent-coloured hero number and nothing that fills up, because none of those
+ * would be telling the truth about a queue that isn't moving. The only element
+ * allowed any weight is the prompt to check in, which is the one thing on the
+ * page a person can actually act on. */
+
+.card {
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.serviceName {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.kind {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Status is a label, not a badge of honour. Same neutral treatment for every
+ * value, so "Waiting" doesn't read as a failure next to "Been seen". */
+.status {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.statusLost {
+  border-color: color-mix(in srgb, var(--pink) 40%, var(--border));
+  background: color-mix(in srgb, var(--pink) 12%, var(--bg-sunken));
+  color: var(--text-primary);
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.metaDim {
+  color: var(--text-muted);
+}
+
+/* The only thing on the card with any emphasis, because it's the only thing
+ * you can do something about. */
+.action {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm, 12px);
+  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg-sunken));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.actionTitle {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.actionBody {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.clinicBox {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm, 12px);
+  border: 1px dashed var(--border);
+  background: var(--bg-sunken);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.clinicFigure {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.clinicSource {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.clinicSource a {
+  color: var(--text-secondary);
+}
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.logEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.logBody {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.rowButton {
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  min-height: 38px;
+}
+
+.rowButton:hover {
+  border-color: color-mix(in srgb, var(--lavender) 40%, var(--border));
+  color: var(--text-primary);
+}
+
+.rowButtonPrimary {
+  border-color: color-mix(in srgb, var(--lavender) 50%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 16%, transparent);
+  color: var(--text-primary);
+}
+
+.elsewhere {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.elsewhereItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: inherit;
+  text-decoration: none;
+}
+
+.elsewhereItem:hover {
+  border-color: color-mix(in srgb, var(--lavender) 34%, var(--border));
+}
+
+.elsewhereTitle {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.elsewhereBody {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.attribution {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.attribution a {
+  color: var(--text-secondary);
+}

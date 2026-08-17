@@ -18,6 +18,7 @@ export const MODULE_OPTIONS: ModuleOption[] = [
   { key: "journey", title: "Journey", desc: "Milestones and your timeline" },
   { key: "medication", title: "Medication", desc: "Schedules, reminders, history" },
   { key: "appointments", title: "Appointments", desc: "Clinics, tests, reminders" },
+  { key: "waitingList", title: "Waiting lists", desc: "Referrals, chasing them, and where you are in the queue" },
   { key: "journal", title: "Journal & check-ins", desc: "Notes, mood, reflections" },
   { key: "goals", title: "Goals", desc: "Things you're working towards" },
   { key: "bloodTests", title: "Blood tests", desc: "A private, descriptive record of your results" },

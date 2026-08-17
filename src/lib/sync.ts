@@ -7,6 +7,8 @@ import {
   enqueueSnapshot,
   type Appointment,
   emptyAppointmentBuilderData,
+  type Referral,
+  type ReferralUpdate,
   type AuroraMode,
   type CheckIn,
   type CheckInPeriod,
@@ -52,6 +54,7 @@ import { isAppearance, isThemeId } from "@/lib/themes";
 import { createClient } from "@/lib/supabase/client";
 import { shouldApplyRemoteChange } from "@/lib/sync-policy";
 import { isEntityExcluded, entitiesForCategories } from "@/lib/syncCategories";
+import type { ContactMethod, ReferralKind, ReferralStatus, ReferralUpdateKind } from "@/lib/referrals";
 
 type RemoteRow = Record<string, unknown>;
 
@@ -66,6 +69,8 @@ const SYNC_ORDER: SyncEntity[] = [
   "care_supply",
   "care_supply_adjustment",
   "appointment",
+  "referral",
+  "referral_update",
   "check_in",
   "goal",
   "aurora_nudge",
@@ -96,6 +101,8 @@ const TABLES: Record<SyncEntity, string> = {
   care_supply: "care_supplies",
   care_supply_adjustment: "care_supply_adjustments",
   appointment: "appointments",
+  referral: "referrals",
+  referral_update: "referral_updates",
   check_in: "check_ins",
   goal: "goals",
   aurora_nudge: "aurora_interaction_log",
@@ -417,6 +424,42 @@ async function localPayload(
           }
         : null;
     }
+    case "referral": {
+      const item = await db.referrals.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            service_name: item.serviceName,
+            kind: item.kind,
+            referred_on: item.referredOn,
+            referred_by: item.referredBy,
+            reference_number: item.referenceNumber,
+            status: item.status,
+            chase_every_days: item.chaseEveryDays,
+            last_chased_on: item.lastChasedOn,
+            clinic_index_id: item.clinicIndexId,
+            note: item.note,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
+    case "referral_update": {
+      const item = await db.referralUpdates.get(recordId);
+      return item
+        ? {
+            ...shared,
+            id: item.id,
+            referral_id: item.referralId,
+            happened_on: item.happenedOn,
+            kind: item.kind,
+            contact_method: item.contactMethod,
+            spoke_to: item.spokeTo,
+            body: item.body,
+            created_at: item.createdAt,
+          }
+        : null;
+    }
     case "check_in": {
       const item = await db.checkIns.get(recordId);
       return item
@@ -712,6 +755,12 @@ async function deleteLocal(entity: SyncEntity, row: RemoteRow): Promise<void> {
     case "appointment":
       await db.appointments.delete(id);
       return;
+    case "referral":
+      await db.referrals.delete(id);
+      return;
+    case "referral_update":
+      await db.referralUpdates.delete(id);
+      return;
     case "check_in":
       await db.checkIns.delete(id);
       return;
@@ -992,6 +1041,38 @@ async function applyRemote(entity: SyncEntity, row: RemoteRow): Promise<void> {
         createdAt,
         updatedAt: changedAt,
       } satisfies Appointment);
+      return;
+    }
+    case "referral": {
+      await db.referrals.put({
+        id,
+        serviceName: stringValue(row.service_name),
+        kind: (nullableString(row.kind) ?? "other") as ReferralKind,
+        referredOn: nullableString(row.referred_on),
+        referredBy: nullableString(row.referred_by),
+        referenceNumber: nullableString(row.reference_number),
+        status: (nullableString(row.status) ?? "waiting") as ReferralStatus,
+        chaseEveryDays: nullableNumber(row.chase_every_days),
+        lastChasedOn: nullableString(row.last_chased_on),
+        clinicIndexId: nullableNumber(row.clinic_index_id),
+        note: nullableString(row.note),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies Referral);
+      return;
+    }
+    case "referral_update": {
+      await db.referralUpdates.put({
+        id,
+        referralId: stringValue(row.referral_id),
+        happenedOn: stringValue(row.happened_on),
+        kind: (nullableString(row.kind) ?? "note") as ReferralUpdateKind,
+        contactMethod: nullableString(row.contact_method) as ContactMethod | null,
+        spokeTo: nullableString(row.spoke_to),
+        body: stringValue(row.body),
+        createdAt,
+        updatedAt: changedAt,
+      } satisfies ReferralUpdate);
       return;
     }
     case "check_in": {

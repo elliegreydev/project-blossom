@@ -49,6 +49,19 @@ const TRACKERS: {
     ),
   },
   {
+    module: "waitingList",
+    href: "/track/waiting-list",
+    title: "Waiting lists",
+    desc: "Referrals, chasing them, and where you are",
+    tint: "var(--sky)",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7v5.4l3.2 2" />
+      </svg>
+    ),
+  },
+  {
     module: "goals",
     href: "/track/goals",
     title: "Goals",
