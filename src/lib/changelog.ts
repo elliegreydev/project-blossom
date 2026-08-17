@@ -36,7 +36,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: "new", text: "Waiting lists. A place for a referral: when it was sent, who sent it, the reference number, and what they said the last time you rang. If a service ever tells you there's no record of you, this is the thing you can point at. Switch it on in Settings, under the modules list." },
       { tag: "new", text: "You can log every call. Who you spoke to, how you contacted them, and what they actually said. \"I spoke to Sam on the 12th\" is a lot harder to wave away than \"I rang a while back\"." },
       { tag: "new", text: "Not knowing when you were referred is a proper answer, not a blank box. Loads of people don't. Blossom will suggest asking your GP, because that date is worth having." },
-      { tag: "new", text: "Link a UK gender clinic and Blossom shows what that clinic last published about its own waiting list, and the month it published it. It never estimates when you'll be seen, because nobody honestly can. Those figures come from Trans Clinic Index, who collect them from FOI responses." },
       { tag: "new", text: "Optional nudges to check in, every month, three months or six. Off unless you pick one, and the notification never names the service." },
       { tag: "improved", text: "Referrals and everything logged against them go into your PDF export, so you can print the lot and take it with you." },
     ],
