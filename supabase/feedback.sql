@@ -33,8 +33,21 @@ create policy "feedback_items_public_insert" on public.feedback_items
   );
 
 drop policy if exists "feedback_items_read" on public.feedback_items;
+-- Staff only, deliberately, even though the board itself is public.
+--
+-- This used to be `type = 'feature' or is_staff()`, which let anybody holding
+-- the anon key that ships in the app read the raw table, contact_email and all.
+-- The board has always rendered from feedback_items_public, a view exposing
+-- only safe columns and running with owner rights, so nothing on the page
+-- depends on this policy. Nobody had submitted a contact email yet, so nothing
+-- was ever published, but the first person to leave one would have been.
+-- Reported responsibly by virtualdxs, 18 Aug 2026.
 create policy "feedback_items_read" on public.feedback_items
-  for select using (type = 'feature' or public.is_staff());
+  for select using (public.is_staff());
+
+-- Even a future policy mistake cannot hand these two out. Staff read this
+-- table through the service role, which ignores column grants.
+revoke select (contact_email, reviewed_by) on public.feedback_items from anon, authenticated;
 
 drop policy if exists "feedback_items_staff_update" on public.feedback_items;
 create policy "feedback_items_staff_update" on public.feedback_items

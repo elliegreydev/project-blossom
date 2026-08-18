@@ -193,6 +193,11 @@ as $$
     select 1 from public.support_ticket_access_grants g
     join public.support_tickets t on t.id = g.ticket_id
     where t.user_id = target_user_id
+      -- Consent names ONE member of staff. Without this the grant read as
+      -- "this person is open to support", so any staff account at any rank
+      -- inherited a permission one user gave to one person. Reported
+      -- responsibly by virtualdxs, 18 Aug 2026; no grant was live at the time.
+      and g.requested_by = auth.uid()
       and g.verified_at is not null
       and g.access_expires_at > now()
       and g.revoked_at is null
