@@ -20,7 +20,10 @@ export async function POST() {
   const staffIds = await staffUserIdsAtRank(0);
   const result = await sendPushToStaff(staffIds, {
     title: "New beta tester",
-    body: `${user.email ?? "Someone"} just joined the beta.`,
+    // Not the email. This lands on a staff lock screen, and who joined the
+    // beta of a trans health app is not something to display there. Staff can
+    // see who it was inside the app.
+    body: "Someone just joined the beta.",
     tag: "beta-join",
     url: "https://project-blossom-staff.vercel.app/beta",
   });
