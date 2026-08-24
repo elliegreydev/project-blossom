@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { reportError } from "@/lib/errorReport";
+import { allow, callerKey, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import {
   isClientOperation,
   isErrorSeverity,
@@ -57,6 +58,10 @@ function safeContext(raw: unknown): ErrorContext {
 }
 
 export async function POST(request: Request) {
+  // The app posts its own crashes here, so the ceiling is generous. It was
+  // unlimited before, which meant anyone could fill the error log at will.
+  if (!allow(`errreport:${callerKey(request)}`, 60, HOUR)) return tooManyRequests(3600);
+
   const body = await request.json().catch(() => null);
 
   // Always 200, whatever happens below. The browser has nothing useful to do

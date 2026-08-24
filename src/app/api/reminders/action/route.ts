@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { reportError } from "@/lib/errorReport";
+import { allow, callerKey, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { errorClassOf } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,6 +14,10 @@ export const dynamic = "force-dynamic";
 // the actual writes (mirroring the reminder cron) so this doesn't need to
 // loosen push_notified_reminders' locked-down RLS.
 export async function POST(request: Request) {
+  // Tapped from a notification, so a real person hits this a handful of times
+  // a day. Unlimited before, and it writes via the service role.
+  if (!allow(`reminder:${callerKey(request)}`, 60, HOUR)) return tooManyRequests(3600);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,6 +28,19 @@ export async function POST(request: Request) {
   const key = typeof body?.key === "string" ? body.key : null;
   const action = body?.action;
   if (!key || (action !== "taken" && action !== "snooze")) {
+    return NextResponse.json({ error: "invalid request" }, { status: 400 });
+  }
+  /**
+   * Shape the key before it reaches the database.
+   *
+   * The "taken" branch parses it and then checks the medication really is the
+   * caller's, so it fails closed. The snooze branch does not: it upserts
+   * whatever arrived as reminder_key, through the service role. It is scoped
+   * to their own user_id so nobody else is reachable, but an unbounded string
+   * written straight into a table is still worth refusing. Real keys look like
+   * "medication:<uuid>|<iso>" and are nowhere near this long.
+   */
+  if (key.length > 200 || !/^[a-z]+:[A-Za-z0-9:|._-]+$/.test(key)) {
     return NextResponse.json({ error: "invalid request" }, { status: 400 });
   }
 

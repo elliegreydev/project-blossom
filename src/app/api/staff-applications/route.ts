@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
+import { allow, callerKey, tooManyRequests, HOUR } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,11 @@ const ADMINISTRATOR_RANK = 80;
 // anon client and staff_applications' own RLS (public insert-only), so a
 // bug here can't do more than the database already allows.
 export async function POST(request: Request) {
+  // Before anything else, because the work below makes a service-role
+  // admin.listUsers call and pushes every administrator's phone. Both of
+  // those happened once per request, from anybody, with no limit at all.
+  if (!allow(`join:${callerKey(request)}`, 5, HOUR)) return tooManyRequests(3600);
+
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "invalid request" }, { status: 400 });
 
@@ -46,7 +52,10 @@ export async function POST(request: Request) {
   const recipients = await staffUserIdsAtRank(ADMINISTRATOR_RANK);
   await sendPushToStaff(recipients, {
     title: "New team application",
-    body: `${name} applied to join the team.`,
+    // Never the applicant's own words. This lands on a lock screen and the
+    // name is a stranger's free-text field, so it is not ours to put there.
+    // The link opens the application itself.
+    body: "Someone has applied to join the team.",
     tag: "staff-application",
     url: "https://project-blossom-staff.vercel.app/applications",
   });

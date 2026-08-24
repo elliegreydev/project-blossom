@@ -42,7 +42,11 @@ export async function POST(request: Request) {
   const recipients = ticket.claimed_by ? [ticket.claimed_by] : await staffUserIdsAtRank(ticket.min_rank);
   const result = await sendPushToStaff(recipients, {
     title: "New reply on a support ticket",
-    body: message.body,
+    // Never the message itself. This lands on a lock screen, and a Blossom
+    // support ticket can hold medication details, distress, or somebody's
+    // identity. Both sibling routes already send a fixed string; this one
+    // was sending the lot. The url below still opens the thread.
+    body: "A member has replied to their ticket.",
     tag: `ticket-${ticket.id}`,
     url: `https://project-blossom-staff.vercel.app/support/${ticket.id}`,
   });
