@@ -27,8 +27,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Matches the engines field. Below 20.9 Next itself will not run.
-          node-version: "20.9"
+          # Deliberately newer than the engines field.
+          #
+          # engines says >=20.9 because that is what Next needs to RUN the
+          # app, and that is the right number for anybody installing it. The
+          # test scripts are a different matter: they are .ts run directly
+          # through node, which needs --experimental-strip-types, and that
+          # flag does not exist before 22.6. Pinning CI to the engines
+          # minimum failed on the very first run with "bad option".
+          node-version: "24"
           cache: npm
 
       - run: npm ci
