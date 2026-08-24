@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { secretMatches } from "@/lib/secretCompare";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -48,12 +49,12 @@ function isSection(value: string): value is Section {
 
 function authorisedRead(request: Request) {
   const expected = process.env.HQ_STATS_SECRET;
-  return !!expected && request.headers.get("x-hq-stats-secret") === expected;
+  return !!expected && secretMatches(expected, request.headers.get("x-hq-stats-secret"));
 }
 
 function authorisedWrite(request: Request) {
   const expected = process.env.HQ_ADMIN_SECRET;
-  return !!expected && request.headers.get("x-hq-admin-secret") === expected;
+  return !!expected && secretMatches(expected, request.headers.get("x-hq-admin-secret"));
 }
 
 function serviceClient() {

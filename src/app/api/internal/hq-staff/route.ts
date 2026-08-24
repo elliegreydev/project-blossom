@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { errorClassOf } from "@/lib/errorShape";
+import { secretMatches } from "@/lib/secretCompare";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,7 @@ const EDITABLE_ROLES = ["administrator", "manager", "moderator", "trial_moderato
 function authorised(request: Request) {
   const expected = process.env.HQ_ADMIN_SECRET;
   if (!expected) return false;
-  return request.headers.get("x-hq-admin-secret") === expected;
+  return secretMatches(expected, request.headers.get("x-hq-admin-secret"));
 }
 
 function serviceClient() {
@@ -38,7 +40,7 @@ export async function GET(request: Request) {
     .select("email, role, added_at")
     .order("added_at", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
   return NextResponse.json({ staff: data ?? [] });
 }
 
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
   if (role === "none") {
     if (!existing) return NextResponse.json({ ok: true, email: targetEmail, role: "none" });
     const { error } = await supabase.from("staff_emails").delete().eq("email", targetEmail);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true, email: targetEmail, role: "none" });
   }
 
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
   const { error } = await supabase
     .from("staff_emails")
     .upsert({ email: targetEmail, role }, { onConflict: "email" });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
 
   // staff_emails already has an automatic audit trigger (staff_activity_log)
   // that fires regardless of who writes, service role included - it just

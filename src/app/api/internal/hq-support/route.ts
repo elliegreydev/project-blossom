@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { errorClassOf } from "@/lib/errorShape";
+import { secretMatches } from "@/lib/secretCompare";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +14,12 @@ export const dynamic = "force-dynamic";
 // for now, stays exclusive to the Blossom Staff app.
 function authorisedRead(request: Request) {
   const expected = process.env.HQ_STATS_SECRET;
-  return !!expected && request.headers.get("x-hq-stats-secret") === expected;
+  return !!expected && secretMatches(expected, request.headers.get("x-hq-stats-secret"));
 }
 
 function authorisedWrite(request: Request) {
   const expected = process.env.HQ_ADMIN_SECRET;
-  return !!expected && request.headers.get("x-hq-admin-secret") === expected;
+  return !!expected && secretMatches(expected, request.headers.get("x-hq-admin-secret"));
 }
 
 function serviceClient() {
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
       .eq("ticket_id", ticketId)
       .eq("visible_to_user_only", false)
       .order("created_at", { ascending: true });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
 
     const senderIds = Array.from(new Set((messages ?? []).map((m) => m.sender_id)));
     const { data: profiles } = senderIds.length
@@ -149,13 +151,13 @@ export async function POST(request: Request) {
       .from("support_tickets")
       .update({ claimed_by: actorId, claimed_at: new Date().toISOString() })
       .eq("id", ticketId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
   if (action === "unclaim") {
     const { error } = await supabase.from("support_tickets").update({ claimed_by: null, claimed_at: null }).eq("id", ticketId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
@@ -168,7 +170,7 @@ export async function POST(request: Request) {
       body: messageBody.slice(0, 4000),
       is_system: false,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
@@ -177,13 +179,13 @@ export async function POST(request: Request) {
       .from("support_tickets")
       .update({ status: "resolved", resolved_at: new Date().toISOString() })
       .eq("id", ticketId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
   if (action === "reopen") {
     const { error } = await supabase.from("support_tickets").update({ status: "open", resolved_at: null }).eq("id", ticketId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: errorClassOf(error) }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 

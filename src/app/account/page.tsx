@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, LOCAL_PROFILE_ID } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, deleteAllData } from "@/lib/db";
 import { isHqDevEntry } from "@/lib/devAccess";
 import HqSignInNotice from "@/components/HqSignInNotice";
 import { reportClientError } from "@/lib/clientErrorReport";
@@ -254,6 +254,26 @@ export default function AccountPage() {
     setWorking(false);
   }
 
+  // The complement to the button above. On a shared or borrowed device,
+  // "keep data on this device" is the wrong default, so this offers the other
+  // choice explicitly rather than wiping on every sign-out (which would lose a
+  // local-only user's journal the moment they signed out). Wipe first, then
+  // sign out, so a failure to wipe never leaves them signed out AND exposed.
+  async function signOutAndWipe() {
+    setWorking(true);
+    setError(null);
+    try {
+      await deleteAllData();
+    } catch {
+      setWorking(false);
+      setError("Something went wrong and nothing was removed. You are still signed in. Please try again.");
+      return;
+    }
+    await createClient().auth.signOut();
+    setMessage("Signed out, and this device's Blossom data has been removed.");
+    setWorking(false);
+  }
+
   const ownershipConflict = Boolean(user && syncState?.ownerId && syncState.ownerId !== user.id);
   const syncing = Boolean(syncState?.syncing || working);
   // Dev only. False on production, where the email code sign-in below stays
@@ -445,6 +465,19 @@ export default function AccountPage() {
 
             <button type="button" className={styles.signOutButton} onClick={signOut} disabled={working}>
               Sign out, keep data on this device
+            </button>
+            <button
+              type="button"
+              className={styles.signOutButton}
+              style={{ color: "var(--pink)" }}
+              onClick={() => {
+                if (confirm("Remove all of this device's Blossom data and sign out? This cannot be undone. Export a backup first if you might need it.")) {
+                  void signOutAndWipe();
+                }
+              }}
+              disabled={working}
+            >
+              Sign out and remove data from this device
             </button>
           </>
         )}

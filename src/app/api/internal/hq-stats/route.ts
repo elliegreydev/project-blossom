@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { secretMatches } from "@/lib/secretCompare";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import pkg from "../../../../../package.json";
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   const provided = request.headers.get("x-hq-stats-secret");
-  if (provided !== expected) {
+  if (!secretMatches(expected, provided)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

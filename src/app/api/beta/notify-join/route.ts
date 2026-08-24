@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { allow, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
 
@@ -13,6 +14,9 @@ export async function POST() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // A session is required, but a signed-in caller could replay this to
+  // fan out repeated pushes. Cap it per user.
+  if (!allow(`notify-join:${user.id}`, 5, HOUR)) return tooManyRequests(3600);
 
   const { data: isBetaTester } = await supabase.rpc("is_beta_tester");
   if (isBetaTester !== true) return NextResponse.json({ error: "not a beta tester" }, { status: 403 });
