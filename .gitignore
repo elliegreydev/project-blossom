@@ -55,3 +55,6 @@ android/*.apk
 
 # playwright browsers are machine-local, installed on demand
 /test-results/
+
+# Private working notes. This repository is public.
+/notes
