@@ -68,6 +68,20 @@ export default function AiPage() {
               plenty. The judgement about what Blossom should be, what it refuses to do, and where
               your data is allowed to go is mine.
             </p>
+              <p>
+                That is easy to say, so here are three you can go and check. The waiting list has
+                no progress bar, because a bar that fills up would be a lie about a queue that is
+                not moving. Blossom keeps no waiting times of its own, only what you were told and
+                when, because a number typed in during August is wrong by Christmas, and being
+                wrong about a queue means somebody decides not to ring. Photo backup was designed
+                in full and then not built, because doing it safely without a password meant
+                inventing key management from scratch, and getting that wrong loses somebody their
+                photos for good.
+              </p>
+              <p>
+                Each of those is written into the code with the reasoning beside it, so the
+                decision cannot quietly get undone later. That is what the long comments are for.
+              </p>
             <p>
               What that means in practice is that you should not take my word for how it behaves,
               and you do not have to. The repository is public specifically so the privacy claims

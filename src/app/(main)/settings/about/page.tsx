@@ -74,6 +74,11 @@ export default function AboutBlossomPage() {
         <div className={styles.group}>
           <Row href="/legal/privacy" title="Privacy Policy" />
           <Row href="/legal/terms" title="Terms of Service" />
+            <ExternalRow
+              href="https://github.com/elliegreydev/project-blossom"
+              title="Read the source"
+              meta="Every privacy claim here is checkable"
+            />
         </div>
 
         <p className={styles.versionStamp}>Blossom v{APP_VERSION}</p>

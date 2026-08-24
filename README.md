@@ -20,6 +20,34 @@ There's no analytics, no tracking, and no third party scripts. Not "we don't sel
 
 You don't have to believe any of that, which is most of the reason this repository is public.
 
+## What Blossom isn't
+
+It isn't a medical device, and it doesn't give medical advice. No dosing
+guidance, nothing about where to buy anything, and it will never tell you what
+a blood test result means. Those are questions for a clinician, and Blossom is
+built to refuse them rather than guess.
+
+It doesn't replace care, a prescriber, or a crisis service. If you're in crisis,
+[the crisis page](https://projectblossom.net/crisis-support) has real numbers on
+it and needs no account.
+
+**The resource directory is UK-focused.** There are entries for other countries
+and they're checked, but the depth is here. If you're outside the UK, that's
+worth knowing before you spend an evening on it.
+
+## Getting around it
+
+Everything is optional. You pick which parts exist in onboarding and can change
+it whenever, so if you only want the waiting list tracker, that's all you get.
+
+There are five accessibility presets in settings, including a migraine-friendly
+one that deliberately doesn't raise contrast, because harsh contrast is a
+migraine trigger and the usual accessibility answer gets that backwards.
+
+What's being worked on next is public at
+[projectblossom.net/roadmap](https://projectblossom.net/roadmap), and the full
+changelog is in the app under Settings, About.
+
 ## How this app is built
 
 I use AI to write most of the code here. I'm one person, I'm not a developer by trade, and Blossom would not exist otherwise. That's near the top of this file because it belongs there, not because anyone caught me at it.
@@ -65,6 +93,20 @@ Source available, not open source. See [LICENSE](LICENSE).
 The short version: read it, audit it, run it locally, learn from it. Don't host it for other people, redistribute it, sell it, or ship something called Blossom.
 
 That last part isn't about ownership. If somebody stood up a copy under a similar name, people would trust it because they trust this, and I'd have no idea what it did with their data. Being able to check the code only means something if the thing you checked is the thing you're using.
+
+## Contributing
+
+Bug reports, security reports and ideas are genuinely welcome and I'd rather
+have them than not.
+
+**Pull requests I'll probably decline, and it's fairer to say so up front than
+to leave one sitting.** The reason is the same one the rest of this file is
+about: I can vouch for what's here because I decided it, and I can't vouch for
+code I didn't direct in an app holding this kind of data. Merging something I
+can't stand behind would quietly undo the only argument Blossom has.
+
+If you've spotted something wrong, open an issue and tell me. That's worth more
+to me than a patch, and it's how both of August's security fixes happened.
 
 ## Found a problem?
 
