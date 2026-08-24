@@ -1,6 +1,7 @@
 {
   "name": "project-blossom",
   "version": "0.5.33",
+  "engines": { "node": ">=20.9.0" },
   "private": true,
   "scripts": {
     "dev": "next dev",
