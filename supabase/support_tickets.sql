@@ -203,6 +203,18 @@ as $$
       and g.revoked_at is null
   );
 $$;
+-- code_hash must never leave the server.
+--
+-- The access code is six digits hashed unsalted, which is a million
+-- candidates and therefore not a secret once the hash is readable. Staff could
+-- read it on any ticket they could see, recover the code offline and verify it
+-- themselves, turning the user's consent into a formality. Both RPCs that need
+-- the hash are SECURITY DEFINER, so they are unaffected by this.
+revoke select on public.support_ticket_access_grants from anon, authenticated;
+grant select (id, ticket_id, requested_by, attempts, created_at,
+              expires_at, verified_at, access_expires_at, revoked_at)
+  on public.support_ticket_access_grants to authenticated;
+
 revoke all on function public.has_ticket_access(uuid) from public;
 grant execute on function public.has_ticket_access(uuid) to authenticated;
 

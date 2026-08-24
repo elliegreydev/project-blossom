@@ -6,8 +6,8 @@
 drop policy if exists "staff_avatars_update_own" on storage.objects;
 create policy "staff_avatars_update_own" on storage.objects
   for update using (
-    bucket_id = 'staff-avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'staff-avatars' and public.is_staff() and (storage.foldername(name))[1] = auth.uid()::text
   )
   with check (
-    bucket_id = 'staff-avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'staff-avatars' and public.is_staff() and (storage.foldername(name))[1] = auth.uid()::text
   );

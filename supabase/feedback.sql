@@ -45,9 +45,16 @@ drop policy if exists "feedback_items_read" on public.feedback_items;
 create policy "feedback_items_read" on public.feedback_items
   for select using (public.is_staff());
 
--- Even a future policy mistake cannot hand these two out. Staff read this
--- table through the service role, which ignores column grants.
-revoke select (contact_email, reviewed_by) on public.feedback_items from anon, authenticated;
+-- A column revoke alone does nothing while a table-wide SELECT grant stands:
+-- has_column_privilege answers yes if EITHER grant allows it, and Supabase
+-- grants both roles table-wide SELECT by default. So the grant has to be
+-- dropped and the safe columns handed back explicitly. The policy above is
+-- what closes the leak; this makes the column restriction real rather than
+-- decorative, so it holds even if that policy is ever widened again.
+revoke select on public.feedback_items from anon, authenticated;
+grant select (id, type, title, description, status, vote_count,
+              reviewed_at, created_at, updated_at)
+  on public.feedback_items to authenticated;
 
 drop policy if exists "feedback_items_staff_update" on public.feedback_items;
 create policy "feedback_items_staff_update" on public.feedback_items
@@ -79,8 +86,12 @@ create policy "feedback_votes_public_insert" on public.feedback_votes
   );
 
 drop policy if exists "feedback_votes_public_delete" on public.feedback_votes;
-create policy "feedback_votes_public_delete" on public.feedback_votes
-  for delete using (true);
+-- No delete policy, deliberately.
+--
+-- This used to be `using (true)`, so anybody holding the anon key that ships
+-- in the app could empty the table and zero every count on the public board.
+-- Votes are anonymous and carry no owner, so no client has standing to delete
+-- one. Staff clear them through the service role, which ignores RLS entirely.
 -- Deliberately no select policy - vote rows carry no identity beyond a
 -- random token, and nobody (not even staff) needs to read them directly;
 -- feedback_items.vote_count is the public-facing aggregate.
