@@ -78,25 +78,25 @@ export default function CircleViewerPage({ params }: { params: Promise<{ grantId
     }
     if (category === "journey" && journeyItems.length === 0) {
       const [{ data: m }, { data: e }] = await Promise.all([
-        supabase.from("milestones").select("title,category,event_date,note").eq("user_id", ownerId),
-        supabase.from("journey_events").select("title,category,event_date,note").eq("user_id", ownerId),
+        supabase.from("milestones").select("title,category,event_date,note").eq("user_id", ownerId).is("deleted_at", null),
+        supabase.from("journey_events").select("title,category,event_date,note").eq("user_id", ownerId).is("deleted_at", null),
       ]);
       setJourneyItems([...(m ?? []), ...(e ?? [])].sort((a, b) => String(b.event_date ?? "").localeCompare(String(a.event_date ?? ""))));
     }
     if (category === "medications" && medications.length === 0) {
-      const { data } = await supabase.from("medications").select("name,route,unit,active").eq("user_id", ownerId);
+      const { data } = await supabase.from("medications").select("name,route,unit,active").eq("user_id", ownerId).is("deleted_at", null);
       setMedications(data ?? []);
     }
     if (category === "appointments" && appointments.length === 0) {
-      const { data } = await supabase.from("appointments").select("title,appointment_at,location").eq("user_id", ownerId).order("appointment_at", { ascending: false });
+      const { data } = await supabase.from("appointments").select("title,appointment_at,location").eq("user_id", ownerId).is("deleted_at", null).order("appointment_at", { ascending: false });
       setAppointments(data ?? []);
     }
     if (category === "checkins" && checkIns.length === 0) {
-      const { data } = await supabase.from("check_ins").select("mood,energy,confidence,stress,comfort,created_at").eq("user_id", ownerId).order("created_at", { ascending: false });
+      const { data } = await supabase.from("check_ins").select("mood,energy,confidence,stress,comfort,created_at").eq("user_id", ownerId).is("deleted_at", null).order("created_at", { ascending: false });
       setCheckIns(data ?? []);
     }
     if (category === "goals" && goals.length === 0) {
-      const { data } = await supabase.from("goals").select("title,status,category").eq("user_id", ownerId);
+      const { data } = await supabase.from("goals").select("title,status,category").eq("user_id", ownerId).is("deleted_at", null);
       setGoals(data ?? []);
     }
   }

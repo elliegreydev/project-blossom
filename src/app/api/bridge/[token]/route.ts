@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { allow, callerKey, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { reportError } from "@/lib/errorReport";
 import { errorClassOf } from "@/lib/errorShape";
 
@@ -53,7 +54,12 @@ async function loadLink(token: string) {
 // *names* only, never the actual data, so a link-preview bot fetching this
 // URL (Slack/Discord/iMessage unfurling a pasted link) never sees anything
 // beyond "a share exists for these categories".
-export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
+  // The token is a 122-bit random UUID, so this is a cost guard, not an
+  // anti-guessing one: it stops a stranger spending service-role queries
+  // in a loop against an endpoint that needs no account.
+  if (!allow(`bridge:${callerKey(request)}`, 60, HOUR)) return tooManyRequests(3600);
+
   const { token } = await params;
   const { link, reason } = await loadLink(token);
   if (!link) return NextResponse.json({ valid: false, reason });
@@ -72,7 +78,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
 // never happens on page load, so a bot fetching the GET above can't trigger
 // this path by accident. Logs the access (the "access history" the owner
 // sees) and returns the real data for the granted categories only.
-export async function POST(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
+  // The token is a 122-bit random UUID, so this is a cost guard, not an
+  // anti-guessing one: it stops a stranger spending service-role queries
+  // in a loop against an endpoint that needs no account.
+  if (!allow(`bridge:${callerKey(request)}`, 60, HOUR)) return tooManyRequests(3600);
+
   const { token } = await params;
   const { link, reason } = await loadLink(token);
   if (!link) return NextResponse.json({ valid: false, reason });

@@ -119,27 +119,39 @@ create policy "profiles_circle_read" on public.profiles
 
 drop policy if exists "milestones_circle_read" on public.milestones;
 create policy "milestones_circle_read" on public.milestones
-  for select using (public.has_trusted_circle_access(user_id, 'journey'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'journey') and deleted_at is null);
 
 drop policy if exists "journey_events_circle_read" on public.journey_events;
 create policy "journey_events_circle_read" on public.journey_events
-  for select using (public.has_trusted_circle_access(user_id, 'journey'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'journey') and deleted_at is null);
 
 drop policy if exists "medications_circle_read" on public.medications;
 create policy "medications_circle_read" on public.medications
-  for select using (public.has_trusted_circle_access(user_id, 'medications'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'medications') and deleted_at is null);
 
 drop policy if exists "appointments_circle_read" on public.appointments;
 create policy "appointments_circle_read" on public.appointments
-  for select using (public.has_trusted_circle_access(user_id, 'appointments'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'appointments') and deleted_at is null);
 
 drop policy if exists "check_ins_circle_read" on public.check_ins;
 create policy "check_ins_circle_read" on public.check_ins
-  for select using (public.has_trusted_circle_access(user_id, 'checkins'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'checkins') and deleted_at is null);
 
 drop policy if exists "goals_circle_read" on public.goals;
 create policy "goals_circle_read" on public.goals
-  for select using (public.has_trusted_circle_access(user_id, 'goals'));
+  -- deleted_at is null: a grantee should not keep seeing entries the owner
+  -- deleted, matching the Bridge link. Enforced here, not just in the viewer.
+  for select using (public.has_trusted_circle_access(user_id, 'goals') and deleted_at is null);
 
 -- Access log: every time a grantee actually opens a shared category, the
 -- client writes a row here - a real trail for the normal path, not

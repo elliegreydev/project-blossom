@@ -211,7 +211,19 @@ export default function DataSettingsPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    await deleteAllData();
+    try {
+      await deleteAllData();
+    } catch {
+      // If the wipe throws, the worst outcome is telling somebody their data
+      // is gone when it is not. Say the opposite plainly and let them retry,
+      // rather than leaving the confirm screen spinning forever, which is what
+      // used to happen when deleteAllData aborted.
+      setDeleting(false);
+      setMessage(
+        "Something went wrong and nothing was deleted. Your data is still here. Please try again."
+      );
+      return;
+    }
     setDeleting(false);
     setConfirmOpen(false);
     router.replace(`/data-deleted?at=${encodeURIComponent(new Date().toISOString())}`);

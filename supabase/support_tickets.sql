@@ -432,3 +432,10 @@ create policy "goals_staff_ticket_delete" on public.goals
 drop policy if exists "aurora_interaction_log_staff_ticket_access" on public.aurora_interaction_log;
 create policy "aurora_interaction_log_staff_ticket_access" on public.aurora_interaction_log
   for select using (public.has_ticket_access(user_id));
+
+-- SECURITY DEFINER, staff-only in practice, but left executable by the
+-- default PUBLIC grant. Restrict to authenticated. August red-team pass.
+revoke all on function public.request_ticket_access(uuid) from public, anon;
+grant execute on function public.request_ticket_access(uuid) to authenticated;
+revoke all on function public.verify_ticket_access(uuid, text) from public, anon;
+grant execute on function public.verify_ticket_access(uuid, text) to authenticated;

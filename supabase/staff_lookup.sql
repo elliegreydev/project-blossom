@@ -88,3 +88,8 @@ insert into public.staff_page_permissions (role, page, can_access)
 select role, '/staff-lookup', (role in ('administrator', 'owner'))
 from unnest(array['trial_moderator', 'moderator', 'manager', 'administrator', 'owner']) as role
 on conflict (role, page) do nothing;
+
+-- SECURITY DEFINER, staff-only in practice, but left executable by the
+-- default PUBLIC grant. Restrict to authenticated. August red-team pass.
+revoke all on function public.touch_staff_presence() from public, anon;
+grant execute on function public.touch_staff_presence() to authenticated;
