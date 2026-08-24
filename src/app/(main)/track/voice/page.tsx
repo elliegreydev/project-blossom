@@ -137,7 +137,7 @@ export default function VoicePracticePage() {
                               s.pitchLowHz !== null && s.pitchHighHz !== null ? `≈${s.pitchLowHz}–${s.pitchHighHz} Hz` : null,
                             ]
                               .filter(Boolean)
-                              .join(" · ") || "—"}
+                              .join(" · ") || "No details"}
                           </span>
                         </div>
                       ))}

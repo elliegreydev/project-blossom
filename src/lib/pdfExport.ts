@@ -490,7 +490,7 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.heading("Personal Support Map");
     for (const entry of data.supportMapEntries) {
       d.subheading(entry.name);
-      d.meta([entry.type, entry.area ?? "", entry.labels.join(", ")].filter(Boolean).join(" Â· "));
+      d.meta([entry.type, entry.area ?? "", entry.labels.join(", ")].filter(Boolean).join(" · "));
       d.meta(entry.contact ?? "");
       d.body(entry.note ?? "");
       d.spacer(4);
@@ -501,7 +501,7 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
     d.heading("Intimacy & wellbeing");
     for (const entry of data.intimacyEntries) {
       d.subheading(entry.label ?? "Private entry");
-      d.meta([fmtDate(entry.date), entry.time ?? "", entry.datePrecision === "approximate" ? "Approximate date" : "", entry.feeling ?? ""].filter(Boolean).join(" Â· "));
+      d.meta([fmtDate(entry.date), entry.time ?? "", entry.datePrecision === "approximate" ? "Approximate date" : "", entry.feeling ?? ""].filter(Boolean).join(" · "));
       if (entry.tags.length > 0) d.meta(entry.tags.join(", "));
       d.body(entry.protectionNote ?? "");
       d.body(entry.aftercareNote ?? "");

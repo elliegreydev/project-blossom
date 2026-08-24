@@ -103,7 +103,7 @@ export default function PresentationPage() {
                       >
                         <div className={local.byCategoryRow}>
                           <span className={styles.itemMeta}>{dateLabel(entry.date)}</span>
-                          <span>{entry.confidenceRating ? `Comfort ${entry.confidenceRating}/5` : "—"}</span>
+                          <span>{entry.confidenceRating ? `Comfort ${entry.confidenceRating}/5` : "Not rated"}</span>
                         </div>
                       </button>
                     ))}
