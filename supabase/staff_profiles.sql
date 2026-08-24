@@ -140,7 +140,7 @@ as $$
   where public.is_staff()
   order by se.added_at;
 $$;
-revoke all on function public.staff_directory() from public;
+revoke all on function public.staff_directory() from public, anon;
 grant execute on function public.staff_directory() to authenticated;
 
 -- Avatar storage: public read (so <img> tags just work), write restricted

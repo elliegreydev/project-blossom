@@ -58,7 +58,7 @@ as $$
   join auth.users u on u.id = auth.uid()
   where g.status = 'pending' and lower(g.grantee_email) = lower(u.email);
 $$;
-revoke all on function public.pending_trusted_circle_invites() from public;
+revoke all on function public.pending_trusted_circle_invites() from public, anon;
 grant execute on function public.pending_trusted_circle_invites() to authenticated;
 
 -- Accepting/declining goes through this rather than a direct update, since
@@ -86,7 +86,7 @@ begin
   return coalesce(updated, false);
 end;
 $$;
-revoke all on function public.respond_trusted_circle_invite(uuid, boolean) from public;
+revoke all on function public.respond_trusted_circle_invite(uuid, boolean) from public, anon;
 grant execute on function public.respond_trusted_circle_invite(uuid, boolean) to authenticated;
 
 create or replace function public.has_trusted_circle_access(target_owner_id uuid, target_category text)

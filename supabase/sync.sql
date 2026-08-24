@@ -165,5 +165,5 @@ as $$
   select statement_timestamp();
 $$;
 
-revoke all on function public.blossom_sync_clock() from public;
+revoke all on function public.blossom_sync_clock() from public, anon;
 grant execute on function public.blossom_sync_clock() to authenticated;

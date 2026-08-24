@@ -79,7 +79,7 @@ as $$
   order by happened_at desc
   limit 100;
 $$;
-revoke all on function public.staff_activity_for(uuid) from public;
+revoke all on function public.staff_activity_for(uuid) from public, anon;
 grant execute on function public.staff_activity_for(uuid) to authenticated;
 
 -- "/staff-lookup" joins the per-page permission matrix like every other

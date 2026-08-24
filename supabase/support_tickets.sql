@@ -339,7 +339,7 @@ begin
   values (target_ticket_id, auth.uid(), 'Access ended early by staff.', true);
 end;
 $$;
-revoke all on function public.revoke_ticket_access(uuid) from public;
+revoke all on function public.revoke_ticket_access(uuid) from public, anon;
 grant execute on function public.revoke_ticket_access(uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------

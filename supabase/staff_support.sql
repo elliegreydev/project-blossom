@@ -15,7 +15,7 @@ as $$
   select u.id, u.email from auth.users u
   where public.is_staff() and u.email = lookup_email;
 $$;
-revoke all on function public.find_user_by_email(text) from public;
+revoke all on function public.find_user_by_email(text) from public, anon;
 grant execute on function public.find_user_by_email(text) to authenticated;
 
 create table if not exists public.support_cases (

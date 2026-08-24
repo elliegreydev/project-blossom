@@ -64,7 +64,7 @@ as $$
   where public.is_staff()
   order by c.created_at desc;
 $$;
-revoke all on function public.list_beta_codes() from public;
+revoke all on function public.list_beta_codes() from public, anon;
 grant execute on function public.list_beta_codes() to authenticated;
 
 create or replace function public.revoke_beta_access(target_user_id uuid)
