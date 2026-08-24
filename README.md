@@ -1,5 +1,7 @@
 # Blossom
 
+[![Tests](https://github.com/elliegreydev/project-blossom/actions/workflows/tests.yml/badge.svg)](https://github.com/elliegreydev/project-blossom/actions/workflows/tests.yml)
+
 A support app for trans, nonbinary and questioning adults in the UK.
 
 It keeps the admin of transition in one place: medications and what you've got left, appointments, waiting lists and who you last chased, journal entries, voice practice, body measurements, blood test results, and a directory of real services with a note of when each one was last checked.
@@ -115,3 +117,5 @@ Security issues to **support@projectblossom.net**, or open a GitHub issue for an
 If it's a security problem, please give me a chance to fix it before posting details publicly. Somebody did exactly that, found two real ones without testing either, and it's the most useful thing anyone has done for this project.
 
 I'm one person, so I might be slow, but I do read everything.
+
+There's a [security.txt](https://projectblossom.net/.well-known/security.txt) if you prefer, and [what happens if Blossom stops](https://projectblossom.net/if-blossom-stops) if you were wondering.

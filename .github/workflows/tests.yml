@@ -1,0 +1,45 @@
+# Runs the test suites on every push and pull request.
+#
+# These twelve suites already existed and had never run anywhere but on Ellie's
+# machine, which meant "the parts that matter have tests" was something people
+# had to take on faith. Somebody asked, fairly, how anyone could know the
+# privacy and safety promises held. A green tick they can click is a better
+# answer than a paragraph.
+#
+# They are plain Node scripts with no framework, no database and no secrets, so
+# there is nothing to configure and nothing that can leak from a fork's PR.
+name: Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches the engines field. Below 20.9 Next itself will not run.
+          node-version: "20.9"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run all suites
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # The build only needs these to exist. They are the public anon values
+          # a browser already receives, and the app runs local-only without them.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder

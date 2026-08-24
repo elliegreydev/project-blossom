@@ -25,6 +25,10 @@ const PAGES: { path: string; priority: number; changeFrequency: MetadataRoute.Si
   { path: "/crisis-support", priority: 0.9, changeFrequency: "monthly" },
   { path: "/about", priority: 0.8, changeFrequency: "monthly" },
   { path: "/ai", priority: 0.8, changeFrequency: "monthly" },
+  // Two pages that answer the questions a careful person asks before
+  // trusting a health app run by one person.
+  { path: "/if-blossom-stops", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/changelog", priority: 0.6, changeFrequency: "weekly" },
   { path: "/roadmap", priority: 0.6, changeFrequency: "weekly" },
   { path: "/ideas", priority: 0.5, changeFrequency: "weekly" },
   { path: "/blog", priority: 0.5, changeFrequency: "weekly" },
