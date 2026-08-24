@@ -269,6 +269,7 @@ export default function OnboardingPage() {
                   key={opt.key}
                   type="button"
                   className={`${styles.optionCard} ${hrtStatus === opt.key ? styles.selected : ""}`}
+                  aria-pressed={hrtStatus === opt.key}
                   onClick={() => setHrtStatus(opt.key)}
                 >
                   <span className={styles.optionTitle}>{opt.title}</span>
@@ -292,6 +293,7 @@ export default function OnboardingPage() {
                   key={m.key}
                   type="button"
                   className={`${styles.optionCard} ${modules.includes(m.key) ? styles.selected : ""}`}
+                  aria-pressed={modules.includes(m.key)}
                   onClick={() => toggleModule(m.key)}
                 >
                   <span className={styles.optionTitle}>{m.title}</span>
@@ -316,6 +318,7 @@ export default function OnboardingPage() {
                   key={m.key}
                   type="button"
                   className={`${styles.optionCard} ${auroraMode === m.key ? styles.selected : ""}`}
+                  aria-pressed={auroraMode === m.key}
                   onClick={() => setAuroraMode(m.key)}
                 >
                   <span className={styles.optionTitle}>{m.title}</span>
@@ -375,6 +378,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 className={`${styles.optionCard} ${!setUpSync ? styles.selected : ""}`}
+                aria-pressed={!setUpSync}
                 onClick={() => setSetUpSync(false)}
               >
                 <span className={styles.optionTitle}>Keep it local-only</span>
@@ -385,6 +389,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 className={`${styles.optionCard} ${setUpSync ? styles.selected : ""}`}
+                aria-pressed={setUpSync}
                 onClick={() => setSetUpSync(true)}
               >
                 <span className={styles.optionTitle}>Set up sync after this</span>
