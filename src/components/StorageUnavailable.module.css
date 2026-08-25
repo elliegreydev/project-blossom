@@ -1,0 +1,112 @@
+/* Standalone on purpose. This screen renders when the database would not open,
+   which means no profile, so none of the user's appearance or accessibility
+   choices can be read. It has to look right on its own with nothing loaded. */
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg, #14101b);
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  padding: 30px 26px 24px;
+  border-radius: var(--radius, 18px);
+  background: var(--elevated, #251a2b);
+  border: 1px solid var(--outline, #38235f);
+  color: var(--text, #f3e9f7);
+}
+
+.mark {
+  display: flex;
+  margin-bottom: 18px;
+}
+
+.mark img {
+  border-radius: 14px;
+}
+
+.card h1 {
+  font-size: 23px;
+  line-height: 1.25;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+
+.card p {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 16px;
+  color: var(--text-muted, #b9a7c6);
+}
+
+/* Tinted with the brand rather than a grey or red alert panel. This is not an
+   error the person caused, and a red box would read as one. */
+.likely {
+  padding: 14px 16px;
+  margin: 0 0 20px;
+  border-radius: var(--radius-sm, 12px);
+  background: color-mix(in srgb, var(--secondary, #c99bff) 14%, var(--elevated, #251a2b));
+  border: 1px solid color-mix(in srgb, var(--secondary, #c99bff) 36%, transparent);
+}
+
+.likely strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: var(--text, #f3e9f7);
+}
+
+.likely p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.alsoLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #f3e9f7);
+  margin-bottom: 8px;
+}
+
+.list {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-muted, #b9a7c6);
+}
+
+.reassure {
+  font-size: 14.5px;
+  padding-top: 16px;
+  border-top: 1px solid var(--outline, #38235f);
+}
+
+.button {
+  width: 100%;
+  padding: 13px 18px;
+  margin-bottom: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius-sm, 12px);
+  background: var(--primary, #ff7dba);
+  color: var(--on-primary, #24101b);
+  cursor: pointer;
+}
+
+.footnote {
+  margin: 0;
+  font-size: 13px;
+}
+
+.card a {
+  color: var(--secondary, #c99bff);
+}

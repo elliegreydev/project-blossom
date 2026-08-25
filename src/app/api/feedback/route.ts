@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { reportError } from "@/lib/errorReport";
+import { allow, callerKey, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { errorClassOf } from "@/lib/errorShape";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ export const dynamic = "force-dynamic";
 // "submitted"), so a bug here can't do more than the database already
 // allows.
 export async function POST(request: Request) {
+  // Anonymous and unlimited before this, with only a honeypot in front of it.
+  if (!allow(`feedback:${callerKey(request)}`, 10, HOUR)) return tooManyRequests(3600);
+
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "invalid request" }, { status: 400 });
 

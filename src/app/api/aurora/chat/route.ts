@@ -146,6 +146,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Aurora is taking a break while this month’s AI budget is reviewed." }, { status: 429 });
   }
 
+    /**
+     * Claim the slot BEFORE calling Anthropic, not after.
+     *
+     * The two checks above counted rows, and the row was only written once a
+     * reply came back. Between those two moments the count does not move, so
+     * every request sent in that window read the same total and every one of
+     * them reached Anthropic. Sending twenty at once cost twenty replies
+     * against a limit of one, and the first sign of it would have been a bill.
+     *
+     * Writing the row first makes the daily count self-limiting: a concurrent
+     * request sees this one already there. Tokens are unknown until the reply
+     * lands, so they go in as zero and are corrected below.
+     */
+    const { data: reservation, error: reserveError } = await service
+      .from("aurora_ai_usage")
+      .insert({
+        user_id: user.id,
+        request_kind: "guide",
+        input_tokens: 0,
+        output_tokens: 0,
+        model,
+        // "normal" because the column's CHECK allows only normal, crisis or
+        // dose_change. The row is corrected or deleted moments later either way.
+        safety_outcome: "normal",
+      })
+      .select("id")
+      .single();
+    if (reserveError || !reservation) {
+      return NextResponse.json({ error: "Aurora’s usage record could not be saved safely." }, { status: 503 });
+    }
+
+    // Nothing was spent, so the slot goes back rather than costing them a turn.
+    const releaseReservation = async () => {
+      await service.from("aurora_ai_usage").delete().eq("id", reservation.id);
+    };
+
   const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -171,6 +207,7 @@ export async function POST(request: Request) {
 
   const rawResponse = await anthropicResponse.json().catch(() => null);
   if (!anthropicResponse.ok) {
+        await releaseReservation();
     const failure = claudeFailure(rawResponse, anthropicResponse.headers.get("request-id"));
     // This deliberately logs only provider diagnostics. User messages and
     // Aurora replies never enter Vercel logs or the usage table.
@@ -212,17 +249,21 @@ export async function POST(request: Request) {
     }, { status: 502 });
   }
   const reply = textFromClaudeResponse(rawResponse);
-  if (!reply) return NextResponse.json({ error: "Aurora returned an empty reply. Please try again." }, { status: 502 });
+    if (!reply) {
+      await releaseReservation();
+      return NextResponse.json({ error: "Aurora returned an empty reply. Please try again." }, { status: 502 });
+    }
 
   // Usage only: never store a message, response, or personal context server-side.
-  const { error: usageError } = await service.from("aurora_ai_usage").insert({
-    user_id: user.id,
-    request_kind: "guide",
-    input_tokens: reply.inputTokens,
-    output_tokens: reply.outputTokens,
-    model,
-    safety_outcome: "normal",
-  });
+    // Correct the slot claimed before the call with what it actually cost.
+    const { error: usageError } = await service
+      .from("aurora_ai_usage")
+      .update({
+        input_tokens: reply.inputTokens,
+        output_tokens: reply.outputTokens,
+        safety_outcome: "normal",
+      })
+      .eq("id", reservation.id);
   if (usageError) {
     // The spending guard runs off this table. If rows stop landing, the daily
     // and monthly limits stop counting, and the first sign of that is a bill.

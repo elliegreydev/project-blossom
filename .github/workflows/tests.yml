@@ -1,0 +1,72 @@
+# Runs the test suites on every push and pull request.
+#
+# These twelve suites already existed and had never run anywhere but on Ellie's
+# machine, which meant "the parts that matter have tests" was something people
+# had to take on faith. Somebody asked, fairly, how anyone could know the
+# privacy and safety promises held. A green tick they can click is a better
+# answer than a paragraph.
+#
+# They are plain Node scripts with no framework, no database and no secrets, so
+# there is nothing to configure and nothing that can leak from a fork's PR.
+name: Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Deliberately newer than the engines field.
+          #
+          # engines says >=20.9 because that is what Next needs to RUN the
+          # app, and that is the right number for anybody installing it. The
+          # test scripts are a different matter: they are .ts run directly
+          # through node, which needs --experimental-strip-types, and that
+          # flag does not exist before 22.6. Pinning CI to the engines
+          # minimum failed on the very first run with "bad option".
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run all suites
+        run: npm test
+
+      - name: Dependency audit gate
+        # Fail the build on a high or critical vulnerability in a PRODUCTION
+        # dependency, so a framework CVE like the one patched in August cannot
+        # ship unnoticed. Dev/tooling advisories with no runtime path are
+        # excluded, otherwise the gate would fire on things a user never runs.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: RLS tripwire (production)
+        # The database red-team, frozen: hits the live REST API with the PUBLIC
+        # anon key and fails if any sealed table answers a stranger. The values
+        # are public (they ship in the app), so there is no secret here and a
+        # fork's PR can run it harmlessly. Read-only.
+        run: npm run test:rls
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://tpbqqlbtwykfuimqgfwn.supabase.co
+          # The anon key is public by design (it ships in the app bundle and is
+          # safe to expose per Supabase's own guidance). Inlined so the tripwire
+          # is active with no repo-variable setup needed.
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwYnFxbGJ0d3lrZnVpbXFnZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MzY5NzcsImV4cCI6MjA5OTUxMjk3N30.srET-ZeP6-yUgX9vsCa95864wfAt7nLBx7nplS5WhBM
+
+      - name: Build
+        run: npm run build
+        env:
+          # The build only needs these to exist. They are the public anon values
+          # a browser already receives, and the app runs local-only without them.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder

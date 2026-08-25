@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "blossom",
+      "runtimeExecutable": "C:\\PROGRA~1\\nodejs\\npm.cmd",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "blossom-prod",
+      "runtimeExecutable": "C:\\PROGRA~1\nodejs\npm.cmd",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3007"
+      ],
+      "port": 3007
+    }
+  ]
+}

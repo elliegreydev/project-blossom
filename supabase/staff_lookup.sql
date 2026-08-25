@@ -23,6 +23,9 @@ $$;
 revoke all on function public.touch_staff_presence() from public;
 grant execute on function public.touch_staff_presence() to authenticated;
 
+-- Guards on administrator rank (80), not just is_staff(), because the
+-- /staff-lookup page that calls this is administrator/owner only. A lower
+-- rank could otherwise call the function directly and bypass the page gate.
 create or replace function public.staff_activity_for(target_user_id uuid)
 returns table (
   kind text,
@@ -48,38 +51,38 @@ as $$
            end, al.table_name) as summary,
          al.created_at as happened_at
   from public.staff_activity_log al
-  where public.is_staff() and al.staff_user_id = target_user_id
+  where public.my_staff_rank() >= 80 and al.staff_user_id = target_user_id
     and al.table_name not in ('staff_issues', 'staff_incidents', 'staff_docs', 'staff_handoff_notes')
 
   union all
   select 'Known issue', 'Reported "' || si.title || '"', si.created_at
   from public.staff_issues si
-  where public.is_staff() and si.reported_by = target_user_id
+  where public.my_staff_rank() >= 80 and si.reported_by = target_user_id
 
   union all
   select 'Incident', 'Logged "' || sic.title || '"', sic.created_at
   from public.staff_incidents sic
-  where public.is_staff() and sic.created_by = target_user_id
+  where public.my_staff_rank() >= 80 and sic.created_by = target_user_id
 
   union all
   select 'Knowledge base', 'Updated "' || sd.title || '"', sd.updated_at
   from public.staff_docs sd
-  where public.is_staff() and sd.updated_by = target_user_id
+  where public.my_staff_rank() >= 80 and sd.updated_by = target_user_id
 
   union all
   select 'Handoff note', left(shn.body, 80), shn.created_at
   from public.staff_handoff_notes shn
-  where public.is_staff() and shn.created_by = target_user_id
+  where public.my_staff_rank() >= 80 and shn.created_by = target_user_id
 
   union all
   select 'Staff chat', left(scm.body, 80), scm.created_at
   from public.staff_chat_messages scm
-  where public.is_staff() and scm.user_id = target_user_id
+  where public.my_staff_rank() >= 80 and scm.user_id = target_user_id
 
   order by happened_at desc
   limit 100;
 $$;
-revoke all on function public.staff_activity_for(uuid) from public;
+revoke all on function public.staff_activity_for(uuid) from public, anon;
 grant execute on function public.staff_activity_for(uuid) to authenticated;
 
 -- "/staff-lookup" joins the per-page permission matrix like every other
@@ -88,3 +91,8 @@ insert into public.staff_page_permissions (role, page, can_access)
 select role, '/staff-lookup', (role in ('administrator', 'owner'))
 from unnest(array['trial_moderator', 'moderator', 'manager', 'administrator', 'owner']) as role
 on conflict (role, page) do nothing;
+
+-- SECURITY DEFINER, staff-only in practice, but left executable by the
+-- default PUBLIC grant. Restrict to authenticated. August red-team pass.
+revoke all on function public.touch_staff_presence() from public, anon;
+grant execute on function public.touch_staff_presence() to authenticated;

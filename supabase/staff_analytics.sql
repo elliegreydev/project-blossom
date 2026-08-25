@@ -59,5 +59,5 @@ begin
 end;
 $$;
 
-revoke all on function public.get_staff_analytics() from public;
+revoke all on function public.get_staff_analytics() from public, anon;
 grant execute on function public.get_staff_analytics() to authenticated;

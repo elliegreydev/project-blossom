@@ -114,7 +114,7 @@ end;
 $$;
 
 -- Backfill: assign staff IDs (pending) to anyone already on the roster
--- without one - like serahtwork@gmail.com, added before this fix.
+-- without one, added before this fix.
 do $$
 declare
   r record;
@@ -155,5 +155,13 @@ as $$
   where public.is_staff()
   order by se.added_at;
 $$;
-revoke all on function public.staff_directory() from public;
+revoke all on function public.staff_directory() from public, anon;
 grant execute on function public.staff_directory() to authenticated;
+
+-- Every other SECURITY DEFINER function here is revoked; this one was missed,
+-- so Postgres' default EXECUTE-to-PUBLIC stood and PostgREST exposed it to
+-- anon. That let a stranger write rows into staff_profiles: junk staff ids,
+-- spoofed display names in HQ's team view, and a real staff member's first
+-- sign-in silently short-circuiting. The triggers that call it are themselves
+-- SECURITY DEFINER owned by postgres, so onboarding is unaffected.
+revoke all on function public.ensure_staff_profile(text, uuid) from public, anon;

@@ -31,5 +31,5 @@ begin
 end;
 $$;
 
-revoke all on function public.get_infra_usage_counts() from public;
+revoke all on function public.get_infra_usage_counts() from public, anon;
 grant execute on function public.get_infra_usage_counts() to authenticated;

@@ -1,12 +1,16 @@
 {
   "name": "project-blossom",
-  "version": "0.5.29",
+  "version": "0.5.33",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:aurora && npm run test:aurora-ai && npm run test:sync && npm run test:reminders && npm run test:costs && npm run test:essentials && npm run test:intentions && npm run test:referrals && npm run test:accessibility && npm run test:selfdirected && npm run test:errors && npm run test:info && npm run test:contrast && npm run test:data && npm run test:migration",
     "test:aurora": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-aurora.mjs",
     "test:aurora-ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-aurora-ai-safety.mjs",
     "test:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-sync-policy.mjs",
@@ -18,7 +22,12 @@
     "test:accessibility": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-accessibility.mjs",
     "test:selfdirected": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-self-directed.mjs",
     "test:devgate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-dev-gate.mjs",
-    "test:info": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-info-index.mjs"
+    "test:errors": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-error-shape.mjs",
+    "test:info": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-info-index.mjs",
+    "test:contrast": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-contrast.mjs",
+    "test:data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./scripts/test-support/register.mjs scripts/test-data-integrity.mjs",
+    "test:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./scripts/test-support/register.mjs scripts/test-migration.mjs",
+    "test:rls": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-rls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -26,7 +35,7 @@
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "jspdf": "^4.2.1",
-    "next": "16.2.9",
+    "next": "^16.3.2",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -39,7 +48,8 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.2",
+    "fake-indexeddb": "^6.2.5",
     "typescript": "^5"
   }
 }

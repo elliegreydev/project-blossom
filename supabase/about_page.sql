@@ -36,5 +36,10 @@ Right now Blossom's in beta, so things might change, break, or get rebuilt if th
 
 Want to reach me directly? I'm around on Discord, or you can leave feedback right in the app.
 
-— Ellie$body$)
+Ellie$body$)
 on conflict (id) do nothing;
+
+-- SECURITY DEFINER, staff-only in practice, but left executable by the
+-- default PUBLIC grant. Restrict to authenticated. August red-team pass.
+revoke all on function public.log_staff_activity() from public, anon;
+grant execute on function public.log_staff_activity() to authenticated;

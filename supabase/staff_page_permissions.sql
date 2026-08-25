@@ -66,7 +66,7 @@ as $$
     );
 $$;
 
-revoke all on function public.has_page_access(text) from public;
+revoke all on function public.has_page_access(text) from public, anon;
 grant execute on function public.has_page_access(text) to authenticated;
 
 -- One round trip for the nav/tile pages to build themselves from, instead
@@ -94,5 +94,5 @@ as $$
   end;
 $$;
 
-revoke all on function public.my_accessible_pages() from public;
+revoke all on function public.my_accessible_pages() from public, anon;
 grant execute on function public.my_accessible_pages() to authenticated;

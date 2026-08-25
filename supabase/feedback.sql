@@ -33,8 +33,28 @@ create policy "feedback_items_public_insert" on public.feedback_items
   );
 
 drop policy if exists "feedback_items_read" on public.feedback_items;
+-- Staff only, deliberately, even though the board itself is public.
+--
+-- This used to be `type = 'feature' or is_staff()`, which let anybody holding
+-- the anon key that ships in the app read the raw table, contact_email and all.
+-- The board has always rendered from feedback_items_public, a view exposing
+-- only safe columns and running with owner rights, so nothing on the page
+-- depends on this policy. Nobody had submitted a contact email yet, so nothing
+-- was ever published, but the first person to leave one would have been.
+-- Reported responsibly by virtualdxs, 18 Aug 2026.
 create policy "feedback_items_read" on public.feedback_items
-  for select using (type = 'feature' or public.is_staff());
+  for select using (public.is_staff());
+
+-- A column revoke alone does nothing while a table-wide SELECT grant stands:
+-- has_column_privilege answers yes if EITHER grant allows it, and Supabase
+-- grants both roles table-wide SELECT by default. So the grant has to be
+-- dropped and the safe columns handed back explicitly. The policy above is
+-- what closes the leak; this makes the column restriction real rather than
+-- decorative, so it holds even if that policy is ever widened again.
+revoke select on public.feedback_items from anon, authenticated;
+grant select (id, type, title, description, status, vote_count,
+              reviewed_at, created_at, updated_at)
+  on public.feedback_items to authenticated;
 
 drop policy if exists "feedback_items_staff_update" on public.feedback_items;
 create policy "feedback_items_staff_update" on public.feedback_items
@@ -66,8 +86,12 @@ create policy "feedback_votes_public_insert" on public.feedback_votes
   );
 
 drop policy if exists "feedback_votes_public_delete" on public.feedback_votes;
-create policy "feedback_votes_public_delete" on public.feedback_votes
-  for delete using (true);
+-- No delete policy, deliberately.
+--
+-- This used to be `using (true)`, so anybody holding the anon key that ships
+-- in the app could empty the table and zero every count on the public board.
+-- Votes are anonymous and carry no owner, so no client has standing to delete
+-- one. Staff clear them through the service role, which ignores RLS entirely.
 -- Deliberately no select policy - vote rows carry no identity beyond a
 -- random token, and nobody (not even staff) needs to read them directly;
 -- feedback_items.vote_count is the public-facing aggregate.

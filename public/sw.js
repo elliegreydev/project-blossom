@@ -15,7 +15,7 @@
 // their phone, unreachable on a train. Google Play also tests offline during
 // review.
 
-const VERSION = "v2";
+const VERSION = "v3"; // bumped to clear caches that mixed deploys, see cacheFirst
 const SHELL_CACHE = `blossom-shell-${VERSION}`;
 const ASSET_CACHE = `blossom-assets-${VERSION}`;
 const SHELL_URL = "/";
@@ -123,7 +123,13 @@ self.addEventListener("fetch", (event) => {
   if (url.searchParams.has("_rsc")) return;
 
   if (isImmutableAsset(url) || isCacheableImage(url)) {
-    event.respondWith(cacheFirst(request));
+    // Immutable /_next/static/ files are content-hashed in the filename, so
+    // the ?dpl=<deploy> query is only a tag: the same chunk from two deploys
+    // is byte-identical. Match ignoring the query, otherwise a cached shell
+    // from one deploy asks for chunks under a query the cache stored under a
+    // different deploy, they miss, and offline boot dies on a fetch that has
+    // no network. Images are not content-hashed, so they stay exact-match.
+    event.respondWith(cacheFirst(request, isImmutableAsset(url)));
     return;
   }
 
@@ -132,9 +138,9 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-async function cacheFirst(request) {
+async function cacheFirst(request, ignoreSearch = false) {
   const cache = await caches.open(ASSET_CACHE);
-  const hit = await cache.match(request);
+  const hit = await cache.match(request, { ignoreSearch });
   if (hit) return hit;
   try {
     const response = await fetch(request);

@@ -4259,6 +4259,12 @@ export async function deleteAllData(): Promise<void> {
       db.notifiedReminders,
       db.cachedRegionResources,
       db.cachedLegalContextNotes,
+      // trips.clear() runs in the callback below but this table was missing
+      // from the scope list, and Dexie 4 throws on any table not in scope.
+      // That aborted and rolled back the whole wipe every single time, so
+      // "delete everything" deleted nothing and the confirm screen hung. This
+      // is the most important control in a health app; it has to actually run.
+      db.trips,
       db.syncOutbox,
       db.syncMeta,
     ],

@@ -38,5 +38,5 @@ begin
     (select count(*) from public.beta_chat_messages where created_at > now() - interval '7 days');
 end;
 $$;
-revoke all on function public.beta_engagement_snapshot() from public;
+revoke all on function public.beta_engagement_snapshot() from public, anon;
 grant execute on function public.beta_engagement_snapshot() to authenticated;

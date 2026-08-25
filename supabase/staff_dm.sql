@@ -118,7 +118,7 @@ as $$
   left join unread u using (other_user_id)
   order by l.last_created_at desc;
 $$;
-revoke all on function public.my_dm_conversations() from public;
+revoke all on function public.my_dm_conversations() from public, anon;
 grant execute on function public.my_dm_conversations() to authenticated;
 
 -- "/messages" and "/people" join the per-page permission matrix like every

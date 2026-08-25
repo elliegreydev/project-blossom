@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { secretMatches } from "@/lib/secretCompare";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import pkg from "../../../../../package.json";
 
 export const dynamic = "force-dynamic";
 
 // Read-only stats feed for Grey Studios HQ's Command Centre. Blossom has no
-// revenue model, so revenueMinor is always 0 — this only ever exposes the
+// revenue model, so revenueMinor is always 0, and this only ever exposes the
 // user count, version, and health, never raw table access.
 export async function GET(request: Request) {
   const expected = process.env.HQ_STATS_SECRET;
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   const provided = request.headers.get("x-hq-stats-secret");
-  if (provided !== expected) {
+  if (!secretMatches(expected, provided)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

@@ -140,7 +140,7 @@ as $$
   where public.is_staff()
   order by se.added_at;
 $$;
-revoke all on function public.staff_directory() from public;
+revoke all on function public.staff_directory() from public, anon;
 grant execute on function public.staff_directory() to authenticated;
 
 -- Avatar storage: public read (so <img> tags just work), write restricted
@@ -149,22 +149,30 @@ insert into storage.buckets (id, name, public)
 values ('staff-avatars', 'staff-avatars', true)
 on conflict (id) do nothing;
 
+-- Capped and restricted. Without these the bucket accepted any file of any
+-- size, which combined with the missing is_staff() check above meant any
+-- account holder could use Blossom's storage as public file hosting.
+update storage.buckets
+   set file_size_limit = 2097152,
+       allowed_mime_types = array['image/png','image/jpeg','image/webp','image/gif']
+ where id = 'staff-avatars';
+
 drop policy if exists "staff_avatars_insert_own" on storage.objects;
 create policy "staff_avatars_insert_own" on storage.objects
   for insert with check (
-    bucket_id = 'staff-avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'staff-avatars' and public.is_staff() and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 drop policy if exists "staff_avatars_update_own" on storage.objects;
 create policy "staff_avatars_update_own" on storage.objects
   for update using (
-    bucket_id = 'staff-avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'staff-avatars' and public.is_staff() and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 drop policy if exists "staff_avatars_delete_own" on storage.objects;
 create policy "staff_avatars_delete_own" on storage.objects
   for delete using (
-    bucket_id = 'staff-avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'staff-avatars' and public.is_staff() and (storage.foldername(name))[1] = auth.uid()::text
   );
 
 -- "/people" joins the per-page permission matrix like every other tool.
@@ -172,3 +180,11 @@ insert into public.staff_page_permissions (role, page, can_access)
 select role, '/people', true
 from unnest(array['trial_moderator', 'moderator', 'manager', 'administrator', 'owner']) as role
 on conflict (role, page) do nothing;
+
+-- Every other SECURITY DEFINER function here is revoked; this one was missed,
+-- so Postgres' default EXECUTE-to-PUBLIC stood and PostgREST exposed it to
+-- anon. That let a stranger write rows into staff_profiles: junk staff ids,
+-- spoofed display names in HQ's team view, and a real staff member's first
+-- sign-in silently short-circuiting. The triggers that call it are themselves
+-- SECURITY DEFINER owned by postgres, so onboarding is unaffected.
+revoke all on function public.ensure_staff_profile(uuid, text) from public, anon;

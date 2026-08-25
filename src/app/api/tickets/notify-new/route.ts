@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { allow, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // A session is required, but a signed-in caller could replay this to
+  // fan out repeated pushes. Cap it per user.
+  if (!allow(`notify-new:${user.id}`, 20, HOUR)) return tooManyRequests(3600);
 
   const body = await request.json().catch(() => null);
   const ticketId = typeof body?.ticketId === "string" ? body.ticketId : null;

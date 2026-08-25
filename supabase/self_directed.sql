@@ -35,3 +35,11 @@ drop trigger if exists self_directed_settings_set_updated_at on public.self_dire
 create trigger self_directed_settings_set_updated_at before update on public.self_directed_settings for each row execute function public.set_updated_at();
 drop trigger if exists self_directed_settings_sync_guard on public.self_directed_settings;
 create trigger self_directed_settings_sync_guard before update on public.self_directed_settings for each row execute function public.keep_newest_blossom_change();
+
+-- Settings, so one row per person. The primary key is a client-supplied
+-- uuid and the policy only ever constrained user_id, which left somebody
+-- free to insert as many rows as they liked under their own account.
+alter table public.self_directed_settings
+  drop constraint if exists self_directed_settings_user_id_key;
+alter table public.self_directed_settings
+  add constraint self_directed_settings_user_id_key unique (user_id);

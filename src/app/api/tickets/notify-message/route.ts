@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { allow, tooManyRequests, HOUR } from "@/lib/rateLimit";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToStaff, staffUserIdsAtRank } from "@/lib/serverPush";
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // A session is required, but a signed-in caller could replay this to
+  // fan out repeated pushes. Cap it per user.
+  if (!allow(`notify-msg:${user.id}`, 30, HOUR)) return tooManyRequests(3600);
 
   const body = await request.json().catch(() => null);
   const messageId = typeof body?.messageId === "string" ? body.messageId : null;
@@ -42,7 +46,11 @@ export async function POST(request: Request) {
   const recipients = ticket.claimed_by ? [ticket.claimed_by] : await staffUserIdsAtRank(ticket.min_rank);
   const result = await sendPushToStaff(recipients, {
     title: "New reply on a support ticket",
-    body: message.body,
+    // Never the message itself. This lands on a lock screen, and a Blossom
+    // support ticket can hold medication details, distress, or somebody's
+    // identity. Both sibling routes already send a fixed string; this one
+    // was sending the lot. The url below still opens the thread.
+    body: "A member has replied to their ticket.",
     tag: `ticket-${ticket.id}`,
     url: `https://project-blossom-staff.vercel.app/support/${ticket.id}`,
   });

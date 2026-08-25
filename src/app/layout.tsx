@@ -22,13 +22,39 @@ const inter = Inter({
   display: "swap",
 });
 
+// Where relative metadata URLs resolve from. Next throws at build time if a
+// relative og:image has no base, and getting it wrong is worse than useless:
+// a card pointing at the wrong host renders as a broken image everywhere the
+// link is shared. The dev site sets this to its own domain so its previews
+// aren't quietly served from production.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://projectblossom.net";
+
+// Deliberately says nothing about who Blossom is for. See the note in
+// opengraph-image.tsx: a preview card appears wherever the link is pasted,
+// and the person pasting it doesn't choose where that is.
+const TAGLINE = "A gentle companion for your journey.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   applicationName: "Project Blossom",
   title: {
     default: "Project Blossom",
     template: "%s · Blossom",
   },
-  description: "A gentle companion for your journey.",
+  description: TAGLINE,
+  openGraph: {
+    type: "website",
+    siteName: "Project Blossom",
+    title: "Project Blossom",
+    description: TAGLINE,
+    url: "/",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Project Blossom",
+    description: TAGLINE,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

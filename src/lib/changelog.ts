@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.29";
+export const APP_VERSION = "0.5.33";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,43 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.33",
+    date: "2026-08-18",
+    title: "When the app wouldn't open at all",
+    items: [
+      { tag: "fix", text: "If your browser wouldn't let Blossom store anything on your device, the app got stuck on \"Opening your space\" and stayed there. No message, no way forward. It now explains what's happened, and that a private or incognito window is almost always the reason, since those block the storage Blossom needs." },
+      { tag: "fix", text: "The same thing on the very first setup screen showed a blank page instead. That gets the same explanation now." },
+      { tag: "improved", text: "It also says plainly that nothing has been deleted. Blossom just can't reach it, and it'll be there once it can." },
+    ],
+  },
+  {
+    version: "0.5.32",
+    date: "2026-08-18",
+    title: "Sharing the link without it saying too much",
+    items: [
+      { tag: "fix", text: "Sending someone the Blossom link used to produce a bare web address with no preview at all, anywhere you pasted it. There's a proper preview card now, so it looks like a real thing rather than a stray link." },
+      { tag: "improved", text: "The card deliberately doesn't say what Blossom is for. It's the name, the flower and \"a gentle companion for your journey\", and nothing else. A preview turns up wherever a link gets pasted, including group chats you didn't pick, so it shouldn't be the thing that tells a room something about you." },
+    ],
+  },
+  {
+    version: "0.5.31",
+    date: "2026-08-17",
+    title: "Saying plainly where AI is used",
+    items: [
+      { tag: "new", text: "A new page, How Blossom is made, in Settings then About. It says outright that most of Blossom's code is written with AI, and separately explains Aurora AI: what it sends, what it never sends, and that it's optional. People asked, and they were right to ask." },
+      { tag: "improved", text: "It also spells out what AI is never allowed to do here. No dosing guidance, nothing about where to buy anything, and no interpreting a blood result. That rule applied already; now it's written down where you can find it." },
+    ],
+  },
+  {
+    version: "0.5.30",
+    date: "2026-08-17",
+    title: "Getting in when the code is slow",
+    items: [
+      { tag: "fix", text: "If you asked for a sign-in code and then asked again before the first one arrived, Blossom refused and didn't explain itself. It now says a code is already on its way, shows you how many seconds until you can ask for another, and points at your spam folder, which is usually where the first one is." },
+      { tag: "fix", text: "Behind the scenes, when something failed Blossom often couldn't say what it was, so problems arrived unnamed and unfixable. That's why the above went unnoticed. It can name them now, which means the next thing that breaks gets found faster." },
+    ],
+  },
   {
     version: "0.5.29",
     date: "2026-08-17",

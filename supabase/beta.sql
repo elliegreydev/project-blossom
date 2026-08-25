@@ -64,7 +64,7 @@ as $$
   where public.is_staff()
   order by c.created_at desc;
 $$;
-revoke all on function public.list_beta_codes() from public;
+revoke all on function public.list_beta_codes() from public, anon;
 grant execute on function public.list_beta_codes() to authenticated;
 
 create or replace function public.revoke_beta_access(target_user_id uuid)
@@ -149,3 +149,14 @@ begin
   alter publication supabase_realtime add table public.beta_chat_messages;
 exception when duplicate_object then null;
 end $$;
+
+-- These write and are SECURITY DEFINER, and were left executable by the
+-- default PUBLIC grant. All are only ever called by a signed-in user, and
+-- redeem_beta_code doubles as a code-validity oracle for anon, so restrict
+-- them to authenticated. Found by the August red-team pass.
+revoke all on function public.redeem_beta_code(text) from public, anon;
+grant execute on function public.redeem_beta_code(text) to authenticated;
+revoke all on function public.leave_beta_program() from public, anon;
+grant execute on function public.leave_beta_program() to authenticated;
+revoke all on function public.revoke_beta_access(uuid) from public, anon;
+grant execute on function public.revoke_beta_access(uuid) to authenticated;

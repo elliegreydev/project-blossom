@@ -95,6 +95,14 @@ export default function AboutPage() {
         )}
 
         <div className={styles.body}>{body}</div>
+
+        {/* Outside the editable body on purpose. The text above is an
+            about_page row that staff can rewrite; the AI declaration is not
+            the sort of thing that should be one accidental edit away from
+            disappearing. */}
+        <p className={styles.back} style={{ marginTop: "2rem" }}>
+          <Link href="/ai">How Blossom is made, including where AI is used →</Link>
+        </p>
       </div>
     </main>
   );

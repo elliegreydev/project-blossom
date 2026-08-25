@@ -137,14 +137,27 @@ create table if not exists public.support_ticket_messages (
 create index if not exists support_ticket_messages_ticket_idx on public.support_ticket_messages (ticket_id, created_at);
 alter table public.support_ticket_messages enable row level security;
 
+-- A ticket owner could rewrite the staff replies on their own ticket.
+--
+-- This was FOR ALL with USING "this ticket is mine", so UPDATE and DELETE
+-- reached every message on it, staff answers and system notes included.
+-- Somebody could edit what support had told them, or delete the record of it,
+-- and the audit trail would agree with them afterwards.
+--
+-- Nothing in the app ever updates or deletes a ticket message, so owners get
+-- read and write-new only. Staff keep their own policies.
 drop policy if exists "support_ticket_messages_owner_all" on public.support_ticket_messages;
-create policy "support_ticket_messages_owner_all" on public.support_ticket_messages
-  for all using (
-    exists (select 1 from public.support_tickets t where t.id = ticket_id and t.user_id = auth.uid())
-  )
-  with check (
-    sender_id = auth.uid() and not is_system
-    and exists (select 1 from public.support_tickets t where t.id = ticket_id and t.user_id = auth.uid())
+
+create policy "support_ticket_messages_owner_read" on public.support_ticket_messages
+  for select using (
+    exists (select 1 from public.support_tickets t
+            where t.id = support_ticket_messages.ticket_id and t.user_id = auth.uid())
+  );
+
+create policy "support_ticket_messages_owner_insert" on public.support_ticket_messages
+  for insert with check (
+    exists (select 1 from public.support_tickets t
+            where t.id = support_ticket_messages.ticket_id and t.user_id = auth.uid())
   );
 
 drop policy if exists "support_ticket_messages_staff_read" on public.support_ticket_messages;
@@ -193,11 +206,28 @@ as $$
     select 1 from public.support_ticket_access_grants g
     join public.support_tickets t on t.id = g.ticket_id
     where t.user_id = target_user_id
+      -- Consent names ONE member of staff. Without this the grant read as
+      -- "this person is open to support", so any staff account at any rank
+      -- inherited a permission one user gave to one person. Reported
+      -- responsibly by virtualdxs, 18 Aug 2026; no grant was live at the time.
+      and g.requested_by = auth.uid()
       and g.verified_at is not null
       and g.access_expires_at > now()
       and g.revoked_at is null
   );
 $$;
+-- code_hash must never leave the server.
+--
+-- The access code is six digits hashed unsalted, which is a million
+-- candidates and therefore not a secret once the hash is readable. Staff could
+-- read it on any ticket they could see, recover the code offline and verify it
+-- themselves, turning the user's consent into a formality. Both RPCs that need
+-- the hash are SECURITY DEFINER, so they are unaffected by this.
+revoke select on public.support_ticket_access_grants from anon, authenticated;
+grant select (id, ticket_id, requested_by, attempts, created_at,
+              expires_at, verified_at, access_expires_at, revoked_at)
+  on public.support_ticket_access_grants to authenticated;
+
 revoke all on function public.has_ticket_access(uuid) from public;
 grant execute on function public.has_ticket_access(uuid) to authenticated;
 
@@ -309,7 +339,7 @@ begin
   values (target_ticket_id, auth.uid(), 'Access ended early by staff.', true);
 end;
 $$;
-revoke all on function public.revoke_ticket_access(uuid) from public;
+revoke all on function public.revoke_ticket_access(uuid) from public, anon;
 grant execute on function public.revoke_ticket_access(uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------
@@ -402,3 +432,10 @@ create policy "goals_staff_ticket_delete" on public.goals
 drop policy if exists "aurora_interaction_log_staff_ticket_access" on public.aurora_interaction_log;
 create policy "aurora_interaction_log_staff_ticket_access" on public.aurora_interaction_log
   for select using (public.has_ticket_access(user_id));
+
+-- SECURITY DEFINER, staff-only in practice, but left executable by the
+-- default PUBLIC grant. Restrict to authenticated. August red-team pass.
+revoke all on function public.request_ticket_access(uuid) from public, anon;
+grant execute on function public.request_ticket_access(uuid) to authenticated;
+revoke all on function public.verify_ticket_access(uuid, text) from public, anon;
+grant execute on function public.verify_ticket_access(uuid, text) to authenticated;
