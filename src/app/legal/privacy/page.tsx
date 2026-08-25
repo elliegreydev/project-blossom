@@ -79,8 +79,11 @@ export default function PrivacyPolicyPage() {
               entries, including any you have sealed as a Time Capsule to reopen later; Aurora AI
               conversation history; any trips you plan in Travel Mode, including where you are going
               and when; unsaved drafts of journal entries and check-in notes, which Blossom keeps as
-              you type so a crash or a restart can&apos;t lose them; your app lock, PIN, biometric
-              credential reference, accessibility choices, and Home layout choices.
+              you type so a crash or a restart can&apos;t lose them; your app lock PIN, biometric
+              credential reference, accessibility choices, and Home layout choices. To be exact
+              about the app lock: the PIN itself and the biometric reference never leave the
+              device, but the fact that you have an app lock switched on does travel with your
+              account, so a new device knows to ask for it.
             </p>
             <p>
               Because Blossom is built to work without a signal, your device also keeps a copy of the
@@ -93,9 +96,12 @@ export default function PrivacyPolicyPage() {
               only keeps a local reference that lets it ask the device to unlock the app.
             </p>
             <p>
-              If you use Blossom without signing in, or sign in but leave sync off, none of your data
-              is sent to Blossom&apos;s servers at all - everything above stays local, and so does
-              everything listed as syncable below.
+              If you use Blossom without signing in, or sign in but leave sync off, nothing you
+              record in the app is sent to Blossom&apos;s servers - everything above stays local,
+              and so does everything listed as syncable below. The one exception is anything you
+              deliberately send us: if you open a support ticket, apply for the beta, post
+              feedback or write in the beta chat, that is stored on our servers whether or not
+              sync is on, because there is no other way for it to reach us.
             </p>
           </section>
 
@@ -112,8 +118,13 @@ export default function PrivacyPolicyPage() {
               session notes (never the recording itself); presentation and body/progress tracking data
               such as category, rating and measurements (never the photo itself); weight and
               food/calorie logs; budget entries and goals; Intimacy &amp; wellbeing entries; safety
-              check-ins; your saved private links; and your Personal Support Map (private contacts and
-              approximate locations you&apos;ve saved).
+              check-ins; your saved private links; your Personal Support Map (private contacts and
+              approximate locations you&apos;ve saved); your waiting list referrals and the updates
+              you log against them, including the service, your reference number and what you were
+              told when you chased; and your self-directed care record, which includes whether
+              anyone is monitoring you, when you started and how often you mean to check bloods.
+              The last two were missing from this list until 25 August 2026, which was an error on
+              our part rather than a change in what syncs.
             </p>
             <p>
               None of this is currently visible to Blossom staff through the support-access system
@@ -185,10 +196,14 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Support access</h2>
             <p>
-              If you ask for help with a synced account, a staff member may open a time-limited support
-              case. While that case is open, authorised staff can see the synced profile, medication,
-              appointment, goal and journey information needed to help. Each normal in-app access is
-              logged. Journal text, blood-test records, voice practice notes, presentation and
+              If you ask for help with a synced account, you can give a staff member a code that
+              grants them time-limited access. While that access is live, authorised staff can see
+              the synced profile, medication, appointment, goal, journey and check-in information
+              needed to help. Being straight about the extent of it: that access can also change
+              and delete those records, not only read them, because fixing something usually means
+              editing it. Each normal in-app access is logged. It expires on its own, and if you
+              want it stopped sooner, ask us and we will end it, since at present only staff can
+              end it from their side. We are changing that so you can revoke it yourself. Journal text, blood-test records, voice practice notes, presentation and
               body/progress tracking, weight and food/calorie logs, budget entries, Intimacy &amp;
               wellbeing entries, safety check-ins, private links, and your Personal Support Map cannot
               currently be reached through support access - not because they don&apos;t sync, but
@@ -322,9 +337,18 @@ export default function PrivacyPolicyPage() {
             <p>
               Supabase and Vercel keep their own short-term technical logs of the requests made to
               Blossom, and those logs include IP addresses, the same as they would for any website.
-              Blossom&apos;s own code never reads or records your IP address or anything about your
-              device, and we do not use our providers&apos; logs to work out who you are or what you
-              looked at. They exist so the service can be kept running and secure.
+              We do not use our providers&apos; logs to work out who you are or what you looked at.
+              They exist so the service can be kept running and secure.
+            </p>
+            <p>
+              Blossom&apos;s own code touches two things about your device, and this paragraph used
+              to say it touched neither. When you make a request that we rate-limit, the server
+              reads the forwarded IP address to count requests against; it is used as a counter in
+              memory and is not written to a database. When something goes wrong and an error is
+              reported to us, that report includes a broad browser and platform name worked out
+              from your browser&apos;s user agent, for example a browser family and whether you are
+              on Android, so we can tell whether a bug affects everybody or only one kind of
+              device. Neither is used to identify you, and neither is combined with your account.
             </p>
             <p>
               Regional resources are curated by Blossom&apos;s team. Opening a resource may take you to an
@@ -336,11 +360,27 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Retention and deletion</h2>
             <p>
-              You can delete local Blossom data from your device and request deletion of a synced account
-              from Settings. Deleting an account removes the associated live synced data, subject to
-              short technical backup retention where needed for security and recovery. We are still
-              setting the precise retention periods for support cases, access logs, beta chat, feedback,
-              applications and backups. Those periods will be published before wider public release.
+              You can delete all Blossom data from your device in Settings, and that is thorough: it
+              clears every local table.
+            </p>
+            <p>
+              What that does not yet do, stated plainly because this page previously implied
+              otherwise. Deleting local data does not remove anything already synced to your
+              account, and there is at present no button anywhere in Blossom that deletes a synced
+              account. Until there is, email{" "}
+              <a href="mailto:support@projectblossom.net">support@projectblossom.net</a> and we will
+              do it by hand. Switching sync off also leaves whatever was already uploaded in place;
+              the one route that genuinely removes data from the server today is turning off an
+              individual category under Choose what syncs, which offers to purge that category and
+              really does delete those rows. When a record is deleted while sync is on, the server
+              currently marks it deleted and stops serving it rather than erasing the text
+              immediately.
+            </p>
+            <p>
+              We are fixing all of that, and we would rather say so here than let this page describe
+              a version of Blossom that does not exist. We are also still setting the precise
+              retention periods for support cases, access logs, beta chat, feedback, applications
+              and backups. Those periods will be published before wider public release.
             </p>
           </section>
 

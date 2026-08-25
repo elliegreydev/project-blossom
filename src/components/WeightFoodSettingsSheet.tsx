@@ -51,7 +51,7 @@ export default function WeightFoodSettingsSheet({ profile, onClose }: { profile:
       <div ref={dialogRef} className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="weight-food-settings-title">
         <div className={styles.grabber} />
         <h2 id="weight-food-settings-title" className={styles.title}>Weight &amp; food</h2>
-        <p className={styles.helpText}>Both are optional, private to this device, and can be turned off at any time.</p>
+        <p className={styles.helpText}>Both are optional and can be turned off at any time. These preferences stay on this device; the entries themselves sync with your account if sync is on.</p>
 
         <div className={styles.field}>
           <label className={styles.label}><input type="checkbox" checked={weightEnabled} onChange={(event) => setWeightEnabled(event.target.checked)} /> Track weight</label>
