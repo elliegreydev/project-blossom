@@ -18,6 +18,7 @@ import {
   type JourneyEvent,
 } from "@/lib/db";
 import { auroraQuietStatus, selectAuroraSuggestion } from "@/lib/aurora";
+import { resourcesForRegion } from "@/lib/regionResources";
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
 import DiscordNudge from "@/components/DiscordNudge";
@@ -51,6 +52,23 @@ function timeLabel(iso: string): string {
 
 function todayLabel(date: Date): string {
   return date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/* Empty means empty: not a single row in any of the tables Home already reads.
+   A table that hasn't loaded yet is not the same thing as an empty one, so
+   undefined counts as "has something" and the ordinary four nudges render.
+   Guessing wrong in that direction is harmless; guessing wrong in the other
+   would show a stranger's welcome card to somebody with a year of records. */
+function nothingRecordedIn(tables: ({ length: number } | undefined)[]): boolean {
+  return tables.every((rows) => rows !== undefined && rows.length === 0);
+}
+
+/* The only two countries on the list that take a "the". Spelled out rather
+   than guessed at, because "services for United States" reads like a form
+   letter and this card is meant to sound like a person. Onboarding says the
+   same sentence and works this out the same way. */
+function countryLabel(country: string): string {
+  return country === "United Kingdom" || country === "United States" ? `the ${country}` : country;
 }
 
 /* These three were text glyphs: a bell emoji, U+2315 (a telephone recorder,
@@ -106,6 +124,53 @@ export default function HomePage() {
   const presentationEntries = useLiveQuery(() => db.presentationEntries.toArray(), []);
   const euphoriaEntries = useLiveQuery(() => db.euphoriaEntries.toArray(), []);
   const auroraNudgeStates = useLiveQuery(() => db.auroraNudges.toArray(), []);
+
+  /* The tables above are the ones Home happens to render, which is nowhere
+     near all of them. Somebody can have a waiting list entry, a social
+     transition plan, blood tests, a budget or a trip and still look brand new
+     to that list, and for a UK user the clinic referral is very often the
+     first thing they ever put in. Counting these rather than loading them
+     keeps it cheap, since Home has no use for the rows themselves. */
+  const nothingRecordedElsewhere = useLiveQuery(async () => {
+    const counts = await Promise.all([
+      db.referrals.count(), db.referralUpdates.count(), db.selfDirected.count(),
+      db.intimacyEntries.count(), db.socialTransitionPeople.count(),
+      db.socialTransitionPlans.count(), db.socialTransitionTasks.count(),
+      db.privateLinks.count(), db.supportMapEntries.count(), db.safetyCheckIns.count(),
+      db.budgetEntries.count(), db.budgetGoals.count(), db.bloodTestEntries.count(),
+      db.bodyEntries.count(), db.weightEntries.count(), db.trips.count(),
+      db.calorieEntries.count(), db.medicationSupplyAdjustments.count(),
+      db.careSupplyAdjustments.count(),
+    ]);
+    return counts.every((count) => count === 0);
+  }, []);
+
+  /* The four nudges at the foot of Home each ask for something: add to home
+     screen, make an account, try these tools, come to Discord. To somebody
+     who has just arrived and put nothing in yet, that is the entire closing
+     note of the page, and it reads as four more jobs before anything has
+     given them anything. So while there is genuinely nothing in here, the
+     nudges stand aside for one card that points at what is already on the
+     phone. A lens over the saved layout, never an edit to it: the moment a
+     single thing is recorded, all four come back exactly as they were.
+     An unresolved count is treated as "has something" for the same reason
+     nothingRecordedIn treats an unloaded table that way. */
+  const nothingRecordedYet = nothingRecordedElsewhere === true && nothingRecordedIn([
+    milestones, journeyEvents, meds, medLogs, medicationSupplies, careSupplies,
+    appts, journalEntries, checkIns, goals, voiceGoals, voiceSessions,
+    presentationEntries, euphoriaEntries,
+  ]);
+
+  /* Only read the resource cache for somebody who could actually see the card.
+     It is a couple of hundred rows and every other visit to Home has no use
+     for it. Null rather than 0 when there's no region, because the card must
+     never render a number it hasn't counted - see the copy below. */
+  const regionServiceCount = useLiveQuery(async () => {
+    if (!nothingRecordedYet || !profile?.region) return null;
+    const inCountry = await db.cachedRegionResources.where("country").equals(profile.region).toArray();
+    return resourcesForRegion(inCountry, profile.region, profile.subregion).length;
+  }, [nothingRecordedYet, profile?.region, profile?.subregion]);
+
   const [auroraHiddenForSession, setAuroraHiddenForSession] = useState(false);
   const [auroraReasonOpen, setAuroraReasonOpen] = useState(false);
   const [desktop, setDesktop] = useState(false);
@@ -181,7 +246,25 @@ export default function HomePage() {
     .filter((block): block is HomeBlockKey => ["focus", "today", "upcoming", "supplies", "pinned", "journey", "aurora", "nudges"].includes(block))
     .filter((block) => selectedLayout.visibleBlocks.includes(block))
     .filter((block) => !desiredBlocks || desiredBlocks.has(block));
+
+  /* The one card is worth reading, so on an empty Home it goes first rather
+     than sitting under five different ways of saying "nothing". Nothing else
+     moves, and the order is theirs again the moment anything is recorded.
+     If they've hidden the nudges block entirely, this respects that and shows
+     nothing, same as it would have shown no nudges. */
+  const blocksInReadingOrder = nothingRecordedYet && orderedBlocks.includes("nudges")
+    ? (["nudges", ...orderedBlocks.filter((block) => block !== "nudges")] as HomeBlockKey[])
+    : orderedBlocks;
   const activeIntention = intention ? INTENTIONS[intention] : null;
+
+  /* Never a zero and never a number we haven't actually counted. Somebody with
+     no region set, or a region whose services haven't loaded, gets the same
+     sentence without the figure rather than a hollow "0 services".
+     "Device" rather than "phone": Home has a desktop layout, so a laptop is a
+     perfectly ordinary place to be reading this. */
+  const alreadyHereCopy = regionServiceCount && profile.region
+    ? `Blossom has ${regionServiceCount} support ${regionServiceCount === 1 ? "service" : "services"} for ${countryLabel(profile.region)} saved on this device, along with the guides. They work with no signal, and there’s nothing to set up.`
+    : "Blossom has support services and written guides saved on this device. They work with no signal, and there’s nothing to set up.";
 
   function dismissAuroraSuggestion() {
     if (!auroraSuggestion) return;
@@ -233,6 +316,20 @@ export default function HomePage() {
     if (block === "pinned") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Shortcuts</div><h2 className={styles.sectionTitle}>Pinned tools</h2></div><Link href="/settings/home" className={styles.link}>Edit</Link></div>{selectedLayout.pinnedTools.length === 0 ? <div className={styles.emptyRow}><strong>Nothing pinned yet.</strong><span>Choose shortcuts in Home screen settings.</span></div> : <div className={styles.pinnedGrid}>{selectedLayout.pinnedTools.map((key) => <Link key={key} href={SHORTCUTS[key].href} className={styles.pinnedTool}>{SHORTCUTS[key].label}</Link>)}</div>}</section>;
     if (block === "journey") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Journey</div><h2 className={styles.sectionTitle}>Recent activity</h2></div><Link href="/journey" className={styles.link}>View all</Link></div>{recentJourney.length === 0 ? <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div> : recentJourney.map((entry) => <div key={entry.id} className={styles.card}><div className={styles.cardTitle}>{entry.title}</div>{formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}</div>)}</section>;
     if (block === "aurora") return activeProfile.auroraMode === "disabled" ? null : <aside className={styles.auroraCard} aria-label="Aurora suggestion"><div className={styles.auroraText}><span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span><strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong><span>{auroraSuggestion?.message ?? auroraStatus.message}</span>{auroraReasonOpen && <span className={styles.auroraReason}>{auroraReason()}</span>}</div><div className={styles.auroraActions}>{auroraSuggestion ? <><Link href={auroraSuggestion.href} className={styles.auroraAction}>{auroraSuggestion.actionLabel}</Link><button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>Not now</button><button type="button" className={styles.auroraDismiss} aria-expanded={auroraReasonOpen} onClick={() => setAuroraReasonOpen((open) => !open)}>{auroraReasonOpen ? "Hide why" : "Why this?"}</button></> : <Link href="/settings/aurora" className={styles.auroraDismiss}>Aurora settings</Link>}</div></aside>;
+    /* Something to read, not something to do. No steps, no percentage, no
+       "get started": it offers what's already sitting on the phone and then
+       gets out of the way. */
+    if (nothingRecordedYet) return (
+      <section className={styles.alreadyHere} aria-labelledby="already-here-title">
+        <div className={styles.eyebrow}>Already here</div>
+        <h2 id="already-here-title" className={styles.alreadyHereTitle}>There’s more in here than you’ve put in.</h2>
+        <p className={styles.alreadyHereCopy}>{alreadyHereCopy}</p>
+        <div className={styles.alreadyHereLinks}>
+          <Link href="/settings/support" className={styles.alreadyHereLink}>Support services</Link>
+          <Link href="/info" className={styles.alreadyHereLink}>Guides in Info</Link>
+        </div>
+      </section>
+    );
     return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><SharingToolsNudge /><DiscordNudge /></section>;
   }
 
@@ -262,7 +359,7 @@ export default function HomePage() {
         </button>
       </div>
     )}
-    <div className={styles.homeBlocks}>{filterBlocksForEssentials(orderedBlocks, quietHome).map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
+    <div className={styles.homeBlocks}>{filterBlocksForEssentials(blocksInReadingOrder, quietHome).map((block) => <div key={block} className={`${styles.homeBlock} ${selectedLayout.blockWidths[block] === "half" ? styles.half : styles.wide}`}>{renderBlock(block)}</div>)}</div>
     {/* Asking for money on a day somebody has told us is hard is the wrong
         instinct, so the whole donation entry point steps back too. */}
     {!quietHome && <SupportCard />}

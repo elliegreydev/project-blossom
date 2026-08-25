@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.34";
+export const APP_VERSION = "0.5.35";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.35",
+    date: "2026-08-25",
+    title: "Setting up got shorter",
+    items: [
+      { tag: "fix", text: "Setup asked whether to lock the more private parts of Blossom behind your app lock, but ticking it did nothing at all, because setup never asked you to set a PIN. If you ticked that box expecting it to protect you, it wasn't protecting you. The tick is gone, and the App lock in Settings does the job properly." },
+      { tag: "improved", text: "Setting up is six screens instead of nine. Three of them were asking you things that changed nothing about the app you were about to use, so they've gone. Nothing you'd already chosen has changed." },
+      { tag: "improved", text: "Picking your country now tells you straight away what it got you, rather than apologising for the list. The support services for where you are were already saved on your device; now you can see how many." },
+      { tag: "improved", text: "If you haven't put anything in Blossom yet, the first thing on Home is what's already in there for you, rather than four different things asking you to install it, make an account, or join Discord. Those come back once you've actually started using it." },
+      { tag: "improved", text: "The support services page lets you pick your country and area on the page itself, instead of telling you more services exist and sending you somewhere else to say where you are." },
+    ],
+  },
   {
     version: "0.5.34",
     date: "2026-08-25",

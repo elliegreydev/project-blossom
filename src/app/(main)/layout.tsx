@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, getOrCreateProfile, LOCAL_PROFILE_ID, syncDeviceTimezone } from "@/lib/db";
 import { syncRegionResourcesCache } from "@/lib/regionResources";
+import { reportClientError } from "@/lib/clientErrorReport";
 import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
 import AppLockGate from "@/components/AppLockGate";
@@ -51,7 +52,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       // degraded app, it is no app. Without this the rejection was silent and
       // the loading screen ran forever, which is what somebody actually sat
       // through rather than being told what was wrong.
-      .catch(() => setStorageFailed(true));
+      //
+      // Reported as well as shown, because somebody who cannot open Blossom
+      // at all has no way to tell us and no reason to try twice. The report
+      // carries the shape of the failure and nothing about them.
+      .catch((error) => {
+        reportClientError("storing data on this device", error);
+        setStorageFailed(true);
+      });
     void syncDeviceTimezone();
     void syncRegionResourcesCache();
   }, [router]);
