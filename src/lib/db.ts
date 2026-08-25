@@ -2104,7 +2104,20 @@ export const DEFAULT_PROFILE: Profile = {
 export async function getOrCreateProfile(): Promise<Profile> {
   const existing = await db.profiles.get(LOCAL_PROFILE_ID);
   if (!existing) {
-    await db.profiles.add(DEFAULT_PROFILE);
+    try {
+      await db.profiles.add(DEFAULT_PROFILE);
+    } catch {
+      // A concurrent caller can create the profile between our get and add -
+      // React StrictMode fires the boot effect twice, so two of these race on a
+      // fresh device and the loser hits a ConstraintError on the fixed key. If
+      // a profile now exists, use it rather than surfacing the collision.
+      const raced = await db.profiles.get(LOCAL_PROFILE_ID);
+      if (raced) {
+        primeExcludedCategoriesCache(raced.syncExcludedCategories ?? []);
+        return raced;
+      }
+      throw new Error("Failed to create the local profile.");
+    }
     primeExcludedCategoriesCache(DEFAULT_PROFILE.syncExcludedCategories);
     return DEFAULT_PROFILE;
   }
@@ -2500,7 +2513,16 @@ export async function getOrCreateSyncState(): Promise<SyncState> {
     syncing: false,
     lastOverwrittenCount: 0,
   };
-  await db.syncMeta.add(state);
+  try {
+    await db.syncMeta.add(state);
+  } catch {
+    // Same concurrent-create race as getOrCreateProfile: React StrictMode fires
+    // the boot effect twice, both callers find no row and both add the fixed
+    // "sync" key, so the loser hits a ConstraintError. Use whatever landed.
+    const raced = await db.syncMeta.get("sync");
+    if (raced) return raced;
+    throw new Error("Failed to create the local sync state.");
+  }
   return state;
 }
 

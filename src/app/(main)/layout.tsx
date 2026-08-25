@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, getOrCreateProfile, LOCAL_PROFILE_ID, syncDeviceTimezone } from "@/lib/db";
+import { seedDevDataIfNeeded } from "@/lib/devSeed";
 import { syncRegionResourcesCache } from "@/lib/regionResources";
 import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
@@ -36,13 +37,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
 
   useEffect(() => {
-    getOrCreateProfile().then((p) => {
+    (async () => {
+      // Make sure the profile row exists, then, on the dev build only, fill an
+      // empty app with demo data before we decide whether to run onboarding.
+      // The seed marks onboarding complete, so a fresh dev device lands on a
+      // populated Home instead of the setup flow. On production the seed is a
+      // no-op, so this is just getOrCreateProfile as before.
+      await getOrCreateProfile();
+      await seedDevDataIfNeeded();
+      const p = await getOrCreateProfile();
       if (!p.onboardingCompletedAt) {
         router.replace("/onboarding");
         return;
       }
       setCheckedOnboarding(true);
-    });
+    })();
     void syncDeviceTimezone();
     void syncRegionResourcesCache();
   }, [router]);
