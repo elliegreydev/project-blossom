@@ -205,3 +205,54 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* "Care today": the next dose and next appointment, inline at the top of Care,
+   so opening the screen answers "what is due" before the tools list. Two side-
+   by-side cards on a comfortable width, stacking on narrow phones. */
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.todayItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.todayItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--pink) 40%, var(--border));
+  background: color-mix(in srgb, var(--pink) 10%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.todayLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.todayTitle {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.todayMeta {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.todayMore {
+  align-self: flex-start;
+  color: var(--text-secondary);
+  font-size: 13px;
+}

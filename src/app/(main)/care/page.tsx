@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, LOCAL_PROFILE_ID, recordTrackModuleVisit, type ModuleKey } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, recordTrackModuleVisit, nextMedicationDose, type ModuleKey } from "@/lib/db";
 import { sectionLabel } from "@/lib/selfDirected";
 import styles from "./track.module.css";
+
+// Short, calm time label for the next dose or appointment. Same format the
+// Care overview uses, so the two screens read the same.
+function when(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
 
 const ICON_PROPS = {
   viewBox: "0 0 24 24",
@@ -263,7 +269,26 @@ const SHARING: { href: string; title: string; desc: string; tint: string; icon: 
 export default function TrackPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const selfDirected = useLiveQuery(() => db.selfDirected.get("local"), []);
+  // "Care today" reads only what it needs to name the next dose and the next
+  // appointment. It never blocks the tools below: while these load, or when
+  // there is nothing due, the section simply is not shown.
+  const medications = useLiveQuery(() => db.medications.toArray(), []);
+  const medicationLogs = useLiveQuery(() => db.medicationLogs.toArray(), []);
+  const appointments = useLiveQuery(() => db.appointments.toArray(), []);
   if (!profile) return null;
+
+  const now = new Date();
+  const nextDose =
+    profile.enabledModules.includes("medication") && medications && medicationLogs
+      ? nextMedicationDose(medications, medicationLogs, now)
+      : null;
+  const nextAppointment =
+    profile.enabledModules.includes("appointments") && appointments
+      ? appointments
+          .filter((item) => new Date(item.appointmentAt) > now)
+          .sort((a, b) => a.appointmentAt.localeCompare(b.appointmentAt))[0]
+      : null;
+  const hasToday = Boolean(nextDose || nextAppointment);
 
   // Self-directed care is renameable, and the point of that is that the chosen
   // word is the one on screen. A hardcoded title here would leave
@@ -304,7 +329,31 @@ export default function TrackPage() {
         <h1 className={styles.title}>Care</h1>
         <p className={styles.subtitle}>Here's your care at a glance.</p>
       </header>
-      {(profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && <Link href="/care/overview" className={styles.careOverview}><div><span className={styles.careEyebrow}>A calmer overview</span><strong>Care overview</strong><span>Medication, appointments, supplies and blood tests together.</span></div><span aria-hidden="true">→</span></Link>}
+      {hasToday && (
+          <section className={styles.today}>
+            <div className={styles.groupHeading}><h2>Care today</h2></div>
+            <div className={styles.todayItems}>
+              {nextDose && (
+                <Link href="/care/medication" className={styles.todayItem}>
+                  <span className={styles.todayLabel}>Next dose</span>
+                  <span className={styles.todayTitle}>{nextDose.medication.name}</span>
+                  <span className={styles.todayMeta}>{when(nextDose.scheduledTime)}</span>
+                </Link>
+              )}
+              {nextAppointment && (
+                <Link href="/plan" className={styles.todayItem}>
+                  <span className={styles.todayLabel}>Next appointment</span>
+                  <span className={styles.todayTitle}>{nextAppointment.title}</span>
+                  <span className={styles.todayMeta}>{when(nextAppointment.appointmentAt)}</span>
+                </Link>
+              )}
+            </div>
+            {(profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && (
+              <Link href="/care/overview" className={styles.todayMore}>See supplies and blood tests<span aria-hidden="true"> →</span></Link>
+            )}
+          </section>
+        )}
+        {!hasToday && (profile.enabledModules.includes("medication") || profile.enabledModules.includes("appointments") || profile.enabledModules.includes("bloodTests")) && <Link href="/care/overview" className={styles.careOverview}><div><span className={styles.careEyebrow}>A calmer overview</span><strong>Care overview</strong><span>Medication, appointments, supplies and blood tests together.</span></div><span aria-hidden="true">→</span></Link>}
 
       {pinned.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>My spaces</h2><Link href="/settings/modules">Edit</Link></div><div className={styles.cards}>{pinned.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
       {recent.length > 0 && <section className={styles.group}><div className={styles.groupHeading}><h2>Recently used</h2></div><div className={styles.cards}>{recent.map((tool) => <ToolCard key={tool.module} tool={tool} />)}</div></section>}
