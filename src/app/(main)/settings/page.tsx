@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
-import { useUnreadBetaChat } from "@/components/useUnreadBetaChat";
 import { APP_VERSION } from "@/lib/changelog";
 import { THEMES } from "@/lib/themes";
 import styles from "./settings.module.css";
@@ -40,7 +39,6 @@ const THEME_LABELS: Record<string, string> = Object.fromEntries(THEMES.map((t) =
 export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [isStaff, setIsStaff] = useState(false);
-  const [isBetaTester, setIsBetaTester] = useState(false);
   const [activeShares, setActiveShares] = useState<number | null>(null);
 
   useEffect(() => {
@@ -51,13 +49,9 @@ export default function SettingsPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return;
 
-      const [{ data: staffData, error: staffError }, { data: betaData }] = await Promise.all([
-        supabase.rpc("is_staff"),
-        supabase.rpc("is_beta_tester"),
-      ]);
+      const { data: staffData, error: staffError } = await supabase.rpc("is_staff");
       if (cancelled) return;
       if (!staffError) setIsStaff(staffData === true);
-      setIsBetaTester(betaData === true);
     }
 
     /* The sharing tools live in Track now, so Settings carries the count instead -
@@ -91,7 +85,6 @@ export default function SettingsPage() {
     };
   }, []);
 
-  const hasUnreadBetaChat = useUnreadBetaChat(isBetaTester || isStaff);
 
   if (!profile) return null;
 
@@ -105,20 +98,6 @@ export default function SettingsPage() {
   return (
     <div className={styles.screen}>
       <div className={styles.title}>Settings</div>
-
-      {(isBetaTester || isStaff) && (
-        <div className={styles.section}>
-          <p className={styles.sectionLabel}>Beta</p>
-          <div className={styles.group}>
-            <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
-            <Row
-              href="/beta"
-              title="You're a beta tester"
-              meta={hasUnreadBetaChat ? "New message · What's new, beta chat, report a bug" : "What's new, beta chat, report a bug"}
-            />
-          </div>
-        </div>
-      )}
 
       <div className={styles.section}>
         <p className={styles.sectionLabel}>You</p>
