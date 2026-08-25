@@ -18,6 +18,28 @@ import { daysBetween, waitedLabel } from "./referrals.ts";
  * anyone asks for. What is here is admin: the schedule nobody else is keeping,
  * the record nobody else is holding, and the safety net nobody else set up.
  *
+ * ONE NARROW EXCEPTION, ADDED DELIBERATELY (25 Aug 2026).
+ *
+ * The strength converter in src/components/StrengthConverter.tsx turns two
+ * numbers the person typed into a third: 4mg at 40mg/mL is 0.1mL. That is
+ * arithmetic, and it is the same arithmetic this app already does when it
+ * predicts a supply running out from amountPerDose.
+ *
+ * It is not a hole in the rule above, and the line is worth stating precisely
+ * because it will be pushed on. Converting a number somebody gives you is not
+ * guidance. Telling them which number to put in would be. So the converter has
+ * no opinion: it does not know what anybody should be taking, it will not say a
+ * figure looks high or low, it does not check anything, and it saves nothing.
+ * Ask it to convert an absurd number and it converts the absurd number, because
+ * deciding the number is absurd is the clinical judgement we are refusing.
+ *
+ * The reason for having it: people already do this sum in their heads at the
+ * point of drawing up, and a calculator that shows its working makes a slipped
+ * decimal visible in a way mental arithmetic does not. That is harm reduction.
+ *
+ * The no-sources, no-vendors half of the rule was put to Ellie directly on the
+ * same day and she kept it. Do not revisit it on your own initiative.
+ *
  * THE TONE IS THE FEATURE.
  *
  * This has to work for somebody three years in, somebody still deciding, and

@@ -3,128 +3,341 @@
  * Deliberately the quietest surface in the app. No accent-coloured hero, no
  * badges, nothing that draws an eye across a room. Somebody may be reading
  * this on a bus, and the section is renameable precisely because its existence
- * is the sensitive part. */
+ * is the sensitive part.
+ *
+ * Quiet is not the same as grey and unstyled. This screen uses the same cards,
+ * grouped rows, section headings and tinted callouts as the rest of the app,
+ * at the lowest setting any of them run at: colour appears only in the small
+ * icon tiles and in the few callouts either screen ever raises. Looking
+ * like every other screen is part of the point, because a page that looks
+ * unusual is a page somebody remembers seeing over your shoulder.
+ *
+ * Only the themeable tokens are used here. --primary, --surface and friends
+ * exist on the default palette alone, so a component built on them silently
+ * ignores the theme somebody picked, and Low Profile is a discretion feature
+ * rather than decoration.
+ */
 
-.intro {
-  font-size: 14px;
-  line-height: 1.65;
+/* Reading -------------------------------------------------------------- */
+
+/* The opening lines of the main screen, and body copy on the practical
+   information page. One measure, so both pages read the same. */
+.lead,
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  max-width: 62ch;
+}
+
+.lead p,
+.prose p {
+  font-size: 15px;
+  line-height: 1.62;
   color: var(--text-secondary);
 }
 
-.intro strong {
+.lead strong,
+.prose strong {
   color: var(--text-primary);
   font-weight: 600;
 }
 
-.overview {
-  padding: 15px 16px;
+.footnote {
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Sections -------------------------------------------------------------- */
+
+/* Heading, then content. No hairline rules: a line across every section turns
+   the screen into a filing cabinet, and the heading already does the
+   separating. A new section (a converter, say) is a .section with a
+   .sectionTitle and whatever it needs underneath. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  margin: 0 2px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.sectionNote {
+  margin: -4px 2px 0;
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* Grouped rows ---------------------------------------------------------- */
+
+/* One rounded container per group, hairlines between the rows inside it, the
+   same as Settings. A single-row group is how a standalone link card is
+   built, so everything on the screen is made of the same two pieces. */
+.group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg-raised);
+}
+
+/* One brand colour per group, carried by the row icons and nothing else. At
+   this strength it is a hint that two lists are different lists, not a
+   decoration anybody notices from across a room. */
+.tintLavender {
+  --row-tint: var(--lavender);
+}
+
+.tintMint {
+  --row-tint: var(--mint);
+}
+
+.tintSky {
+  --row-tint: var(--sky);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 58px;
+  padding: 13px 15px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+/* Hairlines between rows rather than gaps: a gap would show through when a row
+   scales on tap. */
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--row-tint, var(--lavender)) 7%, var(--bg-raised));
+}
+
+.row:active {
+  transform: scale(0.98);
+}
+
+/* The group clips its corners, which would clip an outset ring with them, so
+   the ring sits inside the row. An outline rather than a box-shadow, because
+   Windows high contrast throws box-shadow away and a keyboard user there would
+   be left with nothing. */
+.row:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: -3px;
+}
+
+.rowIcon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--row-tint, var(--text-secondary));
+  background: color-mix(in srgb, var(--row-tint, var(--text-secondary)) 14%, transparent);
+}
+
+.rowIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+}
+
+/* Title and, where there is one, the marker that sits beside it. Wraps rather
+   than squeezing, so a long name still works at 320px. */
+.rowTitleLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.rowTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rowMeta {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Quiet small print under a row, currently the "Covers suppliers" marker. It
+   has to stay unnoticeable to a glance rather than becoming a badge: the note
+   at the top of info/page.tsx explains why that beats making it prominent. */
+.rowNote {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/* Colour is never the whole message, so the pill always carries its words. */
+.pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--sky) 40%, var(--border));
+  background: color-mix(in srgb, var(--sky) 12%, var(--bg-raised));
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Where you are --------------------------------------------------------- */
+
+/* A fact about a date, said once. Left on the plain card background on
+   purpose: this is the nearest thing the screen has to a summary, and it is
+   exactly the thing that must not become a hero. */
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
 }
 
 .overviewLine {
   font-family: var(--font-display);
   font-weight: 700;
+  /* 17px, not 19px. At 19px this outsized the 18px section titles below it and
+     made "Where you are" the loudest thing under the header, on the screen this
+     stylesheet opens by describing as the quietest surface in the app. */
   font-size: 17px;
+  line-height: 1.3;
   color: var(--text-primary);
 }
 
 .overviewMeta {
   font-size: 13px;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
-/* The one prompt allowed any weight, because it is the only thing here anyone
- * can act on. Still lavender rather than a warning colour: nothing has gone
- * wrong, it has just been a while. */
-.prompt {
-  padding: 13px 15px;
-  border-radius: var(--radius-sm, 12px);
-  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
-  background: color-mix(in srgb, var(--lavender) 12%, var(--bg-sunken));
+/* Callouts -------------------------------------------------------------- */
+
+/* Tinted with a brand colour, never grey. Lavender by default rather than a
+   warning colour: on this screen a callout means it has been a while, not that
+   anything has gone wrong. */
+.callout {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding: 14px 15px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--callout-tint, var(--lavender)) 34%, var(--border));
+  background: color-mix(in srgb, var(--callout-tint, var(--lavender)) 9%, var(--bg-raised));
 }
 
-.promptTitle {
+.calloutMint {
+  --callout-tint: var(--mint);
+}
+
+.calloutTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 700;
-  font-size: 14px;
+  line-height: 1.3;
   color: var(--text-primary);
 }
 
-.promptBody {
-  font-size: 13px;
-  line-height: 1.6;
+.calloutBody {
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
-.links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.link {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 15px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
-  color: inherit;
-  text-decoration: none;
-}
-
-.link:hover {
-  border-color: color-mix(in srgb, var(--lavender) 34%, var(--border));
-}
-
-.linkTitle {
-  font-weight: 600;
-  font-size: 14px;
+.calloutBody strong {
   color: var(--text-primary);
+  font-weight: 600;
 }
 
-.linkMeta {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: right;
-  flex: none;
-}
+/* Setup ----------------------------------------------------------------- */
 
-/* Setup ------------------------------------------------------------------- */
-
+/* First use. One question at a time, the next appearing once the one above it
+   has an answer, so nobody is looking at a form about themselves. */
 .setup {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
   max-width: 560px;
 }
 
 .question {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+}
+
+/* Revealed questions arrive rather than appearing, which makes it obvious that
+   the screen answered you rather than jumped. */
+.revealed {
+  animation: reveal var(--duration-fast) var(--ease-standard) both;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .questionTitle {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 20px;
+  font-size: 21px;
   line-height: 1.25;
   color: var(--text-primary);
 }
 
 .questionBody {
-  font-size: 14px;
-  line-height: 1.65;
+  max-width: 60ch;
+  font-size: 15px;
+  line-height: 1.62;
   color: var(--text-secondary);
 }
 
@@ -132,33 +345,116 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .choice {
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
   padding: 13px 15px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg-raised);
-  font: inherit;
-  font-size: 14px;
   color: var(--text-primary);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
   cursor: pointer;
-  min-height: 46px;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
 .choice:hover {
   border-color: color-mix(in srgb, var(--lavender) 34%, var(--border));
 }
 
-.choice[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--lavender) 62%, var(--border));
-  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+.choice:active {
+  transform: scale(0.98);
 }
 
-.footnote {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--text-muted);
+.choice:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.choice[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--lavender) 58%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg-raised));
+}
+
+.choiceLabel {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+/* The tick is here so the chosen answer is not carried by colour alone, which
+   matters on Low Profile where the whole palette is a few steps of the same
+   grey-blue. */
+.choiceTick {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  color: transparent;
+}
+
+.choiceTick svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* --plum for the tick itself, not --bg. The brand colours are light in every
+   light theme, so a --bg tick on a --lavender circle is white on pastel and
+   comes out at about 1.8:1 on the default palette and worse with high contrast
+   on. --plum is dark in all six themes and both appearances, which is why it is
+   what the shared button uses on the same fill. */
+.choice[aria-pressed="true"] .choiceTick {
+  border-color: transparent;
+  background: var(--lavender);
+  color: var(--plum);
+}
+
+/* Done. The shared button has no disabled state of its own, and a Done that
+   looks pressable before the questions are answered is a Done that gets
+   pressed.
+   Written as .setup .done rather than .done alone so it beats the shared
+   button's own align-self without depending on which stylesheet the bundler
+   happens to emit second. */
+.setup .done {
+  align-self: stretch;
+  justify-content: center;
+}
+
+.done:disabled,
+.done:disabled:hover {
+  opacity: 0.45;
+  transform: none;
+  cursor: default;
+}
+
+@media (min-width: 480px) {
+  .setup .done {
+    align-self: flex-start;
+  }
+}
+
+/* Last in the file on purpose. A media query adds no specificity, so these
+   have to come after the rules they are turning off or they lose to them. */
+@media (prefers-reduced-motion: reduce) {
+  .revealed {
+    animation: none;
+  }
+
+  .row:active,
+  .choice:active {
+    transform: none;
+  }
 }
