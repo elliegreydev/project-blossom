@@ -342,6 +342,117 @@
   word-break: break-word;
 }
 
+/* The deletion receipt at /account/deleted, which is several paragraphs rather
+   than the single line every other card here holds. */
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardText a {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+/* Deleting the account. Set apart from sign-out above it so the two are never
+   mistaken for each other, and tinted rather than shouted at: this is somebody
+   leaving, not an alarm. */
+.dangerSection {
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--pink) 40%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--pink) 7%, var(--bg-raised));
+}
+
+.dangerSection h2 {
+  margin: 5px 0 8px;
+  font-size: 18px;
+}
+
+.dangerSection p,
+.deletePanel p {
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.deletePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* Focus is moved here when the panel opens so it is not lost to the top of the
+   page. Nothing here is clicked, and Tab never lands on it, so it does not
+   need a ring of its own. */
+.deletePanel:focus {
+  outline: none;
+}
+
+.deleteLabel {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.deleteList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.deleteList strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.confirmInput {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.deleteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.deletePanel .deleteActions {
+  margin-top: 4px;
+}
+
+.dangerButton {
+  min-height: 48px;
+  padding: 11px 17px;
+  border: 1px solid color-mix(in srgb, var(--pink) 62%, var(--border));
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 /* Door to the per-category sync choices. Sits under the sync controls because
    it is a refinement of "sync is on", not a separate idea. */
 .chooseLink {

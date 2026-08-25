@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -279,6 +280,16 @@ export default function DataSettingsPage() {
       <div className={styles.field}>
         <span className={styles.label}>Delete everything</span>
         <p className={styles.hint}>Permanently erases data stored in this browser on this device. Downloads, external backups and data someone has already seen through sharing are separate.</p>
+        {/* Without this line, somebody who signed in and turned on sync could
+            wipe this device, watch everything vanish, and reasonably believe
+            their account went with it. It did not. This is the only screen
+            where that misunderstanding can happen, so the correction belongs
+            here rather than only on the other side of it. */}
+        <p className={styles.hint}>
+          This doesn&apos;t touch a synced Blossom account. If you have one,{" "}
+          <Link href="/account" style={{ textDecoration: "underline" }}>Account &amp; sync</Link>{" "}
+          can delete that and this device together.
+        </p>
         <button type="button" className={styles.dangerButton} onClick={() => setConfirmOpen(true)}>Delete all data</button>
       </div>
 

@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.35";
+export const APP_VERSION = "0.5.36";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.36",
+    date: "2026-08-25",
+    title: "You can delete your account",
+    items: [
+      { tag: "new", text: "There's a Delete your account button in Account and sync. It removes your account and everything synced to it, clears Blossom off the device you're on, and signs you out. It asks you to type a word first so it can't happen by accident. It doesn't ask why you're going, and there's nothing offered to keep you." },
+      { tag: "fix", text: "The privacy policy and the terms both said you could delete a synced account, and there was no way to do it anywhere in the app. Support was doing it by hand. That gap is closed." },
+      { tag: "improved", text: "Both documents now say what deleting your account actually reaches. The account, everything synced under it, your support tickets and any sharing you'd set up all go. Ideas, bug reports and applications you sent us don't, because they were never attached to your account, so email us if you want one of those taken down too." },
+      { tag: "improved", text: "Delete all data in Settings now says outright that it clears this device and doesn't touch a synced account. If you'd wiped a device expecting the account to go with it, it hadn't." },
+      { tag: "improved", text: "If any part of the deletion fails, Blossom says so and leaves your device alone rather than wiping it and hoping. You'd know either way, and you'd still have your data." },
+    ],
+  },
   {
     version: "0.5.35",
     date: "2026-08-25",

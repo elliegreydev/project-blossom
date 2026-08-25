@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, deleteAllData } from "@/lib/db";
@@ -18,6 +19,61 @@ import {
   syncNow,
 } from "@/lib/sync";
 import styles from "./account.module.css";
+
+const SUPPORT_EMAIL = "support@projectblossom.net";
+
+/**
+ * The word somebody has to type before their account is deleted.
+ *
+ * Compared case-insensitively and trimmed. A real confirmation is a deliberate
+ * act, not a spelling test, and making a frightened person get the capitals
+ * right is a cruelty that buys no extra safety.
+ */
+const CONFIRM_WORD = "delete";
+
+/**
+ * What is said when Blossom has no better words of its own to use.
+ *
+ * The route writes its own message for the failures it understands (see
+ * /api/account/delete), and that message is shown as it is. This is the
+ * fallback for everything else: a proxy error page, a 500 with no JSON, a
+ * connection that dropped, a response shape nobody expected.
+ *
+ * It deliberately does NOT say the account still exists. On any of those the
+ * request may well have reached the server and finished, and the answer is
+ * what went missing. Telling somebody their trans health record is still
+ * sitting on a server when it is not is the frightening direction to be wrong
+ * in, so this says what is actually known, and gives them the one check they
+ * can run themselves.
+ */
+const DELETE_FAILED =
+  `Blossom didn't get an answer back, so it can't tell you whether your account was deleted. Nothing on this device has been touched. Please try again: if Blossom says you're not signed in, the deletion did go through. If it keeps failing, email ${SUPPORT_EMAIL} and we will finish it by hand.`;
+
+interface DeleteResponse {
+  ok?: unknown;
+  error?: unknown;
+  deletedAt?: unknown;
+}
+
+/**
+ * Turns a refusal into something a person can act on.
+ *
+ * The route's own error string is only trusted when the body actually carries
+ * ok:false, because that is the one shape written to be read by a human and it
+ * always says the account still exists. A 429 comes from the shared rate
+ * limiter and has no ok field at all (it is just { error }), so its wording
+ * says nothing about whether anything was deleted, and it gets its own
+ * sentence here rather than being passed through.
+ */
+function describeDeleteFailure(status: number, payload: DeleteResponse | null): string {
+  if (status === 429) {
+    return `Blossom has had several delete attempts from your account in a short time and stopped, so your account has not been deleted and nothing on this device has been touched. Please wait an hour and try again, or email ${SUPPORT_EMAIL}.`;
+  }
+  if (payload?.ok === false && typeof payload.error === "string" && payload.error.trim() !== "") {
+    return payload.error.trim();
+  }
+  return DELETE_FAILED;
+}
 
 function friendlySyncError(error: unknown): string {
   if (error instanceof LocalDataOwnershipError) return error.message;
@@ -44,6 +100,7 @@ function formatSyncTime(value: string | null | undefined): string {
 }
 
 export default function AccountPage() {
+  const router = useRouter();
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const syncState = useLiveQuery(() => db.syncMeta.get("sync"));
   const pendingCount = useLiveQuery(() => db.syncOutbox.count(), []);
@@ -61,6 +118,34 @@ export default function AccountPage() {
   const [working, setWorking] = useState(false);
   // Seconds until another code can be asked for. Zero means no wait on.
   const [waitSeconds, setWaitSeconds] = useState(0);
+  // Deleting the account. Kept in its own state rather than reusing working/
+  // error/message, because those are shared with sign-in and sync, and a sync
+  // message clearing the sentence that says "your account was not deleted"
+  // would be exactly the kind of quiet ambiguity this flow must not create.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmWord, setConfirmWord] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  // True only once the server has said the account is gone AND the device has
+  // been wiped. Nothing else may set it.
+  const [deleted, setDeleted] = useState(false);
+  // Opening and closing the delete panel swaps one element for another, which
+  // leaves focus nowhere at all. These carry it across.
+  const deletePanelRef = useRef<HTMLDivElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // Only Cancel sets this. A panel that closed because the deletion finished,
+  // or half finished, must not yank focus back to a button that is either gone
+  // or about to be.
+  const returnFocusToTrigger = useRef(false);
+
+  useEffect(() => {
+    if (deleteOpen) {
+      deletePanelRef.current?.focus();
+    } else if (returnFocusToTrigger.current) {
+      returnFocusToTrigger.current = false;
+      deleteTriggerRef.current?.focus();
+    }
+  }, [deleteOpen]);
 
   // Each tick schedules the next one, so the countdown stops on its own rather
   // than leaving an interval running behind a screen nobody is looking at.
@@ -274,11 +359,121 @@ export default function AccountPage() {
     setWorking(false);
   }
 
+  /**
+   * Deleting the account itself. Irreversible, and the order matters.
+   *
+   * Server first, device second, and never the other way round. If the device
+   * were wiped first and the server call then failed, somebody would be left
+   * with an empty phone, an account that still exists, and no way to tell that
+   * had happened. So nothing local is touched until the route has said ok:true.
+   *
+   * Nothing is sent in the body on purpose. The route takes the account from
+   * the session and refuses to read anything else, which is what stops this
+   * from ever being a way to delete somebody else.
+   */
+  async function deleteAccount() {
+    if (!user || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    setError(null);
+    setMessage(null);
+
+    let status = 0;
+    let payload: DeleteResponse | null = null;
+    try {
+      const response = await fetch("/api/account/delete", { method: "POST" });
+      status = response.status;
+      // A response that is not JSON is a failure like any other, not a crash.
+      payload = (await response.json().catch(() => null)) as DeleteResponse | null;
+    } catch {
+      setDeleting(false);
+      setDeleteError(
+        navigator.onLine
+          ? DELETE_FAILED
+          : `Blossom is offline, so it can't tell you whether your account was deleted. Almost certainly it wasn't, because the request never left this device. Nothing on this device has been touched. Try again when you're back online: if Blossom says you're not signed in, the deletion did go through. If it keeps failing, email ${SUPPORT_EMAIL}.`
+      );
+      return;
+    }
+
+    if (status !== 200 || payload?.ok !== true) {
+      setDeleting(false);
+      setDeleteError(describeDeleteFailure(status, payload));
+      return;
+    }
+
+    // From here the account is gone and cannot come back, so nothing below may
+    // claim more or less than it knows.
+    //
+    // The one case where the device is deliberately left alone: its local data
+    // belongs to a different account, which is the same conflict that blocks
+    // sync. Somebody deleting their own account must never take another
+    // person's journal off a shared device with it, so the wipe is skipped and
+    // the receipt says so rather than claiming a clean sweep that didn't happen.
+    const otherAccountOnDevice = Boolean(syncState?.ownerId && syncState.ownerId !== user.id);
+    let wipeFailed = false;
+    if (!otherAccountOnDevice) {
+      try {
+        await deleteAllData();
+      } catch (wipeError) {
+        wipeFailed = true;
+        // A wipe that fails after the account has gone is invisible to the
+        // server, and this is the only chance anyone has of learning it
+        // happened. deleteAllData is a Dexie transaction, so a failure here is
+        // genuinely a failure to store data on this device.
+        reportClientError("storing data on this device", wipeError, { severity: "error" });
+      }
+    }
+
+    // Local scope deliberately. The session this would revoke belongs to an
+    // account that no longer exists, so the network call could only fail, and a
+    // failure here must never look like the deletion not having worked. This
+    // just clears the stored session in the browser.
+    try {
+      await createClient().auth.signOut({ scope: "local" });
+    } catch {
+      // Nothing left to sign out of.
+    }
+
+    if (wipeFailed) {
+      setDeleting(false);
+      setDeleteOpen(false);
+      setConfirmWord("");
+      setDeleteError(
+        `Your account has been deleted from Blossom's servers and you've been signed out. This device's own copy couldn't be removed automatically, so it's still here. Settings, then Data controls, then Delete all data will clear it. If that doesn't work either, email ${SUPPORT_EMAIL}.`
+      );
+      return;
+    }
+
+    const at = typeof payload?.deletedAt === "string" ? payload.deletedAt : new Date().toISOString();
+    const kept = otherAccountOnDevice ? "&device=kept" : "";
+    // Set before navigating so the moment between the wipe and the next screen
+    // shows the calm line rather than flashing the sign-in form at somebody who
+    // has just deleted their account.
+    setDeleted(true);
+    router.replace(`/account/deleted?at=${encodeURIComponent(at)}${kept}`);
+  }
+
   const ownershipConflict = Boolean(user && syncState?.ownerId && syncState.ownerId !== user.id);
   const syncing = Boolean(syncState?.syncing || working);
   // Dev only. False on production, where the email code sign-in below stays
   // exactly as it has always been.
   const hqOnlySignIn = isHqDevEntry();
+
+  // The account is gone and the device is clear. Everything this screen would
+  // otherwise render is about an account that no longer exists, so it renders
+  // none of it while the receipt page loads.
+  if (deleted) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          <header className={styles.header}>
+            <span className={styles.eyebrow}>Done</span>
+            <h1>Your account has been deleted.</h1>
+          </header>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.page}>
@@ -290,6 +485,16 @@ export default function AccountPage() {
           <h1>Keep your space connected</h1>
           <p>Signing in is optional. It never uploads your local Blossom data by itself.</p>
         </header>
+
+        {/* A deletion that half worked signs them out, so everything below
+            this becomes a sign-in form. The one sentence explaining what state
+            their account is in has to sit ABOVE that, not underneath a screen
+            asking them to start again. */}
+        {deleteError && !user && (
+          <div className={styles.error} role="alert">
+            <p>{deleteError}</p>
+          </div>
+        )}
 
         {!user && hqOnlySignIn ? (
           <HqSignInNotice purpose="account" />
@@ -472,7 +677,13 @@ export default function AccountPage() {
               className={styles.signOutButton}
               style={{ color: "var(--pink)" }}
               onClick={() => {
-                if (confirm("Remove all of this device's Blossom data and sign out? This cannot be undone. Export a backup first if you might need it.")) {
+                // Now that deleting the account sits directly below this, the
+                // two have to be told apart at the moment of pressing. This is
+                // the easier button of the pair and it does the lesser thing,
+                // so somebody frightened, moving fast and reading the label as
+                // "get rid of it all" would otherwise walk away believing
+                // their account had gone with the device.
+                if (confirm("Remove all of this device's Blossom data and sign out? This cannot be undone. Your account, and anything synced to it, stays on Blossom's servers: Delete your account below removes those as well. Export a backup first if you might need it.")) {
                   void signOutAndWipe();
                 }
               }}
@@ -480,7 +691,151 @@ export default function AccountPage() {
             >
               Sign out and remove data from this device
             </button>
+
+            {/*
+              Deleting the account for real, which lives here because this is
+              the only screen that knows whether there is an account to delete.
+              Data controls owns the device-only wipe; this owns the server.
+
+              Two steps and a typed word, never one tap. It is quiet until it
+              is opened, it does not ask why, and it does not offer anything in
+              exchange for staying.
+            */}
+            <section className={styles.dangerSection}>
+              <span className={styles.smallLabel}>Leaving</span>
+              <h2>Delete your account</h2>
+              <p>
+                {ownershipConflict
+                  ? "This removes your Blossom account and everything synced to it. This device’s own data belongs to a different account, so it stays."
+                  : "This removes your Blossom account and everything synced to it, and clears Blossom from this device at the same time."}{" "}
+                If you want a copy of anything first, you can export one from Settings, then Data
+                controls.
+              </p>
+
+              {!deleteOpen ? (
+                <div className={styles.deleteActions}>
+                  <button
+                    type="button"
+                    ref={deleteTriggerRef}
+                    className={styles.dangerButton}
+                    onClick={() => {
+                      setDeleteOpen(true);
+                      setConfirmWord("");
+                      setDeleteError(null);
+                    }}
+                  >
+                    Delete my account
+                  </button>
+                </div>
+              ) : (
+                // Opening this unmounts the button that opened it, so without
+                // somewhere to send it, focus falls to the top of the document
+                // and a keyboard or screen reader user has to tab the whole
+                // page again to reach a confirmation they just asked for.
+                // Focus lands on the panel rather than the input so the two
+                // lists are still read in order, and Tab from here reaches the
+                // box to type in.
+                <div
+                  className={styles.deletePanel}
+                  ref={deletePanelRef}
+                  tabIndex={-1}
+                  role="group"
+                  aria-label="Delete your account"
+                >
+                  <span className={styles.deleteLabel}>What goes</span>
+                  <ul className={styles.deleteList}>
+                    <li>
+                      Your account {user.email ? <strong>{user.email}</strong> : null} and everything
+                      synced to it, removed from Blossom&rsquo;s servers.
+                    </li>
+                    <li>
+                      Any links you shared from it stop working, because the records behind them are
+                      gone.
+                    </li>
+                    {ownershipConflict ? null : (
+                      <li>
+                        Blossom&rsquo;s data on this device, including photos and voice recordings,
+                        wiped at the same time.
+                      </li>
+                    )}
+                  </ul>
+                  <span className={styles.deleteLabel}>What doesn&rsquo;t</span>
+                  <ul className={styles.deleteList}>
+                    <li>Anything you exported and downloaded is yours. It stays where you put it.</li>
+                    <li>
+                      Blossom on your other devices keeps its own local copy until you clear it
+                      there.
+                    </li>
+                    {ownershipConflict ? (
+                      <li>
+                        This device&rsquo;s Blossom data, which belongs to a different account. It
+                        won&rsquo;t be touched.
+                      </li>
+                    ) : null}
+                  </ul>
+                  <p>This can&rsquo;t be undone.</p>
+                  <label
+                    className={styles.deleteLabel}
+                    htmlFor="account-delete-confirm"
+                    id="account-delete-confirm-label"
+                  >
+                    Type <strong>{CONFIRM_WORD}</strong> to confirm
+                  </label>
+                  <input
+                    id="account-delete-confirm"
+                    className={styles.confirmInput}
+                    type="text"
+                    value={confirmWord}
+                    onChange={(event) => setConfirmWord(event.target.value)}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder={CONFIRM_WORD}
+                    disabled={deleting}
+                  />
+                  <div className={styles.deleteActions}>
+                    <button
+                      type="button"
+                      className={styles.dangerButton}
+                      onClick={() => void deleteAccount()}
+                      disabled={deleting || confirmWord.trim().toLowerCase() !== CONFIRM_WORD}
+                      // A dimmed button with no reason attached is a wall
+                      // somebody can stand in front of without being told why,
+                      // so it carries the instruction that unlocks it.
+                      aria-describedby="account-delete-confirm-label"
+                    >
+                      {deleting ? "Deleting…" : "Delete my account"}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => {
+                        // Back to the button they came from, rather than to
+                        // the top of the page.
+                        returnFocusToTrigger.current = true;
+                        setDeleteOpen(false);
+                        setConfirmWord("");
+                      }}
+                      disabled={deleting}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
           </>
+        )}
+
+        {/* Still signed in, so the deletion did not happen and this belongs
+            directly under the panel they were just looking at. The signed-out
+            copy of this is above, before the sign-in form. Either way the
+            explanation never disappears with the branch it was raised in. */}
+        {deleteError && user && (
+          <div className={styles.error} role="alert">
+            <p>{deleteError}</p>
+          </div>
         )}
 
         {message && <p className={styles.success} role="status">{message}</p>}

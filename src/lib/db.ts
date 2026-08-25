@@ -4309,6 +4309,20 @@ export async function deleteAllData(): Promise<void> {
     // only thing that can.
     window.localStorage.removeItem("blossom-beta-nudge-dismissed-until");
     window.localStorage.removeItem("blossom-beta-chat-last-read");
+    // The public ideas board votes without an account, so it keeps a random
+    // token identifying this device and the list of ideas the device voted
+    // for, both in localStorage (see src/app/ideas/page.tsx). The token is a
+    // stable id that matches rows still sitting in feedback_votes on the
+    // server, and the list is a record of which trans healthcare features
+    // somebody here asked for. A wipe that leaves those behind has left the
+    // device identifiable, which is the thing it exists to undo.
+    //
+    // The cost is that a new token could vote again on an idea this device
+    // already voted for, moving a public count by one. A vote tally being
+    // slightly soft is worth less than a durable id on a device somebody has
+    // just cleared for their own safety.
+    window.localStorage.removeItem("blossom_feedback_voter_token");
+    window.localStorage.removeItem("blossom_feedback_voted_ids");
     // Unsaved drafts hold the same words the entry would have, so they're
     // part of "everything" too - see src/lib/drafts.ts.
     clearAllDrafts();
