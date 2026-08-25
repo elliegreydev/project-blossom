@@ -43,6 +43,10 @@ const SYNCED_CATEGORIES = [
   "Private links",
   "Personal Support Map",
   "Safety check-ins",
+  // Both of these were missing while the sentence below called the list
+  // "exactly what". They are two of the more sensitive things in it.
+  "Waiting list referrals and the updates you log against them",
+  "Self-directed care settings",
 ];
 
 export default function PrivacySettingsPage() {
@@ -210,7 +214,7 @@ export default function PrivacySettingsPage() {
                 : profile.syncEnabled
                   ? "You have sync turned on, so this data is stored on Blossom's servers so it's available across your devices. Here's exactly what: " +
                     SYNCED_CATEGORIES.join(", ") + "."
-                  : "You're signed in but sync is off. Everything you've entered stays only on this device - nothing has been sent to Blossom's servers."}
+                  : "You're signed in but sync is off, so everything you record in Blossom stays on this device. The exception is anything you deliberately send us, like a support ticket or feedback, which reaches our servers whether sync is on or not."}
             </p>
             <p className={styles.hint}>
               Photos and voice recordings never sync, full stop - not while

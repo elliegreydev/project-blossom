@@ -416,7 +416,12 @@ export default function AppearanceSettingsPage() {
       </section>
 
       <p className={styles.footnote}>
-        Your choice follows your account, so it&apos;ll look the same on any device you sign in on.
+        {/* This promised more than it delivers, in the opposite direction to
+            everything else found in the sweep. Theme and light/dark do travel
+            with the account. The hue, text size, contrast and the other
+            accessibility switches on this page are per device. */}
+        Your theme and your light or dark choice follow your account. The accent colour, text
+        size and the accessibility switches are set per device, so each one can be different.
       </p>
     </div>
   );

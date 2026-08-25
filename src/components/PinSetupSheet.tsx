@@ -69,7 +69,7 @@ export default function PinSetupSheet({ onClose }: { onClose: () => void }) {
           </p>
         )}
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-          Because everything stays on this device, there&apos;s no way to recover a
+          Your PIN never leaves this device, so there is no way to recover a
           forgotten PIN. If you lose it, you&apos;d need to reset the app and lose
           your local data.
         </p>

@@ -142,7 +142,7 @@ export default function AddReferralUpdateSheet({
             placeholder={
               kind === "position"
                 ? "e.g. They're booking people referred in June 2023"
-                : "In your own words. Nobody else reads this."
+                : "In your own words, for you to look back on."
             }
           />
         </div>

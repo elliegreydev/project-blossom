@@ -267,7 +267,12 @@ export default function AuroraPage() {
             <div className={styles.consent}>
               <strong>Before you begin</strong>
               <p>This chat is sent to Anthropic so Aurora can reply - the message you type, plus the earlier messages in the same chat so the reply makes sense. Nothing else goes with it. Blossom does not automatically send your journal, medication, weight, photos, voice notes, or euphoria entries.</p>
-              <p>Conversation history stays on this device unless you choose to paste it into a new message. You can clear it at any time.</p>
+              {/* This said history "stays on this device", which sat awkwardly
+                  next to the paragraph above admitting earlier messages are
+                  sent. Both are true of different things, so say which: the
+                  stored history never syncs, but the recent turns travel with
+                  each reply so Aurora can follow the thread. */}
+              <p>The saved history stays on this device and never syncs to your account, and you can clear it at any time. The last few messages of the current chat do travel with each new one, so Aurora can follow what you are talking about.</p>
               <button type="button" className={styles.primaryButton} onClick={acceptConsent}>I understand, continue</button>
             </div>
           ) : (
