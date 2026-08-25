@@ -13,6 +13,13 @@ export interface PushPayload {
   url?: string;
 }
 
+// Dead subscriptions are cleared by id, never by endpoint. `endpoint` is free
+// text the subscriber sets, and postgrest-js only quotes a value passed to
+// .in() when it contains a comma or a bracket, without escaping a double quote
+// already inside it, so a crafted endpoint breaks out of its own entry in the
+// list and becomes several. These deletes run on the service-role client, which
+// row level security does not apply to, so that was one person being able to
+// delete another's subscription and silently stop their medication reminders.
 function isDeadEndpointError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -38,25 +45,25 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload): 
 
   const { data: subscriptions } = await supabase
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
+    .select("id, endpoint, p256dh, auth")
     .in("user_id", userIds);
   if (!subscriptions || subscriptions.length === 0) return { sent: 0 };
 
   const body = JSON.stringify({ title: payload.title, body: payload.body, tag: payload.tag, url: payload.url ?? "/" });
   let sent = 0;
-  const deadEndpoints = new Set<string>();
+  const deadSubscriptionIds = new Set<string>();
 
   for (const sub of subscriptions) {
     try {
       await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
       sent++;
     } catch (error) {
-      if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
+      if (isDeadEndpointError(error)) deadSubscriptionIds.add(sub.id);
     }
   }
 
-  if (deadEndpoints.size > 0) {
-    await supabase.from("push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
+  if (deadSubscriptionIds.size > 0) {
+    await supabase.from("push_subscriptions").delete().in("id", [...deadSubscriptionIds]);
   }
 
   return { sent };
@@ -82,25 +89,25 @@ export async function sendPushToStaff(userIds: string[], payload: PushPayload): 
 
   const { data: subscriptions } = await supabase
     .from("staff_push_subscriptions")
-    .select("endpoint, p256dh, auth")
+    .select("id, endpoint, p256dh, auth")
     .in("user_id", userIds);
   if (!subscriptions || subscriptions.length === 0) return { sent: 0 };
 
   const body = JSON.stringify({ title: payload.title, body: payload.body, tag: payload.tag, url: payload.url ?? "/" });
   let sent = 0;
-  const deadEndpoints = new Set<string>();
+  const deadSubscriptionIds = new Set<string>();
 
   for (const sub of subscriptions) {
     try {
       await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
       sent++;
     } catch (error) {
-      if (isDeadEndpointError(error)) deadEndpoints.add(sub.endpoint);
+      if (isDeadEndpointError(error)) deadSubscriptionIds.add(sub.id);
     }
   }
 
-  if (deadEndpoints.size > 0) {
-    await supabase.from("staff_push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
+  if (deadSubscriptionIds.size > 0) {
+    await supabase.from("staff_push_subscriptions").delete().in("id", [...deadSubscriptionIds]);
   }
 
   return { sent };
