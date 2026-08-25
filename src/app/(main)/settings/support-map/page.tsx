@@ -81,7 +81,12 @@ export default function PersonalSupportMapPage() {
     <div className={feature.screen}>
       <ScreenHeader title="Personal Support Map" backHref="/track" />
       <p className={feature.pageSubtitle} style={{ marginTop: -10 }}>
-        A private place for people, places and organisations that matter to you. It stays only on this device.
+        {/* "It stays only on this device" was false: support map entries sync,
+            carrying the names and contact details of the people somebody relies
+            on, which is other people's data as well as their own. */}
+        A private place for people, places and organisations that matter to you. These
+        entries sync to your account if you have sync on, under &ldquo;Your people and
+        safety&rdquo;.
       </p>
 
       <div className={styles.privacyNote}>

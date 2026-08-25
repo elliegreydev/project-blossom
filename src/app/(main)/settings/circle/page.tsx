@@ -155,11 +155,17 @@ export default function TrustedCirclePage() {
     <div className={formStyles.screen}>
       <ScreenHeader title="Trusted Circle" backHref="/track" />
       <p className={formStyles.hint}>
+        {/* The old wording said journal entries, blood tests, photos and voice
+            practice "never leave this device in the first place". Three of those
+            four sync. The reason they cannot be shared here is that sharing was
+            deliberately never extended to them, which is the framing the privacy
+            policy already uses correctly. Only photos and voice recordings truly
+            never sync. */}
         Share specific parts of your account with people you choose - never your whole account by
-        default. Only the categories below can ever be shared; journal entries, blood tests,
-        photos and voice practice are never available this way, since they never leave this device
-        in the first place. You can revoke any share instantly, and the other person can leave at
-        any time too.
+        default. Only the categories below can ever be shared: journal entries, blood tests and
+        voice practice notes are deliberately not shareable this way, and photos and voice
+        recordings never leave your device at all. You can revoke any share instantly, and the
+        other person can leave at any time too.
       </p>
 
       {pending.length > 0 && (

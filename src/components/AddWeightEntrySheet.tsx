@@ -38,7 +38,7 @@ export default function AddWeightEntrySheet({ profile, entry, onClose }: { profi
       <div ref={dialogRef} className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="weight-entry-title">
         <div className={styles.grabber} />
         <h2 id="weight-entry-title" className={styles.title}>{entry ? "Edit weight" : "Log weight"}</h2>
-        <p className={styles.helpText}>Private to this device. A number is only a note, never a grade.</p>
+        <p className={styles.helpText}>A number is only a note, never a grade. Weight entries sync with your account if sync is on.</p>
 
         <div className={styles.field}>
           <span className={styles.label}>Date</span>
