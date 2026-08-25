@@ -70,7 +70,9 @@ export default function TermsPage() {
             <h2>Your account</h2>
             <p>
               An account is optional. If you create one, you are responsible for keeping access to your
-              sign-in email secure. Accounts are for individual personal use, not shared logins.
+              sign-in email secure. Accounts are for individual personal use, not shared logins. You
+              can delete your account yourself whenever you like, and Ending your use of Blossom
+              below says what that removes.
             </p>
           </section>
 
@@ -157,11 +159,24 @@ export default function TermsPage() {
             <h2>Ending your use of Blossom</h2>
             <p>
               You can stop using Blossom at any time. Settings lets you delete all the data on your
-              device and manage sync. Deleting a synced account is not yet a button in the app, so
-              until it is, email <a href="mailto:support@projectblossom.net">support@projectblossom.net</a>{" "}
-              and we will do it. This paragraph used to say Settings handled account deletion, which
-              was not true. We may suspend or terminate access where an account seriously or
-              repeatedly breaks these terms, or where this is needed for security or legal reasons.
+              device and manage sync, and that part clears the device only. If you have an account,
+              Account &amp; sync has a Delete your account button that removes the account and
+              everything synced to it, clears Blossom from the device you are on, and signs you out.
+              It asks you to confirm by typing a word first, because it cannot be undone. We do not
+              ask why, and there is nothing to fill in.
+            </p>
+            <p>
+              Deleting your account does not remove anything you posted to the public ideas board,
+              or a bug report, contact email or staff application you sent us, because none of those
+              are attached to your account. Email{" "}
+              <a href="mailto:support@projectblossom.net">support@projectblossom.net</a> if you want
+              one of those taken down and we will do it. The{" "}
+              <Link href="/legal/privacy">Privacy Policy</Link> sets out in full what deletion
+              reaches and what it does not.
+            </p>
+            <p>
+              We may suspend or terminate access where an account seriously or repeatedly breaks
+              these terms, or where this is needed for security or legal reasons.
             </p>
           </section>
 

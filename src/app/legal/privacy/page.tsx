@@ -57,7 +57,10 @@ export default function PrivacyPolicyPage() {
               or asking us to delete it, email{" "}
               <a href="mailto:support@projectblossom.net">support@projectblossom.net</a>. You can
               also use the support route inside the app, which reaches the same people. You do not
-              need an account to email us, and you do not have to explain why you are asking.
+              need an account to email us, and you do not have to explain why you are asking. If
+              what you want is your account gone, you no longer have to ask us at all: Account
+              &amp; sync deletes it there and then, and Retention and deletion below sets out
+              exactly what that reaches.
             </p>
             <p>
               Grey Studios does not yet have a published postal address. If you need one, for a
@@ -76,8 +79,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <p>
               The following also stays on the device where you create it: your gender-euphoria
-              entries, including any you have sealed as a Time Capsule to reopen later; any trips
-              you plan in Travel Mode, including where you are going
+              entries, including any you have sealed as a Time Capsule to reopen later; any leftover
+              history from the Aurora AI chat that was removed in August 2026; any trips you plan in Travel Mode, including where you are going
               and when; unsaved drafts of journal entries and check-in notes, which Blossom keeps as
               you type so a crash or a restart can&apos;t lose them; your app lock PIN, biometric
               credential reference, accessibility choices, and Home layout choices. To be exact
@@ -99,9 +102,9 @@ export default function PrivacyPolicyPage() {
               If you use Blossom without signing in, or sign in but leave sync off, nothing you
               record in the app is sent to Blossom&apos;s servers - everything above stays local,
               and so does everything listed as syncable below. The one exception is anything you
-              deliberately send us: if you open a support ticket or post feedback, that is stored
-              on our servers whether or not sync is on, because there is no other way for it to
-              reach us.
+              deliberately send us: if you open a support ticket, post
+              feedback or apply to join the team, that is stored on our servers whether or not
+              sync is on, because there is no other way for it to reach us.
             </p>
           </section>
 
@@ -113,7 +116,7 @@ export default function PrivacyPolicyPage() {
               milestones and timeline; medications, schedules, dose logs, medication supplies and care
               supplies; appointments, including the questions and details you prepare for an appointment in
               advance and any private notes you add afterwards; check-in ratings and notes; goals;
-              the minimal Aurora state needed to avoid
+              the minimal record of which Aurora suggestions you have already been shown, to avoid
               repeating the same nudge; journal entries; blood-test records; voice practice goals and
               session notes (never the recording itself); presentation and body/progress tracking data
               such as category, rating and measurements (never the photo itself); weight and
@@ -182,6 +185,12 @@ export default function PrivacyPolicyPage() {
               tell you your link has been used without turning into a log of the person you shared
               it with.
             </p>
+            <p>
+              One thing worth knowing about that history now that account deletion exists: where an
+              entry belongs to somebody who has a Blossom account of their own, deleting their
+              account takes their entries with it. A share history can therefore end up with fewer
+              lines in it than it once had.
+            </p>
           </section>
 
           <section>
@@ -227,7 +236,9 @@ export default function PrivacyPolicyPage() {
               Staff read and reply to tickets through Grey Studios&apos; own internal system rather
               than through Blossom, so your message and the display name and email on your account
               are visible there too. It is the same company and the same small team described at the
-              top of this policy, and tickets are not shared outside it.
+              top of this policy, and tickets are not shared outside it. There is one copy of a
+              ticket rather than two, so if you delete your Blossom account, your tickets and
+              everything written on them, staff replies included, are deleted along with it.
             </p>
             <p>
               You do not have to put anything sensitive in a ticket for us to help. If something is
@@ -241,6 +252,17 @@ export default function PrivacyPolicyPage() {
               Feature requests submitted to the public ideas board are visible publicly. Bug reports,
               contact emails and staff applications are visible only to authorised Blossom staff.
               Please do not put medical or other highly sensitive information into a public idea.
+            </p>
+            <p>
+              None of these are attached to your account. The only thread back to you is an email
+              address you typed in yourself, if you gave one, so deleting your Blossom account does
+              not remove them and we would be guessing if we matched them up on that address alone.
+              If you want an idea, a bug report or an application removed, email us and we will do
+              it.
+            </p>
+            <p>
+              Blossom used to have a closed beta with a shared chat for testers. That was closed in
+              August 2026 and the messages have been deleted.
             </p>
           </section>
 
@@ -263,6 +285,12 @@ export default function PrivacyPolicyPage() {
               person hitting a problem repeatedly from a hundred people hitting it once. That reference
               is the same identifier your account uses, so we can connect a report back to an account
               if we need to. It is not published, and it is not shared outside Grey Studios.
+            </p>
+            <p>
+              These reports are kept in Grey Studios&apos; own error log rather than in your
+              account, so deleting your account does not remove ones already sent. They still hold
+              nothing you have written, and the reference in them stops pointing at an account that
+              exists.
             </p>
           </section>
 
@@ -327,9 +355,11 @@ export default function PrivacyPolicyPage() {
               of ordinary use. It no longer does.
             </p>
             <p>
-              There is no longer an exception to that. Blossom used to have an optional AI chat,
-              and what you typed into it was sent to a provider outside the UK and EU. That feature
-              has been removed. Nothing you write in Blossom now leaves Europe.
+              There are now no exceptions to that. Until August 2026 there was one: the optional
+              Aurora AI chat sent what you typed to Anthropic, which processed it outside the UK and
+              EU, and this page said openly that the safeguards for that transfer had not been
+              reviewed. That feature has been removed, so <strong>none of your data leaves the UK
+              and the EU any more</strong>.
             </p>
             <p>
               Supabase and Vercel keep their own short-term technical logs of the requests made to
@@ -357,27 +387,55 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Retention and deletion</h2>
             <p>
-              You can delete all Blossom data from your device in Settings, and that is thorough: it
-              clears every local table.
+              You can delete your whole Blossom account from inside the app. It is in Account &amp;
+              sync, under Delete your account. It takes two steps and asks you to type the word
+              delete, so it cannot happen by a mistaken tap, and that is the whole of it: we do not
+              ask why you are going, and there is nothing offered to make you stay.
             </p>
             <p>
-              What that does not yet do, stated plainly because this page previously implied
-              otherwise. Deleting local data does not remove anything already synced to your
-              account, and there is at present no button anywhere in Blossom that deletes a synced
-              account. Until there is, email{" "}
-              <a href="mailto:support@projectblossom.net">support@projectblossom.net</a> and we will
-              do it by hand. Switching sync off also leaves whatever was already uploaded in place;
-              the one route that genuinely removes data from the server today is turning off an
+              What it removes. Your account, and everything synced under it, meaning everything
+              listed under &ldquo;What can sync when you choose it&rdquo; above. That includes
+              records you had already deleted and which the server was still holding as marked
+              deleted. Your notification subscriptions go too, so reminders stop reaching your
+              devices. Any Trusted Circle grants and Bridge links you created stop working, because
+              the records behind them no longer exist. So do any support tickets you opened,
+              including the replies staff sent you. One part of it sits outside your own account
+              and goes anyway: the entries recording that you opened something another person
+              shared with you, which live in their access history rather than yours.
+            </p>
+            <p>
+              It also clears Blossom&apos;s data from the device you do it on, and signs you out.
+              There is one exception, and the app tells you when it applies: if the Blossom data on
+              that device belongs to a different account, it is left alone, because deleting your
+              account must never take someone else&apos;s entries off a shared device. If any part
+              of the deletion fails, nothing on your device is touched and Blossom says plainly
+              that your account still exists.
+            </p>
+            <p>
+              What it does not reach, said here rather than left for you to find out. Anything you
+              posted to the public ideas board, and any bug report, contact email or staff
+              application you sent, is not attached to your account at all, so it stays; email us if
+              you want one removed. Error reports from when Blossom broke stay as well, in the error
+              log described above. Blossom on your other devices keeps its own local copy until you
+              clear it there. Exports you have downloaded are yours. And nothing can pull back
+              something a share recipient has already read, copied or saved.
+            </p>
+            <p>
+              Three things that account deletion does not change, because they are separate and are
+              all still true. Switching sync off leaves whatever was already uploaded in place.
+              Deleting all data in Settings clears that device and does not touch a synced account.
+              And when you delete a single record while sync is on, the server marks it deleted and
+              stops serving it rather than erasing the text straight away. The one route that
+              removes data from the server without removing your account is turning off an
               individual category under Choose what syncs, which offers to purge that category and
-              really does delete those rows. When a record is deleted while sync is on, the server
-              currently marks it deleted and stops serving it rather than erasing the text
-              immediately.
+              really does delete those rows.
             </p>
             <p>
-              We are fixing all of that, and we would rather say so here than let this page describe
-              a version of Blossom that does not exist. We are also still setting the precise
-              retention periods for support cases, access logs, feedback, applications
-              and backups. Those periods will be published before wider public release.
+              Deletion from the live database happens when you press the button, not on a queue.
+              Our providers keep their own backups and short-term technical logs on their own
+              timers, so a copy can survive there for a while afterwards. We are still setting the
+              precise retention periods for support cases, access logs, feedback, applications and
+              backups. Those periods will be published before wider public release.
             </p>
           </section>
 
@@ -387,7 +445,8 @@ export default function PrivacyPolicyPage() {
               Depending on the law that applies to you, you may have rights to access, correct, erase,
               restrict, object to, or receive a copy of your personal data, and to complain to the UK
               Information Commissioner&apos;s Office. You can already export, pause sync, sign out, manage
-              sharing and delete data through Blossom&apos;s settings. A final reviewed policy will state the
+              sharing, delete this device&apos;s data and delete your account outright through
+              Blossom&apos;s own settings, without asking us for any of it. A final reviewed policy will state the
               legal bases and special-category health-data condition used for each processing purpose.
             </p>
           </section>
@@ -395,19 +454,24 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Aurora</h2>
             <p>
-              Aurora is the gentle suggestion on your Home screen, and it is not AI. Its suggestions
-              are rule-based and worked out on your own device from what you have already recorded
-              in Blossom. Nothing you have written is sent anywhere to produce one. All that syncs,
-              if you have sync on, is the minimal state needed to stop the same nudge repeating at
-              you across your devices, as listed further up this policy.
+              Aurora is the name of Blossom&apos;s gentle suggestions: the occasional card on Home
+              saying something like &ldquo;one of your supplies could use a look&rdquo;. It is
+              rule-based and it runs entirely on your device. It reads what is already stored there,
+              works out whether anything is worth mentioning, and says at most one thing. No part of
+              it sends anything anywhere, and you can set how often it speaks up, or switch it off,
+              in Settings.
             </p>
             <p>
-              Blossom used to have a second, optional feature under the same name, an AI chat that
-              sent what you typed to a provider outside the UK and EU. It has been removed, along
-              with the usage counts it kept. Aurora as it exists now sends nothing you have written
-              anywhere, beyond the minimal nudge state described above, makes no decision with legal
-              or similarly significant effects, and cannot diagnose, prescribe, monitor emergencies,
-              or contact anyone on your behalf.
+              The only thing that leaves your device is a small record of which suggestions you have
+              already been shown, and only if you have sync switched on, so a second device does not
+              repeat one you have seen. It contains no words you wrote.
+            </p>
+            <p>
+              There used to be a second, separate feature also called Aurora: an optional AI chat
+              that sent what you typed to Anthropic. <strong>It was removed in August 2026</strong>,
+              along with the closed beta it was part of. Nothing in Blossom now sends your data
+              outside the UK and the EU. If you used that chat, its history was only ever stored on
+              your own device, and deleting all data in Settings clears it.
             </p>
             <p>
               Separately from the above, most of Blossom&apos;s code is written with the help of AI.
