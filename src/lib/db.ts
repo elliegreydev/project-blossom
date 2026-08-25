@@ -258,6 +258,10 @@ export interface Milestone {
   eventDate: string | null; // ISO date, or free text when precision is "approximate"
   datePrecision: DatePrecision;
   note: string | null;
+  // A private, local-only photo, same treatment as presentation/body photos:
+  // never pushed to sync, stripped to a flag in exports. Optional so existing
+  // rows are valid without it.
+  photo?: Blob | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -270,6 +274,7 @@ export interface JourneyEvent {
   eventDate: string | null;
   datePrecision: DatePrecision;
   note: string | null;
+  photo?: Blob | null;
   createdAt: string;
   updatedAt: string;
 }

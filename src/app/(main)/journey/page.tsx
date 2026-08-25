@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import UndoRemovalNotice from "@/components/UndoRemovalNotice";
+import PhotoThumbnail from "@/components/PhotoThumbnail";
 import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import {
   db,
@@ -31,6 +32,14 @@ function formatEntryDate(entry: Milestone | JourneyEvent): string | null {
   if (entry.datePrecision === "none" || !entry.eventDate) return null;
   if (entry.datePrecision === "approximate") return entry.eventDate;
   return new Date(entry.eventDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// The year a timeline entry belongs under. Undated entries gather beneath a
+// single "No date yet" marker at the end rather than scattering.
+function yearOf(entry: Milestone | JourneyEvent): string {
+  if (!entry.eventDate) return "No date yet";
+  const match = /^(\d{4})/.exec(entry.eventDate);
+  return match ? match[1] : "No date yet";
 }
 
 // Anniversaries within the next ANNIVERSARY_WINDOW_DAYS, including today.
@@ -144,37 +153,64 @@ export default function JourneyPage() {
         </div>
       )}
 
-      {allEntries.length === 0 ? (
-        <div className={styles.empty}>
-          <div className={styles.emptyMark} aria-hidden="true">✦</div>
-          <div className={styles.emptyTitle}>Your journey, your pace</div>
-          <div className={styles.emptySubtitle}>
-            This space is yours when you&apos;re ready. The + button is here whenever it feels useful.
+        {allEntries.length === 0 ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyMark} aria-hidden="true">✦</div>
+            <div className={styles.emptyTitle}>Your journey, your pace</div>
+            <div className={styles.emptySubtitle}>
+              This space is yours when you&apos;re ready. The + button is here whenever it feels useful.
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className={styles.timeline} role="list">
-          {allEntries.map((entry) => (
-            <article key={entry.id} className={styles.entry} role="listitem">
-              <div className={styles.entryTopline}>
-                <div className={styles.entryTitle}>{entry.title}</div>
-                {entry.category && (
-                  <div className={styles.entryCategory}>{CATEGORY_LABELS[entry.category]}</div>
-                )}
-              </div>
-              {formatEntryDate(entry) && <time className={styles.entryMeta}>{formatEntryDate(entry)}</time>}
-              {entry.note && <div className={styles.entryNote}>{entry.note}</div>}
-              <button
-                type="button"
-                className={styles.entryRemove}
-                onClick={() => stageRemoval(entry.id, "This Journey entry", () => isMilestone(entry) ? deleteMilestone(entry.id) : deleteJourneyEvent(entry.id))}
-              >
-                Remove
-              </button>
-            </article>
-          ))}
-        </div>
-      )}
+        ) : (
+          <div className={styles.timeline} role="list">
+            {(() => {
+              const nodes: React.ReactNode[] = [];
+              let lastYear: string | null = null;
+              for (const entry of allEntries) {
+                const year = yearOf(entry);
+                if (year !== lastYear) {
+                  nodes.push(
+                    <div key={"year-" + year} className={styles.yearMarker} aria-hidden="true">{year}</div>
+                  );
+                  lastYear = year;
+                }
+                const date = formatEntryDate(entry);
+                nodes.push(
+                  <article key={entry.id} className={styles.entry} role="listitem">
+                    <span className={styles.entryDot} aria-hidden="true" />
+                    <div className={styles.entryCard}>
+                      <div className={styles.entryBody}>
+                        {date && <time className={styles.entryDate}>{date}</time>}
+                        <div className={styles.entryTitle}>{entry.title}</div>
+                        {entry.note && <p className={styles.entryNote}>{entry.note}</p>}
+                        {entry.category && (
+                          <span className={styles.entryCategory}>{CATEGORY_LABELS[entry.category]}</span>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.entryRemove}
+                          onClick={() =>
+                            stageRemoval(entry.id, "This Journey entry", () =>
+                              isMilestone(entry) ? deleteMilestone(entry.id) : deleteJourneyEvent(entry.id)
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {entry.photo && (
+                        <div className={styles.entryPhoto}>
+                          <PhotoThumbnail photo={entry.photo} alt="" />
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              }
+              return nodes;
+            })()}
+          </div>
+        )}
       {pendingRemoval && <UndoRemovalNotice label={pendingRemoval.label} onUndo={undoRemoval} />}
     </div>
   );

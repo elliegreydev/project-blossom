@@ -106,46 +106,72 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0;
   padding-left: 26px;
 }
 
+/* The rail: one continuous line down the left, behind the dots. */
 .timeline::before {
   content: "";
   position: absolute;
-  top: 10px;
-  bottom: 10px;
+  top: 14px;
+  bottom: 18px;
   left: 5px;
-  width: 1px;
-  background: linear-gradient(var(--lavender), color-mix(in srgb, var(--border) 75%, transparent));
+  width: 2px;
+  background: linear-gradient(var(--pink), color-mix(in srgb, var(--secondary) 60%, transparent));
+  border-radius: 2px;
+}
+
+/* Year label, sitting on the rail, spacing the groups apart. */
+.yearMarker {
+  position: relative;
+  margin: 6px 0 14px -26px;
+  padding-left: 26px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pink);
+  letter-spacing: 0.02em;
 }
 
 .entry {
   position: relative;
-  padding: 4px 0 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  padding: 0 0 18px;
 }
 
-.entry::before {
-  content: "";
+/* The dot on the rail for this entry. */
+.entryDot {
   position: absolute;
   left: -25px;
-  top: 8px;
-  width: 9px;
-  height: 9px;
+  top: 20px;
+  width: 11px;
+  height: 11px;
   border: 3px solid var(--bg);
   border-radius: 50%;
-  background: var(--lavender);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lavender) 55%, var(--border));
+  background: var(--pink);
 }
 
-.entryTopline {
+/* The card: a body column, and a photo on the right when there is one. */
+.entryCard {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
+  align-items: stretch;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.entryBody {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.entryDate {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .entryTitle {
@@ -153,34 +179,40 @@
   font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.entryNote {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
 }
 
 .entryCategory {
-  flex: 0 0 auto;
-  padding: 3px 8px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
-  background: var(--bg-raised);
-  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--pink) 16%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--pink) 40%, var(--border));
+  color: var(--text-primary);
   font-size: 11px;
   font-weight: 600;
 }
 
-.entryMeta {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.entryNote {
-  max-width: 640px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-top: 1px;
+/* Photo thumbnail on the right of the card. Fixed width, square-ish. */
+.entryPhoto {
+  flex: 0 0 92px;
+  width: 92px;
+  align-self: center;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 .entryRemove {
   align-self: flex-start;
-  margin-top: 2px;
+  margin-top: 4px;
   padding: 0;
   border: none;
   background: transparent;
