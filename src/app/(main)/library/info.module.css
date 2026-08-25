@@ -48,3 +48,76 @@ a.row:hover {
   line-height: 1.5;
   color: var(--text-secondary);
 }
+
+/* Browse by topic: a 3-across grid of tappable topic cards that each run a
+   search. Icon over label, calm and even. */
+.topicHead {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 4px 0 12px;
+}
+.topicGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.topicCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 92px;
+  padding: 16px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.topicCard:active { transform: scale(0.98); }
+.topicIcon { width: 26px; height: 26px; }
+.topicIcon svg { width: 100%; height: 100%; }
+.topicLabel {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Support near you banner. */
+.supportBanner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--pink) 34%, var(--border));
+  background: color-mix(in srgb, var(--pink) 9%, var(--bg-raised));
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+.supportPin {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pink) 18%, transparent);
+  color: var(--pink);
+}
+.supportPin svg { width: 22px; height: 22px; }
+.supportText { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.supportText strong { font-family: var(--font-display); font-size: 15px; }
+.supportText span { color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
+.supportFind {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--pink) 50%, var(--border));
+  color: var(--pink);
+  font-size: 13px;
+  font-weight: 600;
+}
