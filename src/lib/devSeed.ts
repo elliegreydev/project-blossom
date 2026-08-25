@@ -47,6 +47,27 @@ export function isDevBuild(): boolean {
   return process.env.NEXT_PUBLIC_HQ_DEV_ENTRY === "1";
 }
 
+/**
+ * Put the app back to the state a stranger meets, so onboarding can be walked
+ * again on demand. Dev only, and it refuses outright anywhere else.
+ *
+ * Two choices worth explaining. It reopens onboarding by clearing the two
+ * fields the app checks, rather than by wiping the database, so a run-through
+ * does not cost the seeded demo data every time. And it clears the seed flag,
+ * because the interesting version of this walk is the one where Home is empty:
+ * with the flag gone, deleting the data separately gets you a genuine first
+ * run rather than a re-seeded one.
+ */
+export async function restartOnboardingForDev(): Promise<void> {
+  if (!isDevBuild()) return;
+  try {
+    localStorage.removeItem(SEED_FLAG);
+  } catch {
+    // No storage is not a reason to refuse the rest.
+  }
+  await updateProfile({ onboardingCompletedAt: null, onboardingStep: 0 } as never);
+}
+
 // React StrictMode fires the boot effect twice in dev, so this can be called
 // twice near-simultaneously. Without a guard both calls pass the empty-database
 // check before either finishes, and the second run collides on the rows the

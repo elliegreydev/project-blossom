@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
+import { isDevBuild, restartOnboardingForDev } from "@/lib/devSeed";
 import { createClient } from "@/lib/supabase/client";
 import { APP_VERSION } from "@/lib/changelog";
 import { THEMES } from "@/lib/themes";
@@ -137,6 +139,7 @@ const AURORA_LABELS: Record<string, string> = {
 const THEME_LABELS: Record<string, string> = Object.fromEntries(THEMES.map((t) => [t.id, t.name]));
 
 export default function SettingsPage() {
+  const router = useRouter();
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
   const [activeShares, setActiveShares] = useState<number | null>(null);
 
@@ -250,6 +253,40 @@ export default function SettingsPage() {
 
         <p className={styles.versionStamp}>Blossom v{APP_VERSION}</p>
       </section>
+
+      {/* Test build only. isDevBuild() reads the same flag the demo seed does,
+          which is set on the dev deployment and nowhere else, so this section is
+          absent from the real app rather than merely hidden in it. */}
+      {isDevBuild() && (
+        <section className={styles.section}>
+          <div className={styles.groupHead}>
+            <span className={styles.groupEyebrow}>Test build</span>
+            <h2 className={styles.groupTitle}>Only on dev</h2>
+          </div>
+          <div className={styles.group}>
+            <button
+              type="button"
+              className={styles.row}
+              onClick={() => {
+                void restartOnboardingForDev().then(() => router.replace("/onboarding"));
+              }}
+            >
+              <span className={styles.rowIcon} aria-hidden="true">{ICONS.home}</span>
+              <div className={styles.rowText}>
+                <span className={styles.rowTitle}>Run setup again</span>
+                <span className={styles.rowMeta}>Reopens onboarding from the first screen. Your data stays.</span>
+              </div>
+              {CHEVRON}
+            </button>
+          </div>
+          <p className={styles.note}>
+            <span>
+              To see exactly what a brand new person sees, run setup again and then clear
+              your data in Data controls. The demo seed will not refill it afterwards.
+            </span>
+          </p>
+        </section>
+      )}
     </div>
   );
 }
