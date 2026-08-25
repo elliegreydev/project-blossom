@@ -1,0 +1,28 @@
+# Static security analysis on every push and PR. Free for public repositories.
+# Catches injection, auth and data-flow bugs in the JavaScript/TypeScript before
+# they ship, complementing the runtime red-teams which cannot see every path.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # weekly, so newly-published queries run against old code
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3

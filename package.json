@@ -25,7 +25,8 @@
     "test:info": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-info-index.mjs",
     "test:contrast": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-contrast.mjs",
     "test:data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./scripts/test-support/register.mjs scripts/test-data-integrity.mjs",
-    "test:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./scripts/test-support/register.mjs scripts/test-migration.mjs"
+    "test:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./scripts/test-support/register.mjs scripts/test-migration.mjs",
+    "test:rls": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-rls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

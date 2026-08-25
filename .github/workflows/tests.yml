@@ -43,6 +43,26 @@ jobs:
       - name: Run all suites
         run: npm test
 
+      - name: Dependency audit gate
+        # Fail the build on a high or critical vulnerability in a PRODUCTION
+        # dependency, so a framework CVE like the one patched in August cannot
+        # ship unnoticed. Dev/tooling advisories with no runtime path are
+        # excluded, otherwise the gate would fire on things a user never runs.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: RLS tripwire (production)
+        # The database red-team, frozen: hits the live REST API with the PUBLIC
+        # anon key and fails if any sealed table answers a stranger. The values
+        # are public (they ship in the app), so there is no secret here and a
+        # fork's PR can run it harmlessly. Read-only.
+        run: npm run test:rls
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://tpbqqlbtwykfuimqgfwn.supabase.co
+          # The anon key is public by design (it ships in the app bundle and is
+          # safe to expose per Supabase's own guidance). Inlined so the tripwire
+          # is active with no repo-variable setup needed.
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwYnFxbGJ0d3lrZnVpbXFnZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MzY5NzcsImV4cCI6MjA5OTUxMjk3N30.srET-ZeP6-yUgX9vsCa95864wfAt7nLBx7nplS5WhBM
+
       - name: Build
         run: npm run build
         env:
