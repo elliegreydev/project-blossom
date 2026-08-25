@@ -448,7 +448,8 @@ export default function AccountPage() {
                     Milestones, medication, appointments, goals, check-ins, journal entries, blood
                     tests, voice practice notes, presentation and body/progress data, weight and
                     calorie logs, budget entries, Intimacy &amp; wellbeing entries, safety
-                    check-ins, private links and your Personal Support Map can sync.
+                    check-ins, private links, your Personal Support Map, your waiting list
+                    referrals and your self-directed care settings can sync.
                   </li>
                   <li>Photos and voice recordings never sync, even with sync on.</li>
                   <li>You can pause sync without removing local data.</li>
