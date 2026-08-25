@@ -21,7 +21,6 @@ begin
     'goals', (select count(*) from public.goals),
     'checkIns', (select count(*) from public.check_ins),
     'pushSubscriptions', (select count(*) from public.push_subscriptions),
-    'auroraAiUsage', (select count(*) from public.aurora_ai_usage),
     'supportTickets', (select count(*) from public.support_tickets),
     'feedbackItems', (select count(*) from public.feedback_items),
     'staffIssues', (select count(*) from public.staff_issues)

@@ -20,7 +20,6 @@ import {
 import { auroraQuietStatus, selectAuroraSuggestion } from "@/lib/aurora";
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
-import BetaNudge from "@/components/BetaNudge";
 import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
@@ -234,7 +233,7 @@ export default function HomePage() {
     if (block === "pinned") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Shortcuts</div><h2 className={styles.sectionTitle}>Pinned tools</h2></div><Link href="/settings/home" className={styles.link}>Edit</Link></div>{selectedLayout.pinnedTools.length === 0 ? <div className={styles.emptyRow}><strong>Nothing pinned yet.</strong><span>Choose shortcuts in Home screen settings.</span></div> : <div className={styles.pinnedGrid}>{selectedLayout.pinnedTools.map((key) => <Link key={key} href={SHORTCUTS[key].href} className={styles.pinnedTool}>{SHORTCUTS[key].label}</Link>)}</div>}</section>;
     if (block === "journey") return <section className={styles.section}><div className={styles.linkRow}><div><div className={styles.eyebrow}>Journey</div><h2 className={styles.sectionTitle}>Recent activity</h2></div><Link href="/journey" className={styles.link}>View all</Link></div>{recentJourney.length === 0 ? <div className={styles.emptyRow}>Your journey, your pace. Nothing here yet.</div> : recentJourney.map((entry) => <div key={entry.id} className={styles.card}><div className={styles.cardTitle}>{entry.title}</div>{formatEntryDate(entry) && <div className={styles.cardMeta}>{formatEntryDate(entry)}</div>}</div>)}</section>;
     if (block === "aurora") return activeProfile.auroraMode === "disabled" ? null : <aside className={styles.auroraCard} aria-label="Aurora suggestion"><div className={styles.auroraText}><span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span><strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong><span>{auroraSuggestion?.message ?? auroraStatus.message}</span>{auroraReasonOpen && <span className={styles.auroraReason}>{auroraReason()}</span>}</div><div className={styles.auroraActions}>{auroraSuggestion ? <><Link href={auroraSuggestion.href} className={styles.auroraAction}>{auroraSuggestion.actionLabel}</Link><button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>Not now</button><button type="button" className={styles.auroraDismiss} aria-expanded={auroraReasonOpen} onClick={() => setAuroraReasonOpen((open) => !open)}>{auroraReasonOpen ? "Hide why" : "Why this?"}</button></> : <Link href="/settings/aurora" className={styles.auroraDismiss}>Aurora settings</Link>}</div></aside>;
-    return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><BetaNudge /><SharingToolsNudge /><DiscordNudge /></section>;
+    return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><SharingToolsNudge /><DiscordNudge /></section>;
   }
 
   const name = profile.displayName || "there";

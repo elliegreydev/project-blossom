@@ -109,7 +109,6 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
 export const NEVER_SYNCED = [
   "Photos and voice recordings",
   "Euphoria entries and Time Capsules",
-  "Aurora AI conversations",
   "Trips you've planned",
   "Your app lock PIN",
 ];

@@ -77,7 +77,10 @@ export const INTENTION_LIST: Intention[] = [
     summary: "Checked sources for where you are",
     description: "Verified regional sources and urgent support, when useful.",
     blocks: ["focus", "aurora", "pinned"],
-    href: "/aurora",
+    // Used to point at Aurora's "Find support" tab, which was the regional
+    // resource list. That page has gone with the AI chat, so this goes to
+    // Help & support, which is the same list of checked regional sources.
+    href: "/settings/support",
     action: "Find support",
   },
 ];

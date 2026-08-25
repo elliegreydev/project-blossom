@@ -4285,13 +4285,20 @@ export async function deleteAllData(): Promise<void> {
     }
   );
 
-  // Aurora AI's conversation history and consent flag live in localStorage,
-  // not Dexie (see src/app/(main)/aurora/page.tsx), so a full data wipe has
-  // to clear them separately or they'd be the one thing "delete everything"
-  // leaves behind.
+  // Leftovers from the Aurora AI chat, which has been removed. Its conversation
+  // history and consent flag lived in localStorage rather than Dexie, so on a
+  // device that used it they are still sitting there. Removing the feature did
+  // not remove them, and they are somebody's words, so the wipe keeps clearing
+  // them: this stays until it is safe to assume no device still has them.
   if (typeof window !== "undefined") {
     window.localStorage.removeItem("blossom:aurora-ai-history:v1");
     window.localStorage.removeItem("blossom:aurora-ai-consent:v1");
+    // Same story for the beta programme, removed at the same time. These two
+    // hold no writing, just a dismissal timestamp and a last-read marker, but
+    // there is no longer any code that reads or clears them, so the wipe is the
+    // only thing that can.
+    window.localStorage.removeItem("blossom-beta-nudge-dismissed-until");
+    window.localStorage.removeItem("blossom-beta-chat-last-read");
     // Unsaved drafts hold the same words the entry would have, so they're
     // part of "everything" too - see src/lib/drafts.ts.
     clearAllDrafts();

@@ -38,8 +38,6 @@ export default function robots(): MetadataRoute.Robots {
           "/track/",
           "/journey",
           "/calendar",
-          "/aurora",
-          "/beta-chat",
           "/search",
           "/onboarding",
           "/reminders",

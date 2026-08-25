@@ -9,9 +9,9 @@
  * For most of Blossom that would be recoverable, because signing back in pulls
  * the synced categories down again. But the things Blossom deliberately never
  * syncs have no copy anywhere at all - euphoria entries and Time Capsules,
- * Aurora conversations, trips, photos and voice recordings. Those are kept on
- * the device on purpose, for people's safety, and that same decision means
- * there is nothing to restore them from.
+ * trips, photos and voice recordings. Those are kept on the device on purpose,
+ * for people's safety, and that same decision means there is nothing to restore
+ * them from.
  *
  * So the failure this exists to prevent is specific and quiet: somebody
  * doesn't open Blossom for a fortnight, opens it on a bad day to reread a

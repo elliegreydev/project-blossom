@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.33";
+export const APP_VERSION = "0.5.34";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.34",
+    date: "2026-08-25",
+    title: "The AI chat has gone",
+    items: [
+      { tag: "improved", text: "Blossom's optional AI chat has been removed. It was the only part of the app that sent anything you wrote outside the UK, and now nothing does. If that was the thing that made you unsure about Blossom, it isn't there any more." },
+      { tag: "improved", text: "Aurora, the gentle suggestion on your Home screen, is staying exactly as it is. It was never the AI, whatever the shared name suggested: those suggestions are worked out on your own device and don't need a connection at all. Your Aurora setting is untouched." },
+      { tag: "improved", text: "The closed beta programme has gone too, along with beta chat. Ideas and bug reports still work the same way, in Settings then About, or at the ideas board." },
+      { tag: "improved", text: "The privacy policy is shorter as a result. The paragraph warning that one thing you typed could leave Europe, and the note saying the safeguards for it hadn't been reviewed yet, are both gone, because there's no longer anything for them to describe." },
+    ],
+  },
   {
     version: "0.5.33",
     date: "2026-08-18",

@@ -32,7 +32,10 @@ const STEPS: { key: string; title: string; body: string; href: string; actionLab
     key: "find-support",
     title: "Know where to find support",
     body: "Whether that's a harm-reduction community, a crisis line, or just people who get it - it's easier to look this up now than in a harder moment.",
-    href: "/aurora",
+    // Help & support rather than the crisis page: this step names harm
+    // reduction and peer communities as well as crisis lines, and the crisis
+    // page deliberately shows only what you can ring right now.
+    href: "/settings/support",
     actionLabel: "Find support",
   },
   {

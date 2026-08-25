@@ -371,7 +371,7 @@ export default function OnboardingPage() {
             </p>
             <div className={styles.callout}>
               <strong>Whatever you choose here:</strong> photos, voice recordings,
-              euphoria entries, Time Capsules, Aurora chats and trips never leave this
+              euphoria entries, Time Capsules and trips never leave this
               device. Not with sync on, not ever.
             </div>
             <div className={styles.optionGrid}>

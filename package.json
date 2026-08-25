@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.33",
+  "version": "0.5.34",
   "engines": {
     "node": ">=20.9.0"
   },
@@ -10,9 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npm run test:aurora && npm run test:aurora-ai && npm run test:sync && npm run test:reminders && npm run test:costs && npm run test:essentials && npm run test:intentions && npm run test:referrals && npm run test:accessibility && npm run test:selfdirected && npm run test:errors && npm run test:info && npm run test:contrast && npm run test:data && npm run test:migration",
+    "test": "npm run test:aurora && npm run test:sync && npm run test:reminders && npm run test:costs && npm run test:essentials && npm run test:intentions && npm run test:referrals && npm run test:accessibility && npm run test:selfdirected && npm run test:errors && npm run test:info && npm run test:contrast && npm run test:data && npm run test:migration",
     "test:aurora": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-aurora.mjs",
-    "test:aurora-ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-aurora-ai-safety.mjs",
     "test:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-sync-policy.mjs",
     "test:reminders": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-reminders.mjs",
     "test:costs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-running-costs.mjs",

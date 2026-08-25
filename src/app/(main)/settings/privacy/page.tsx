@@ -221,8 +221,8 @@ export default function PrivacySettingsPage() {
             </p>
             <p className={styles.hint}>
               Some things you write never sync either: your euphoria entries,
-              including anything you&apos;ve sealed as a Time Capsule, your
-              Aurora AI conversations, and any trips you&apos;ve planned. Your
+              including anything you&apos;ve sealed as a Time Capsule, and any
+              trips you&apos;ve planned. Your
               app lock PIN/biometric and accessibility settings also always
               stay local, since they&apos;re per-device settings rather than
               account data.
@@ -234,7 +234,7 @@ export default function PrivacySettingsPage() {
             <div className={styles.field} style={{ gap: 7 }}>
               <span className={styles.label}>At a glance</span>
               <span className={styles.hint}>Signed out, or sync off: everything stays on this device, no exceptions.</span>
-              <span className={styles.hint}>Signed in with sync on: the categories listed above sync so they follow you across devices - photos, voice recordings, euphoria entries, Aurora chats and trips still never do.</span>
+              <span className={styles.hint}>Signed in with sync on: the categories listed above sync so they follow you across devices - photos, voice recordings, euphoria entries and trips still never do.</span>
               <span className={styles.hint}>Exports: created on this device, and only include the sections you select.</span>
             </div>
           </>
@@ -270,7 +270,7 @@ export default function PrivacySettingsPage() {
         <p className={styles.hint}>
           {signedIn ? "Supabase: used for your signed-in account and any data you choose to sync. " : "Supabase: not connected on this device. "}
           {pushEnabled ? "Push notifications: on for this device. " : "Push notifications: off. "}
-          Aurora&apos;s optional AI chat sends that conversation to Anthropic after you choose to use it - what you type and the earlier messages in the same chat, and nothing else; it never receives your Blossom records automatically.
+          Blossom has no AI service, no analytics and no advertising code, so nothing you write is sent anywhere to be read by another company. The rest of what Blossom relies on, hosting and the donation page, is listed in the Privacy Policy.
         </p>
       </div>
 
