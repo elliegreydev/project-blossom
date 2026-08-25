@@ -150,4 +150,36 @@ error reports, and provider backups.
 - No cookies are set at all unless somebody signs in, and then only for the
   session. There is no cookie banner because there is nothing optional to
   consent to.
-- Users can export everything and delete everything, locally and on the server.
+
+## What does NOT currently work, which you should know before advising
+
+An audit on 25 August 2026 checked the privacy policy line by line against the
+code. It found that several things the policy promises are not true today. These
+are being fixed, but they were true when you were engaged, so please advise on
+the basis that they existed rather than that they were always sound.
+
+- **There is no account deletion route at all.** Both the privacy policy and the
+  terms tell people they can request deletion of a synced account from Settings.
+  No such control or code path exists.
+- **"Delete all data" only clears the device.** It makes no server call, and it
+  clears the pending-changes queue, so deletions waiting to be sent are
+  destroyed rather than sent.
+- **Deletion on the server is a soft delete.** A timestamp is set; the content
+  columns (journal text, notes, private notes) are retained indefinitely.
+- **Turning sync off leaves everything already uploaded on the server**, with no
+  prompt to remove it. The per-category route does offer a real hard delete, but
+  the general "pause sync" does not.
+- **The policy says our code never reads an IP address or anything about the
+  device. Both halves are wrong.** Rate limiting reads the forwarded-for header,
+  and error reports include a browser and platform token derived from the user
+  agent.
+- **Support access is read AND write, including delete, across nine tables**,
+  and the policy only ever says staff can "see". The person who granted it also
+  cannot revoke it themselves; only staff can.
+- **Export omits photos and voice recordings entirely**, silently drops safety
+  check-ins, and cannot export self-directed care records at all.
+- **Medications and goals can never be deleted**, only deactivated or archived.
+
+Additional question for you, given the above: where a policy promised a right
+that the software did not deliver, what should we do about the period in which
+that was the case, and does it need reporting to anybody?

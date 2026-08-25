@@ -104,9 +104,11 @@ export interface Profile {
   // any theme in either appearance - see src/lib/themes.ts.
   theme: ThemeId;
   appearance: Appearance;
-  // The hue behind the "Your colour" theme, 0-359. Device-local like the
-  // theme itself: someone might want one colour on their phone and another
-  // on a laptop, and it never leaves the device either way.
+  // The hue behind the "Your colour" theme, 0-359. This one really is
+  // device-local: someone might want one colour on their phone and another on a
+  // laptop. NOT "like the theme itself", which is what this used to say and was
+  // wrong: `theme` and `appearance` are both in the profile upload payload
+  // (src/lib/sync.ts) and do follow you between devices. Only the hue stays put.
   themeHue: number;
   // INERT. Gentle Mode and Low-Energy Mode were both pulled before release
   // and are still listed on the roadmap as unbuilt. Nothing in the app can set
@@ -155,8 +157,14 @@ export interface Profile {
   onboardingStep: number;
   createdAt: string;
   updatedAt: string;
-  // Privacy & security. Device-local only - never synced, so a PIN or
-  // accessibility preference set on one device never applies to another.
+  // Privacy & security. Read the split carefully, because this block used to be
+  // described as "device-local only, never synced" and that was not true of the
+  // first field: `app_lock_enabled` IS in the profile upload payload
+  // (src/lib/sync.ts), so the server knows an account uses an app lock, though
+  // never what the lock is. The SECRET never leaves the device: appLockPinHash
+  // and webauthnCredentialId are both absent from the payload, which is what
+  // makes the user-facing promise about "your app lock PIN" accurate. The
+  // accessibility preferences below are genuinely device-local.
   appLockEnabled: boolean;
   appLockPinHash: string | null;
   // A registered platform authenticator (Face ID / Touch ID / Windows
@@ -706,8 +714,16 @@ export interface Goal {
 // Descriptive only, per the locked spec: no reference ranges computed, no
 // flags, no interpretation. referenceRangeRaw is free text the user copies
 // from their own lab report, shown back exactly as entered, never parsed.
-// Not yet wired into account sync (see src/lib/sync.ts) - local-only for now,
-// same as journal entries and private links.
+// Blood tests DO sync, as entity `blood_test_entry` (src/lib/sync.ts), inside
+// the "Body, voice and presentation" category, so somebody can switch that
+// category off and keep them on the device. This comment used to say they were
+// "not yet wired into account sync, local-only for now, same as journal entries
+// and private links", which by now was wrong three times over: those two sync as
+// well. Kept as a warning rather than deleted, because a stale comment about
+// what leaves the device is not an ordinary stale comment. This one was found
+// while assembling a DPIA, where quoting it into a privacy policy would have
+// meant telling people their blood results stayed on their phone when they did
+// not. If you change what syncs, change the comment in the same commit.
 
 export interface BloodTestEntry {
   id: string;

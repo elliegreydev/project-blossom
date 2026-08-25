@@ -214,11 +214,63 @@ Not aspirations. Each of these is in the shipped product.
 - Row-level security, plus an automated test that fails the build if a table
   becomes publicly readable
 - Data and server code both in Ireland
-- Export and delete available to the user
+- Export and local deletion available to the user, with the significant
+  limitations set out in section 6a, which must be read alongside this list
 - No cookies at all unless signed in, and then only the session
 - A published privacy policy in plain English that states known limitations
   rather than hiding them
 - ICO registration (25 August 2026)
+
+## 6a. Known defects found while writing this
+
+An audit on 25 August 2026 checked the privacy policy line by line against the
+code, and checked whether each right the policy offers actually works. It did
+not go well, and the results are recorded here rather than quietly fixed,
+because the gap between what was promised and what the software did is itself
+the finding.
+
+**Rights that do not work as described.** These are the serious ones.
+
+| What is promised | What actually happens |
+|---|---|
+| Request deletion of a synced account from Settings (privacy policy and terms) | **No account deletion route exists anywhere in the app** |
+| "Delete all data" | Clears the device only. No server call. It also clears the pending-changes queue, destroying deletions that were waiting to be sent |
+| Deletion | On the server it is a soft delete. A timestamp is set and the content columns are kept indefinitely |
+| Turning sync off | Everything already uploaded stays. Only the per-category route offers a real hard delete |
+| Export your data | Photos and voice recordings are excluded entirely and there is no other way to get them out. Safety check-ins are silently dropped. Self-directed care records cannot be exported at all |
+| Delete an entry | Medications and goals can never be deleted, only deactivated or archived. Safety check-ins and self-directed settings have no delete path |
+
+**Statements in the privacy policy that are false.**
+
+- "Blossom's own code never reads or records your IP address or anything about
+  your device." Both halves are wrong. Rate limiting reads the forwarded-for
+  header, and error reports carry a browser and platform token derived from the
+  user agent.
+- The support access section describes a system that has been retired and
+  replaced.
+- Staff support access is described as being able to "see". It is in fact read
+  **and write, including delete**, across nine tables, and the person who
+  granted it cannot revoke it. Only staff can.
+- "If you use Blossom without signing in, or sign in but leave sync off, none of
+  your data is sent to Blossom's servers at all", which the support ticket
+  section then contradicts.
+- "You control this category by category" while the profile row is deliberately
+  outside the category system and always syncs.
+
+**Things that happen and are not disclosed at all:** waiting list referrals and
+self-directed care records both sync; Trusted Circle stores a third party's
+email address; a persistent browser identifier is created for idea voting
+without an account; the server keeps a record of which reminders were sent to
+whom; deleted beta chat messages survive in a staff-readable audit log; push
+subscriptions survive every deletion path, and deleted medications keep
+generating reminders.
+
+**What was verified as genuinely true**, and is worth keeping: photos and voice
+recordings never sync under any setting; euphoria entries, Time Capsules, Aurora
+conversations and Travel Mode trips never reach a server; Aurora is gated and
+consent-first and sends only the conversation; there is no date of birth, legal
+name, sex-assigned-at-birth or diagnosis field anywhere; category-level sync
+control does what it says, including a real hard purge.
 
 ## 6. Outstanding actions
 
@@ -231,7 +283,15 @@ Not aspirations. Each of these is in the shipped product.
 | 5 | Decide whether the Online Safety Act applies to beta chat | Solicitor | Open |
 | 6 | Publish or provide a postal address | Grey Studios | Provided on request today |
 | 7 | Write down a breach response procedure | Grey Studios | Not started |
-| 8 | Correct stale comments in the code that misdescribe what syncs | Grey Studios | Identified, not yet fixed |
+| 8 | Correct stale comments in the code that misdescribe what syncs | Grey Studios | Blood tests, theme hue and app lock fixed 25 Aug; full sweep running |
+| 9 | Build an account deletion route | Grey Studios | Open. Promised in two legal documents, does not exist |
+| 10 | Make "delete all data" reach the server, and stop it destroying queued deletions | Grey Studios | Open |
+| 11 | Decide whether server deletion should erase content or keep the soft-delete tombstone | Grey Studios, then solicitor | Open |
+| 12 | Offer a purge when sync is switched off, not only per category | Grey Studios | Open |
+| 13 | Correct the false statements in the privacy policy listed in 6a | Grey Studios | Open, highest priority of these |
+| 14 | Disclose staff support access as read and write, and let the user revoke it | Grey Studios | Open |
+| 15 | Include photos, voice recordings, safety check-ins and self-directed records in the export | Grey Studios | Open |
+| 16 | Remove push subscriptions on deletion, and stop reminders for deleted records | Grey Studios | Open |
 
 ## 7. Sign-off
 
