@@ -1,6 +1,6 @@
 -- Aggregate-only data volume counts for the Infra & usage staff page.
 -- Several of these tables (profiles, appointments, medications, goals,
--- check_ins, push_subscriptions, aurora_ai_usage) are owner-only RLS or
+-- check_ins, push_subscriptions) are owner-only RLS or
 -- client-inaccessible entirely - a normal staff session querying them
 -- directly would only ever see their own rows (or nothing), not the real
 -- total. This mirrors get_staff_analytics()'s security-definer pattern to
@@ -27,7 +27,6 @@ begin
     'goals', (select count(*) from public.goals),
     'checkIns', (select count(*) from public.check_ins),
     'pushSubscriptions', (select count(*) from public.push_subscriptions),
-    'auroraAiUsage', (select count(*) from public.aurora_ai_usage),
     'supportCases', (select count(*) from public.support_cases),
     'feedbackItems', (select count(*) from public.feedback_items),
     'staffIssues', (select count(*) from public.staff_issues)

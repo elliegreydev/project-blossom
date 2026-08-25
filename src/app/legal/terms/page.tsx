@@ -12,7 +12,7 @@ export default function TermsPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Terms of Service</h1>
-          <p className={styles.updated}>Last updated 7 August 2026</p>
+          <p className={styles.updated}>Last updated 25 August 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -53,9 +53,10 @@ export default function TermsPage() {
               emergency services or an appropriate crisis service directly.
             </p>
             <p>
-              Aurora AI is an optional beta feature. It can help explain Blossom and organise information,
-              but it can make mistakes and is not medical, legal, therapeutic or emergency advice. Do not use it
-              to decide on medication doses or changes, or instead of an appropriate professional or urgent service.
+              Aurora&apos;s suggestions are organisational prompts worked out on your device from
+              what you have recorded. They can be wrong or badly timed, and they are not medical,
+              legal, therapeutic or emergency advice. Do not use one to decide on medication doses
+              or changes, or instead of an appropriate professional or urgent service.
             </p>
             <p>
               Regional resources are provided for information. We work to keep them useful, but cannot
@@ -97,12 +98,12 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2>Beta chat and feedback</h2>
+            <h2>Feedback</h2>
             <p>
-              Beta chat is shared with the beta group and Blossom staff. Public feature requests can be
-              seen by other visitors. Do not post medical details, passwords, personal contact details or
-              anything else you would not want other people to see. We may remove chat or public-feedback
-              content that is abusive, unlawful, unsafe, spammy or breaks these terms.
+              Public feature requests can be seen by other visitors. Do not post medical details,
+              passwords, personal contact details or anything else you would not want other people
+              to see. We may remove public-feedback content that is abusive, unlawful, unsafe,
+              spammy or breaks these terms.
             </p>
           </section>
 
@@ -119,7 +120,7 @@ export default function TermsPage() {
           <section>
             <h2>Availability and changes</h2>
             <p>
-              Blossom is a beta service and may change, pause or contain bugs. We aim to keep it useful,
+              Blossom is still in active development and may change, pause or contain bugs. We aim to keep it useful,
               but cannot promise uninterrupted availability, successful notification delivery, or that a
               feature will always remain available. Local-only features can still work offline, subject to
               your device and browser.

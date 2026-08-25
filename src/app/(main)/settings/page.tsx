@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
-import { useUnreadBetaChat } from "@/components/useUnreadBetaChat";
 import { APP_VERSION } from "@/lib/changelog";
 import { THEMES } from "@/lib/themes";
 import styles from "./settings.module.css";
@@ -101,18 +100,6 @@ const ICONS = {
       <circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none" />
     </svg>
   ),
-  askAurora: (
-    <svg {...ICON_PROPS}>
-      <path d="M20 12.4c0 3.5-3.6 6.4-8 6.4-.9 0-1.7-.1-2.5-.3L4.6 20l1.2-3.1A6.1 6.1 0 0 1 4 12.4C4 8.9 7.6 6 12 6s8 2.9 8 6.4Z" />
-      <path d="m12 9.4.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z" />
-    </svg>
-  ),
-  beta: (
-    <svg {...ICON_PROPS}>
-      <path d="M10 3.6h4M11 3.6v5.6L6.7 17a2.2 2.2 0 0 0 1.9 3.4h6.8a2.2 2.2 0 0 0 1.9-3.4L13 9.2V3.6" />
-      <path d="M8.7 15.4h6.6" />
-    </svg>
-  ),
 };
 
 function Row({
@@ -120,13 +107,11 @@ function Row({
   icon,
   title,
   meta,
-  unread,
 }: {
   href: string;
   icon: React.ReactNode;
   title: string;
   meta?: string;
-  unread?: boolean;
 }) {
   return (
     <Link href={href} className={styles.row}>
@@ -137,7 +122,6 @@ function Row({
         <span className={styles.rowTitle}>{title}</span>
         {meta && <span className={styles.rowMeta}>{meta}</span>}
       </div>
-      {unread && <span className={styles.rowDot} aria-hidden="true" />}
       {CHEVRON}
     </Link>
   );
@@ -154,26 +138,11 @@ const THEME_LABELS: Record<string, string> = Object.fromEntries(THEMES.map((t) =
 
 export default function SettingsPage() {
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
-  const [isStaff, setIsStaff] = useState(false);
-  const [isBetaTester, setIsBetaTester] = useState(false);
   const [activeShares, setActiveShares] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const supabase = createClient();
-
-    async function checkStaffAccess() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) return;
-
-      const [{ data: staffData, error: staffError }, { data: betaData }] = await Promise.all([
-        supabase.rpc("is_staff"),
-        supabase.rpc("is_beta_tester"),
-      ]);
-      if (cancelled) return;
-      if (!staffError) setIsStaff(staffData === true);
-      setIsBetaTester(betaData === true);
-    }
 
     /* The sharing tools live in Care now, so Settings carries the count instead -
        "who can see my data" should never be something you have to go looking for. */
@@ -199,14 +168,11 @@ export default function SettingsPage() {
       setActiveShares((grants ?? 0) + (links ?? 0));
     }
 
-    void checkStaffAccess();
     void countActiveShares();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  const hasUnreadBetaChat = useUnreadBetaChat(isBetaTester || isStaff);
 
   if (!profile) return null;
 
@@ -224,25 +190,6 @@ export default function SettingsPage() {
         <h1 className={styles.title}>Settings</h1>
         <p className={styles.subtitle}>Set Blossom up the way you want it.</p>
       </header>
-
-      {(isBetaTester || isStaff) && (
-        <section className={styles.section}>
-          <div className={styles.groupHead}>
-            <span className={styles.groupEyebrow}>Beta</span>
-            <h2 className={styles.groupTitle}>Early access</h2>
-          </div>
-          <div className={`${styles.group} ${styles.tintSky}`}>
-            <Row href="/aurora" icon={ICONS.askAurora} title="Ask Aurora" meta="Private AI help and regional support sources" />
-            <Row
-              href="/beta"
-              icon={ICONS.beta}
-              title="You're a beta tester"
-              meta={hasUnreadBetaChat ? "New message · What's new, beta chat, report a bug" : "What's new, beta chat, report a bug"}
-              unread={hasUnreadBetaChat}
-            />
-          </div>
-        </section>
-      )}
 
       <section className={styles.section}>
         <div className={styles.groupHead}>

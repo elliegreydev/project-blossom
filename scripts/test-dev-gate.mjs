@@ -116,7 +116,7 @@ for (const path of [
   assert.equal(gate.isAlwaysAllowed(path), true, `${path} must never be gated`);
 }
 
-for (const path of ["/", "/track", "/settings", "/journey", "/api/aurora/chat", "/legal/privacy"]) {
+for (const path of ["/", "/track", "/settings", "/journey", "/api/feedback", "/legal/privacy"]) {
   assert.equal(gate.isAlwaysAllowed(path), false, `${path} should be behind the gate`);
 }
 

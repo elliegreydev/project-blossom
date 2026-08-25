@@ -65,7 +65,6 @@ export default function AboutBlossomPage() {
           <Row href="/blog" title="Blog" meta="Updates from the team" />
           <Row href="/roadmap" title="Roadmap" meta="What's here and what's next" />
           <Row href="/join" title="Join the team" meta="Apply to help build Blossom" />
-          <Row href="/beta" title="Beta programme" meta="What beta testing looks like" />
         </div>
       </div>
 

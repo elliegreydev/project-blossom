@@ -40,14 +40,13 @@ const SEALED_TABLES = [
   "self_directed_settings", "weight_entries", "trusted_circle_grants",
   "bridge_links", "support_tickets", "support_ticket_messages",
   "support_ticket_access_grants", "staff_emails", "staff_dm_messages",
-  "staff_chat_messages", "beta_invite_codes", "feedback_items",
+  "staff_chat_messages", "feedback_items",
 ];
 
 // SECURITY DEFINER functions an anonymous caller must not be able to execute.
 // They gate internally, but were revoked from anon and should stay that way.
 const SEALED_RPCS = [
-  "find_user_by_email", "staff_directory", "list_beta_codes",
-  "get_staff_analytics", "redeem_beta_code", "leave_beta_program",
+  "find_user_by_email", "staff_directory", "get_staff_analytics",
 ];
 
 let failures = 0;

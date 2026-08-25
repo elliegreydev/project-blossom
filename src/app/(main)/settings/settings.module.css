@@ -176,16 +176,6 @@
   color: var(--text-secondary);
 }
 
-/* Unread beta chat. The row text says so too; this is just so you can see it
-   without reading. */
-.rowDot {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--pink);
-}
-
 .chevron {
   width: 16px;
   height: 16px;

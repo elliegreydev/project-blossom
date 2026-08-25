@@ -17,7 +17,7 @@ const BLOCKS: Array<{ key: HomeBlockKey; title: string; description: string }> =
   { key: "supplies", title: "Supply heads-up", description: "Only appears when a practical supply check may help." },
   { key: "journey", title: "Recent journey", description: "Private moments you have already recorded." },
   { key: "aurora", title: "Aurora", description: "Optional gentle guidance from Aurora." },
-  { key: "nudges", title: "Optional reminders", description: "App install, sync and beta reminders when relevant." },
+  { key: "nudges", title: "Optional reminders", description: "App install, sync and sharing reminders when relevant." },
 ];
 
 const SHORTCUTS: Array<{ key: HomeShortcutKey; title: string }> = [

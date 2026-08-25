@@ -33,7 +33,6 @@ const HOME_MOODS: { value: number; label: string; face: string }[] = [
 ];
 import InstallAppNudge from "@/components/InstallAppNudge";
 import SyncNudge from "@/components/SyncNudge";
-import BetaNudge from "@/components/BetaNudge";
 import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
@@ -535,7 +534,7 @@ export default function HomePage() {
       </section>
     );
     if (block === "aurora") return activeProfile.auroraMode === "disabled" ? null : <aside className={styles.auroraCard} aria-label="Aurora suggestion"><div className={styles.auroraText}><span className={styles.auroraLabel}>{auroraSuggestion?.eyebrow ?? auroraStatus.eyebrow}</span><strong className={styles.auroraTitle}>{auroraSuggestion?.title ?? auroraStatus.title}</strong><span>{auroraSuggestion?.message ?? auroraStatus.message}</span>{auroraReasonOpen && <span className={styles.auroraReason}>{auroraReason()}</span>}</div><div className={styles.auroraActions}>{auroraSuggestion ? <><Link href={auroraSuggestion.href} className={styles.auroraAction}>{auroraSuggestion.actionLabel}</Link><button type="button" className={styles.auroraDismiss} onClick={dismissAuroraSuggestion}>Not now</button><button type="button" className={styles.auroraDismiss} aria-expanded={auroraReasonOpen} onClick={() => setAuroraReasonOpen((open) => !open)}>{auroraReasonOpen ? "Hide why" : "Why this?"}</button></> : <Link href="/settings/aurora" className={styles.auroraDismiss}>Aurora settings</Link>}</div></aside>;
-    return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><BetaNudge /><SharingToolsNudge /><DiscordNudge /></section>;
+    return <section className={styles.nudges}><InstallAppNudge /><SyncNudge /><SharingToolsNudge /><DiscordNudge /></section>;
   }
 
   const name = profile.displayName || "there";

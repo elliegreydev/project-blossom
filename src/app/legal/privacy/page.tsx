@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>Legal</span>
           <h1>Privacy Policy</h1>
-          <p className={styles.updated}>Last updated 14 August 2026</p>
+          <p className={styles.updated}>Last updated 25 August 2026</p>
         </header>
 
         <div className={styles.draftNotice}>
@@ -76,8 +76,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <p>
               The following also stays on the device where you create it: your gender-euphoria
-              entries, including any you have sealed as a Time Capsule to reopen later; Aurora AI
-              conversation history; any trips you plan in Travel Mode, including where you are going
+              entries, including any you have sealed as a Time Capsule to reopen later; any trips
+              you plan in Travel Mode, including where you are going
               and when; unsaved drafts of journal entries and check-in notes, which Blossom keeps as
               you type so a crash or a restart can&apos;t lose them; your app lock PIN, biometric
               credential reference, accessibility choices, and Home layout choices. To be exact
@@ -99,9 +99,9 @@ export default function PrivacyPolicyPage() {
               If you use Blossom without signing in, or sign in but leave sync off, nothing you
               record in the app is sent to Blossom&apos;s servers - everything above stays local,
               and so does everything listed as syncable below. The one exception is anything you
-              deliberately send us: if you open a support ticket, apply for the beta, post
-              feedback or write in the beta chat, that is stored on our servers whether or not
-              sync is on, because there is no other way for it to reach us.
+              deliberately send us: if you open a support ticket or post feedback, that is stored
+              on our servers whether or not sync is on, because there is no other way for it to
+              reach us.
             </p>
           </section>
 
@@ -130,8 +130,8 @@ export default function PrivacyPolicyPage() {
               None of this is currently visible to Blossom staff through the support-access system
               described below, even while synced - staff support access only reaches the smaller set
               of categories it already covered before this list expanded. Photos, voice recordings,
-              gender-euphoria and Time Capsule entries, Aurora AI conversation history and Travel
-              Mode trips never sync at all, as described above.
+              gender-euphoria and Time Capsule entries, and Travel Mode trips never sync at all, as
+              described above.
             </p>
             <p>
               You control this category by category. In Account &amp; sync, &ldquo;Choose what
@@ -236,13 +236,11 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2>Beta chat, feedback and applications</h2>
+            <h2>Feedback and applications</h2>
             <p>
-              Beta chat is a shared space, not a private journal. Messages and the display name you use
-              there are visible to other beta testers and Blossom staff. Feature requests submitted to
-              the public ideas board are visible publicly. Bug reports, contact emails and staff
-              applications are visible only to authorised Blossom staff. Please do not put medical or
-              other highly sensitive information into public ideas or beta chat.
+              Feature requests submitted to the public ideas board are visible publicly. Bug reports,
+              contact emails and staff applications are visible only to authorised Blossom staff.
+              Please do not put medical or other highly sensitive information into a public idea.
             </p>
           </section>
 
@@ -296,7 +294,7 @@ export default function PrivacyPolicyPage() {
             <h2>How we use information</h2>
             <p>
               We use information to provide the features you choose, keep your account and data secure,
-              deliver reminders you enable, respond to support requests, run beta features, and improve
+              deliver reminders you enable, respond to support requests, and improve
               the service. Staff can view aggregate operational statistics for synced accounts, such as
               total account numbers, broad regions and module uptake. These statistics are not used for
               advertising, and local-only use leaves no server-side analytics trail.
@@ -318,9 +316,9 @@ export default function PrivacyPolicyPage() {
             <h2>Providers and external links</h2>
             <p>
               We currently use Supabase for authentication and synced data, Vercel to host Blossom,
-              Anthropic to generate Aurora AI replies if you use that feature, Stripe if you choose
-              to donate, and your browser or operating system&apos;s push service if you enable
-              notifications. Those services process data only to provide their services to us.
+              Stripe if you choose to donate, and your browser or operating system&apos;s push
+              service if you enable notifications. Those services process data only to provide their
+              services to us.
             </p>
             <p>
               Where this happens today: synced data is stored in Ireland, and as of 13 August 2026
@@ -329,10 +327,9 @@ export default function PrivacyPolicyPage() {
               of ordinary use. It no longer does.
             </p>
             <p>
-              The exception is Aurora AI. Anthropic processes those messages outside the UK and EU,
-              so if you use Aurora AI, and only then, what you type in that conversation leaves
-              Europe. The safeguards relied on for that transfer have not yet been reviewed by a
-              solicitor, and this paragraph will be updated when they have.
+              There is no longer an exception to that. Blossom used to have an optional AI chat,
+              and what you typed into it was sent to a provider outside the UK and EU. That feature
+              has been removed. Nothing you write in Blossom now leaves Europe.
             </p>
             <p>
               Supabase and Vercel keep their own short-term technical logs of the requests made to
@@ -379,7 +376,7 @@ export default function PrivacyPolicyPage() {
             <p>
               We are fixing all of that, and we would rather say so here than let this page describe
               a version of Blossom that does not exist. We are also still setting the precise
-              retention periods for support cases, access logs, beta chat, feedback, applications
+              retention periods for support cases, access logs, feedback, applications
               and backups. Those periods will be published before wider public release.
             </p>
           </section>
@@ -398,20 +395,19 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2>Aurora</h2>
             <p>
-              Aurora&apos;s ordinary Home suggestions are rule-based. Aurora AI is an optional, signed-in beta
-              feature. Before someone sends their first AI message, Blossom explains that the message is
-              sent to Anthropic to generate a reply. What travels is the conversation itself: the message
-              you just typed, along with the earlier messages in that same chat so the reply makes sense
-              in context. Nothing else goes with it. Blossom does not automatically send journal entries,
-              medication records, weight or food logs, photos, voice notes, gender-euphoria entries, or
-              any other device-only information to Aurora AI.
+              Aurora is the gentle suggestion on your Home screen, and it is not AI. Its suggestions
+              are rule-based and worked out on your own device from what you have already recorded
+              in Blossom. Nothing you have written is sent anywhere to produce one. All that syncs,
+              if you have sync on, is the minimal state needed to stop the same nudge repeating at
+              you across your devices, as listed further up this policy.
             </p>
             <p>
-              Aurora AI conversation history stays on the person&apos;s device by default and can be deleted there.
-              Blossom keeps only aggregate usage information needed to apply safety, rate and spending limits;
-              it does not keep AI prompts or replies in its own database. Aurora AI does not make decisions with
-              legal or similarly significant effects, and it cannot diagnose, prescribe, monitor emergencies, or
-              contact anyone on a person&apos;s behalf.
+              Blossom used to have a second, optional feature under the same name, an AI chat that
+              sent what you typed to a provider outside the UK and EU. It has been removed, along
+              with the usage counts it kept. Aurora as it exists now sends nothing you have written
+              anywhere, beyond the minimal nudge state described above, makes no decision with legal
+              or similarly significant effects, and cannot diagnose, prescribe, monitor emergencies,
+              or contact anyone on your behalf.
             </p>
             <p>
               Separately from the above, most of Blossom&apos;s code is written with the help of AI.

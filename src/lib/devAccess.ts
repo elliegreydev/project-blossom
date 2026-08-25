@@ -7,9 +7,8 @@
 // template, two emails an hour), and nobody needs it there any more.
 //
 // Production must keep its email sign-in exactly as it is, because that is
-// how real people turn on cloud sync and join the beta. Two independent
-// conditions have to hold before anything changes, and production satisfies
-// neither:
+// how real people turn on cloud sync. Two independent conditions have to hold
+// before anything changes, and production satisfies neither:
 //
 //   1. NEXT_PUBLIC_HQ_DEV_ENTRY must be "1". It is set only on the
 //      project-blossom-dev Vercel project. Absent anywhere else, and absent

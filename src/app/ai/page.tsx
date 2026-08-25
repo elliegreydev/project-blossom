@@ -4,7 +4,7 @@ import styles from "../legal/legal.module.css";
 export const metadata = {
   title: "How Blossom is made - AI",
   description:
-    "An honest account of where AI is used in Blossom: to write the code, and optionally inside the app as Aurora AI.",
+    "An honest account of where AI is used in Blossom: to write the code, and nowhere inside the app itself.",
 };
 
 /**
@@ -18,9 +18,10 @@ export const metadata = {
  *
  * Two different questions get folded into "do you use AI", and answering only
  * one of them reads as a dodge, so both are here: AI wrote the code, and AI is
- * optionally in the product. The detail on the second lives in the privacy
- * policy, which is the document that has to be complete; this page summarises
- * it and links across rather than keeping a second copy that can drift.
+ * not in the product. The second used to be a longer answer, because Blossom
+ * had an optional AI chat that sent what you typed to Anthropic. That feature
+ * has been removed, so the honest answer is now the short one, and saying so
+ * plainly is worth more than quietly dropping the section.
  *
  * The tone is the point. This was written after three separate people asked
  * for a declaration within two hours of Blossom first being shown publicly,
@@ -35,21 +36,20 @@ export default function AiPage() {
         <header className={styles.header}>
           <span className={styles.eyebrow}>About</span>
           <h1>How Blossom is made</h1>
-          <p className={styles.updated}>Last updated 17 August 2026</p>
+          <p className={styles.updated}>Last updated 25 August 2026</p>
         </header>
 
         <div className={styles.body}>
           <section>
             <h2>The short version</h2>
             <p>
-              Yes, AI is involved, in two separate ways that often get muddled together.
-              AI writes most of Blossom&apos;s code. And there is one optional feature inside the
-              app, Aurora AI, that sends what you type in that chat to an AI service. Everything
-              else in Blossom is ordinary code doing ordinary things.
+              Yes, AI is involved, but only in one way, and it is probably not the one you are
+              asking about. AI writes most of Blossom&apos;s code. Nothing inside the app sends
+              what you write to an AI service. Blossom is ordinary code doing ordinary things.
             </p>
             <p>
-              Both are explained properly below. If you would rather check than read, the code is
-              public at{" "}
+              That is explained properly below, along with what happened to the one feature that
+              did use AI. If you would rather check than read, the code is public at{" "}
               <a href="https://github.com/elliegreydev/project-blossom" target="_blank" rel="noreferrer noopener">
                 github.com/elliegreydev/project-blossom
               </a>.
@@ -96,44 +96,37 @@ export default function AiPage() {
           </section>
 
           <section>
-            <h2>Aurora AI, inside the app</h2>
+            <h2>Aurora is not AI</h2>
             <p>
-              Aurora is the gentle nudge on your Home screen. Ordinarily it is not AI at all: those
-              suggestions are plain rules, worked out on your own device from what you have already
-              told Blossom.
+              Aurora is the gentle nudge on your Home screen, and the name confuses people, so it is
+              worth saying outright: it is not AI. Those suggestions are plain rules, worked out on
+              your own device from what you have already told Blossom. Nothing you have written is
+              sent anywhere to work one out, and they need no connection at all. If you turn sync
+              on, the only thing that travels is a note of which nudge you have already seen, so the
+              same one does not repeat on your other devices.
             </p>
             <p>
-              Aurora AI is a separate, optional feature, currently limited to signed-in beta
-              testers. Before anyone sends their first message, Blossom explains that the message
-              goes to Anthropic to generate a reply. What travels is the conversation itself, and
-              nothing else. Blossom does not send your journal entries, medication records, blood
-              tests, photos, voice notes or anything else along with it.
+              There used to be a second feature sharing that name, an optional chat that sent what
+              you typed to Anthropic. It has been removed. It was the only part of Blossom that sent
+              anything you wrote outside the UK, and that is no longer true of any part of the app.
             </p>
             <p>
-              That conversation is processed outside the UK and EU. If you use Aurora AI, and only
-              then, what you type in that chat leaves Europe. Your conversation history stays on
-              your device and you can delete it there. Blossom keeps only the counts it needs to
-              apply safety and spending limits, not your prompts or the replies.
-            </p>
-            <p>
-              The full detail, including the legal basis and the safeguards, is in the{" "}
-              <Link href="/legal/privacy">Privacy Policy</Link>, which is the complete version if
-              this summary and that document ever disagree.
+              What Blossom does with your data, now that this is the whole picture, is set out in
+              the <Link href="/legal/privacy">Privacy Policy</Link>, which is the complete version
+              if this summary and that document ever disagree.
             </p>
           </section>
 
           <section>
-            <h2>What AI is never allowed to do here</h2>
+            <h2>What Blossom is never allowed to do here</h2>
             <p>
               Blossom gives no dosing guidance, no information about where to buy anything, and
               never interprets a blood test result. Those are clinical, they are not ours to give,
-              and no amount of asking changes it. That rule applies to Aurora AI exactly as it
-              applies to everything else.
+              and no amount of asking changes it.
             </p>
             <p>
-              Aurora AI cannot diagnose, prescribe, monitor an emergency, or contact anyone on your
-              behalf. It makes no decision about you that has legal or similarly significant
-              effects. Nothing in Blossom decides anything about you at all.
+              Blossom cannot diagnose, prescribe, monitor an emergency, or contact anyone on your
+              behalf. Nothing in Blossom decides anything about you at all.
             </p>
           </section>
 

@@ -28,7 +28,6 @@ const READ_SECTIONS = [
   "incidents",
   "notes",
   "applications",
-  "beta",
   "roadmap",
   "docs",
   "resources",
@@ -148,14 +147,6 @@ async function readSection(admin: Admin, section: Section) {
         .order("created_at", { ascending: false })
         .limit(200);
       return { items: data ?? [] };
-    }
-    case "beta": {
-      const [{ data: knownIssues }, { data: codes }, { data: focus }] = await Promise.all([
-        admin.from("beta_known_issues").select("id,title,note,resolved,created_at").order("created_at", { ascending: false }).limit(100),
-        admin.from("beta_invite_codes").select("*").order("created_at", { ascending: false }).limit(100),
-        admin.from("beta_focus_note").select("note").limit(1).maybeSingle(),
-      ]);
-      return { knownIssues: knownIssues ?? [], codes: codes ?? [], focus: focus?.note ?? null };
     }
     case "roadmap": {
       const { data } = await admin
@@ -322,12 +313,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ sec
       if (typeof body.status === "string") patch.status = body.status;
       if (typeof body.review_note === "string") patch.review_note = body.review_note.slice(0, 1000);
       const { error } = await admin.from("staff_applications").update(patch).eq("id", id);
-      if (error) throw error;
-      return NextResponse.json({ ok: true });
-    }
-
-    if (section === "beta" && action === "resolveIssue") {
-      const { error } = await admin.from("beta_known_issues").update({ resolved: !!body.resolved }).eq("id", id);
       if (error) throw error;
       return NextResponse.json({ ok: true });
     }

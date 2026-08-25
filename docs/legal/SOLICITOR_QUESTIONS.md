@@ -65,17 +65,17 @@ Genuinely unclear to us and it affects almost everything else.
   change what we must offer for access and erasure requests?
 - Does offering an export feature for device-only data change the answer?
 
-## 4. The AI assistant and the transfer outside the UK
+## 4. Transfers outside the UK
 
-Aurora AI sends what the user types to Anthropic, which processes it outside the
-UK and EU. It is opt-in and off by default. Everything else now runs in Ireland.
+**There are none, as of 25 August 2026.** This section used to ask what was
+needed to make the Aurora AI transfer to Anthropic lawful. That feature has been
+removed, so the question is moot and we are not asking you to bill for it.
+Blossom's data is stored in Ireland and the server code runs in Ireland.
 
-- What is needed to make that transfer lawful: the IDTA, the Addendum to the
-  SCCs, or reliance on an adequacy decision? Does the answer depend on where
-  Anthropic actually processes?
-- Do we need a transfer risk assessment, and is it proportionate at our size?
-- Given the content can include someone's health and gender identity, is opt-in
-  consent enough on its own, or do we need the transfer mechanism as well?
+The only thing worth your time here: for roughly two months before that removal,
+opt-in AI conversations that could include health and gender identity were sent
+to Anthropic without the transfer safeguards having been reviewed. Is there
+anything we should do about that period now it has ended?
 
 ## 5. Is a DPIA mandatory, and is ours adequate?
 
@@ -95,13 +95,15 @@ is not required, but it is common and it costs nothing.
 
 ## 7. Does the Online Safety Act apply to us?
 
-Blossom has a beta testers' chat and a feedback board where suggestions can be
-seen and voted on by other users.
+Blossom had a beta testers' chat, which was removed on 25 August 2026. What
+remains is a feedback board where suggestions can be seen and voted on by other
+users. Nothing else lets one user send anything to another.
 
-- Do those make Blossom a user-to-user service within scope of the OSA?
-- If so, what are the proportionate duties for a service this small, and is
-  there a threshold below which they do not bite?
-- Would removing the chat take us out of scope, and is that worth doing?
+- Does a suggestion board on its own make Blossom a user-to-user service within
+  scope of the OSA, or does removing the chat take us out of it?
+- If we are still in scope, what are the proportionate duties for a service this
+  small, and is there a threshold below which they do not bite?
+- If the board is the only thing keeping us in scope, is it worth keeping?
 
 ## 8. Support access to user data
 

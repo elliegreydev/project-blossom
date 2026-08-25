@@ -112,9 +112,13 @@ content" on what the app *provides*, and answer yes to any question about users
 being able to create private content. Worth reading the exact wording, because
 IARC asks about what the app enables as well as what it shows.
 
-**User-to-user communication.** Beta chat and the public ideas board both exist,
-so answer **yes** to user interaction, and yes to sharing user-generated content
-publicly. That alone tends to raise the rating, and it's the honest answer.
+**User-to-user communication.** The public ideas board exists and anything
+posted to it can be read by any visitor, so answer **yes** to sharing
+user-generated content publicly. That alone tends to raise the rating, and it's
+the honest answer. Beta chat used to be the other half of this, and it has been
+removed, so there is no longer any private messaging between users anywhere in
+Blossom. Read the user-interaction question again with that in mind, because the
+honest answer to it may now be narrower than it was.
 
 ---
 

@@ -292,7 +292,7 @@ export default function AccountPage() {
         </header>
 
         {!user && hqOnlySignIn ? (
-          <DevSignInNotice purpose="account" />
+          <DevSignInNotice />
         ) : !user && pendingEmail ? (
           <section className={styles.card}>
             <div className={styles.cardHeading}>

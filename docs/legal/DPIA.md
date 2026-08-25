@@ -23,8 +23,10 @@ screening criteria this meets more than one "likely high risk" indicator:
 - **Special category data**, at the core of the product rather than incidentally.
 - **Vulnerable data subjects.** Trans, nonbinary and questioning adults, many of
   whom are not out to family, employers or colleagues.
-- **Innovative technology**, in that an AI assistant can be given the person's
-  own health context.
+- **Innovative technology**, when this was drafted, in that an AI assistant could
+  be given the person's own health context. That feature was removed on 25 August
+  2026 and this indicator no longer applies. The first two still do, and either
+  alone is enough.
 
 The consequence of a disclosure here is not ordinarily financial. It is that
 somebody is outed, and the follow-on harms are social, physical and sometimes
@@ -56,7 +58,7 @@ sync map in `src/lib/sync.ts`):
   **none of them are in the sync map**. A voice recording is a recording of the
   person's own voice.
 - Euphoria entries and Time Capsules
-- Aurora AI conversations
+- Aurora AI conversations (the feature has since been removed entirely; any history left on a device is cleared by "delete all data")
 - Trips planned in Travel Mode
 - The app lock PIN
 
@@ -97,10 +99,9 @@ any given field cannot be bounded by its name.
 
 ### 2.4 What else leaves the device
 
-- **Aurora AI.** Opt-in, off by default. Conversations are held in
-  `localStorage`, not the database, and messages are sent to **Anthropic, which
-  processes them outside the UK and EU**. This is the only routine transfer out
-  of Europe.
+- **Nothing leaves the UK or EU.** This entry used to describe Aurora AI, which
+  sent conversations to Anthropic and was the only routine transfer out of
+  Europe. It was removed on 25 August 2026. See R3.
 - **Timezone.** Pushed to the server so the reminder cron can work out what is
   due, and deliberately never pulled back. The server therefore holds a coarse
   location signal per account.
@@ -120,7 +121,6 @@ any given field cannot be bounded by its name.
 | Reminders | The server must know what is due and when | Partly. Local reminders work without an account |
 | Sharing with a trusted person or clinician | Explicitly requested each time | Time-limited and revocable |
 | Support | Answering a question about someone's own data | Access is granted by the user with an expiring code |
-| Aurora AI | Answering questions in context | Opt-in, off by default, and the only transfer abroad |
 
 We hold **no advertising, profiling or analytics purpose at all**. There is no
 analytics or advertising code anywhere in the app, verified by inspection.
@@ -157,15 +157,26 @@ states this plainly rather than burying it.
 
 **Residual: MEDIUM.**
 
-### R3. The transfer to Anthropic — MEDIUM
+### R3. The transfer to Anthropic — CLOSED, 25 August 2026
 
-Health and identity data leaves the UK and EU when Aurora AI is used.
+Health and identity data used to leave the UK and EU when the Aurora AI chat was
+used, and the safeguards for that transfer had never been reviewed. The privacy
+policy said so openly rather than hiding it.
 
-**Mitigations:** opt-in and off by default; conversations never sync; users are
-told this in the policy.
+**The feature has been removed**, along with the beta programme it was gated
+behind. Blossom now makes no transfer of personal data outside the UK and EU at
+all. The chat screen, its API route, its safety layer and the `aurora_ai_usage`
+table are gone.
 
-**Residual: UNRESOLVED.** The transfer safeguards have not been reviewed. The
-privacy policy says so openly. See `SOLICITOR_QUESTIONS.md` §4.
+**Residual: NONE.** This risk is closed by deletion rather than by mitigation,
+which is the strongest way to close one. Recorded here rather than removed,
+because a DPIA is a dated record of what was true and when.
+
+Two notes for whoever reviews this. First, "Aurora" still exists in Blossom and
+is a completely different thing: a local suggestion engine that reads data on
+the device and makes no network request. Do not confuse the two. Second, anyone
+who used the old chat still has its history in `localStorage` on their own
+device; it is not on any server, and "delete all data" clears it.
 
 ### R4. Data lost because it only ever existed on one device — MEDIUM
 
@@ -278,7 +289,7 @@ control does what it says, including a real hard purge.
 |---|---|---|---|
 | 1 | Determine whether the strength converter engages UK MDR | Solicitor | Open, highest priority |
 | 2 | Record the Article 9 condition and evidence of consent | Solicitor then policy update | Open |
-| 3 | Resolve the Anthropic transfer safeguards | Solicitor | Open |
+| 3 | Resolve the Anthropic transfer safeguards | Solicitor | CLOSED 25 Aug 2026: the feature was removed, so there is no transfer left to safeguard |
 | 4 | Set and publish retention periods | Grey Studios | Open, policy says "before wider release" |
 | 5 | Decide whether the Online Safety Act applies to beta chat | Solicitor | Open |
 | 6 | Publish or provide a postal address | Grey Studios | Provided on request today |

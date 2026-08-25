@@ -5,36 +5,26 @@ import styles from "@/app/account/account.module.css";
  *
  * This used to be written for staff: it told the reader to open Grey Studios
  * HQ and use the dev entry link, which "hands you full staff access straight
- * away". That was correct when the only people here were Ellie and Sarah. Now
- * outside testers are being invited in with a code, and a tester from Reddit
- * has no HQ, so the old wording read as a locked door with instructions they
- * could not follow.
+ * away". That was correct when the only people here were Ellie and Sarah, but
+ * anyone let in with a dev access code has no HQ, so the old wording read as a
+ * locked door with instructions they could not follow.
  *
- * Written for the tester now, because they are who actually reaches it. Staff
- * arrive already signed in through /api/hq-enter, so they see the signed-in
- * screen rather than this one; the line for them is a footnote for the case
- * where somebody signed out.
+ * Written for whoever actually reaches it now. Staff arrive already signed in
+ * through /api/hq-enter, so they see the signed-in screen rather than this one;
+ * the line for them is a footnote for the case where somebody signed out.
  *
  * The important thing this has to get across is that there is nothing wrong.
  * No account is not a broken feature, it is how the test build is meant to
  * work, and Blossom is local-first anyway so almost everything still does.
  */
-export default function DevSignInNotice({ purpose }: { purpose: "account" | "beta" }) {
+export default function DevSignInNotice() {
   return (
     <section className={styles.card}>
       <div className={styles.cardHeading}>
         <div className={styles.icon} aria-hidden="true">✳</div>
         <div>
-          <h2>
-            {purpose === "beta"
-              ? "The beta isn't part of the test version"
-              : "No accounts in the test version"}
-          </h2>
-          <p>
-            {purpose === "beta"
-              ? "Beta access lives on the real app, not here."
-              : "Nothing to sign up for, and nothing to sign in to."}
-          </p>
+          <h2>No accounts in the test version</h2>
+          <p>Nothing to sign up for, and nothing to sign in to.</p>
         </div>
       </div>
       <p>
@@ -44,8 +34,8 @@ export default function DevSignInNotice({ purpose }: { purpose: "account" | "bet
         of it.
       </p>
       <p>
-        The parts you can&apos;t try here are the ones that need an account: syncing between
-        devices, and Aurora AI. Those live on the real app at{" "}
+        The one part you can&apos;t try here is the part that needs an account: syncing
+        between devices. That lives on the real app at{" "}
         <a href="https://projectblossom.net">projectblossom.net</a>, where syncing is still
         off until you switch it on yourself.
       </p>
