@@ -155,8 +155,11 @@ export default function TermsPage() {
           <section>
             <h2>Ending your use of Blossom</h2>
             <p>
-              You can stop using Blossom at any time and can use Settings to manage local data, sync and
-              account deletion. We may suspend or terminate access where an account seriously or
+              You can stop using Blossom at any time. Settings lets you delete all the data on your
+              device and manage sync. Deleting a synced account is not yet a button in the app, so
+              until it is, email <a href="mailto:support@projectblossom.net">support@projectblossom.net</a>{" "}
+              and we will do it. This paragraph used to say Settings handled account deletion, which
+              was not true. We may suspend or terminate access where an account seriously or
               repeatedly breaks these terms, or where this is needed for security or legal reasons.
             </p>
           </section>

@@ -107,10 +107,19 @@ export default function SafetyCheckInsPage() {
 
       {!profile.safetyCheckInsEnabled && (
         <p className={styles.hint}>
+          {/* "never reports this to us" and "stays only on this device" were both
+              false: the check-in rows sync, and because status is only pending or
+              completed, a pending one with a due time in the past is a missed
+              check-in that is visible server-side. "Never contacts anyone" is
+              true and worth keeping. Who your trusted contact is genuinely never
+              leaves the device: their name and contact method are absent from the
+              profile upload. */}
           Start a timed check-in on yourself around something stressful. If you don&apos;t
-          resolve it in time, Blossom will gently suggest reaching out to someone you trust -
-          it never contacts anyone on your own, and never tracks or reports this to us. Everything
-          here stays only on this device.
+          resolve it in time, Blossom will gently suggest reaching out to someone you trust.
+          It never contacts anyone for you, and who you choose as that person never leaves
+          this device. The check-ins themselves sync with your account if sync is on, so
+          switch off &ldquo;Your people and safety&rdquo; in Choose what syncs to keep them
+          here only.
         </p>
       )}
 

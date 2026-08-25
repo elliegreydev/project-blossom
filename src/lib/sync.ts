@@ -257,8 +257,11 @@ async function localPayload(
         quiet_hours_enabled: profile.quietHoursEnabled,
         quiet_hours_start: profile.quietHoursStart,
         quiet_hours_end: profile.quietHoursEnd,
-        // Synced (unlike weight/food tracking, which stays device-local) since
-        // the server-side reminder cron needs these to fire push notifications
+        // Synced because the server-side reminder cron needs these to fire push
+        // notifications. This used to add "unlike weight/food tracking, which
+        // stays device-local", eight lines above the payload that uploads
+        // weight_entry and calorie_entry. Only the weight and food PREFERENCES
+        // on the profile stay device-local
         // for a closed app - see dueCheckInReminders in reminders.ts.
         check_in_morning_reminder_enabled: profile.checkInMorningReminderEnabled,
         check_in_morning_reminder_time: profile.checkInMorningReminderTime,

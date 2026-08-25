@@ -87,7 +87,14 @@ export default function BodyProgressPage() {
           <div className={local.trackingHeading}>
             <div>
               <h2 className={styles.sectionTitle}>Weight &amp; food</h2>
-              <p className={local.sectionCopy}>Optional, private to this device, and never shared or synced.</p>
+              {/* Was "private to this device, and never shared or synced".
+                  Weight and calorie entries are both sync entities. Only the
+                  preferences behind the button next to this are device-local. */}
+              <p className={local.sectionCopy}>
+                Optional, and you can turn it off whenever. These entries sync with your
+                account unless you switch off &ldquo;Body, voice and presentation&rdquo; in
+                Choose what syncs.
+              </p>
             </div>
             <button type="button" className={styles.linkButton} onClick={() => setSettingsOpen(true)}>Preferences</button>
           </div>

@@ -45,7 +45,18 @@ export default function IntimacyPage() {
         <ScreenHeader title="Intimacy & wellbeing" backHref="/care" />
         <p className={feature.pageSubtitle} style={{ marginTop: -10 }}>A private place to keep only what feels useful to remember. No counts, streaks, reminders or judgement.</p>
 
-        <div className={styles.privacyNote}>Stored only on this device. It stays out of sync, Home, search and notifications.</div>
+        {/* This used to read "Stored only on this device. It stays out of sync".
+            That was false: intimacy entries are a sync entity and go up by
+            default once sync is on, private note and all. Saying otherwise on
+            the screen that collects the most sensitive writing in the app is
+            the worst version of getting this wrong, so the line now says what
+            actually happens and points at the control that changes it. */}
+        <div className={styles.privacyNote}>
+          Kept out of Home, search and notifications. If you have sync switched on, these
+          entries do go to your account, so turn off &ldquo;Private notes, in your own
+          words&rdquo; in <Link href="/account/what-syncs">Choose what syncs</Link> to keep
+          them on this device only.
+        </div>
 
         <div className={feature.section}>
           {visibleEntries.length === 0 ? <div className={feature.empty}><div className={feature.emptyTitle}>Nothing needs recording to be real</div><div className={feature.emptySubtitle}>If you ever want a private note for yourself, this space is here.</div></div> : <div className={feature.list}>{visibleEntries.map((entry) => <article key={entry.id} className={feature.item}><button type="button" className={styles.entryButton} onClick={() => setEditing(entry)}><div className={feature.itemRow}><span className={feature.itemTitle}>{entry.label ?? "Private entry"}</span><span className={feature.itemMeta}>{dateLabel(entry)}</span></div>{entry.feeling && <span className={styles.feeling}>{FEELING_LABELS[entry.feeling]}</span>}{entry.tags.length > 0 && <span className={feature.itemMeta}>{entry.tags.join(" · ")}</span>}{entry.privateNote && <span className={styles.preview}>{entry.privateNote}</span>}</button>{(entry.feeling === "unsure" || entry.feeling === "not-good") && <Link href="/crisis-support" className={styles.supportLink}>Need support right now?</Link>}<div className={styles.actions}><button type="button" className={feature.linkButton} onClick={() => setEditing(entry)}>Edit</button><button type="button" className={feature.linkButton} onClick={() => stageRemoval(entry.id, "This private entry", () => deleteIntimacyEntry(entry.id))}>Remove</button></div></article>)}</div>}

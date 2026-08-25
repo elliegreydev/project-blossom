@@ -206,9 +206,13 @@ export interface Profile {
   supportPromptDismissedForever: boolean;
   // Safety check-ins (see the SafetyCheckIn table below). Off by default -
   // this is opt-in, never something a user finds already running. The
-  // trusted contact's name and how to reach them are device-local, same
-  // treatment as journal entries: Blossom's server never sees who someone's
-  // trusted contact is or whether a check-in was ever missed.
+  // trusted contact's name and how to reach them ARE device-local: both are
+  // absent from the profile upload payload, so the server never learns who
+  // somebody's trusted contact is. The rest of what this used to claim was
+  // wrong. It said "same treatment as journal entries", and journal entries
+  // sync. It also said the server never sees whether a check-in was missed, but
+  // SafetyCheckIn rows sync with status and dueAt, and status is only pending or
+  // completed, so a pending row past its due time IS a missed check-in.
   safetyCheckInsEnabled: boolean;
   trustedContactName: string | null;
   trustedContactMethod: string | null;
@@ -220,7 +224,11 @@ export interface Profile {
   quietHoursEnabled: boolean;
   quietHoursStart: string | null; // "HH:MM", 24h, wall-clock local time
   quietHoursEnd: string | null;
-  // Weight and food logging are deliberately device-local. A setting of
+  // The weight and food PREFERENCES here are deliberately device-local: none of
+  // the five appear in the profile upload payload. The ENTRIES are not, and this
+  // comment used to say "weight and food logging are deliberately device-local",
+  // which four user-facing screens then repeated. weight_entry and calorie_entry
+  // are both sync entities, inside "Body, voice and presentation". A setting of
   // "auto" takes its display unit from the selected country, while entries
   // themselves are stored in grams so changing a preference never changes
   // the underlying record.
@@ -866,10 +874,12 @@ export interface WeightEntry {
 }
 
 /**
- * A trip. Device-local and never synced, same treatment as weight and calorie
- * tracking: a list of where someone is going and when is not something
- * Blossom's server needs, and for some people it's the most sensitive thing
- * in the app. See src/lib/travel.ts for the timezone arithmetic.
+ * A trip. Genuinely device-local and never synced: there is no trip entity and
+ * addTrip writes no outbox row. A list of where someone is going and when is not
+ * something Blossom's server needs, and for some people it's the most sensitive
+ * thing in the app. (This used to say "same treatment as weight and calorie
+ * tracking", which was a bad example to reach for, because those do sync.)
+ * See src/lib/travel.ts for the timezone arithmetic.
  */
 export interface Trip {
   id: string;
