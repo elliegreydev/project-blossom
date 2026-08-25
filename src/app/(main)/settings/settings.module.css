@@ -1,32 +1,48 @@
 .screen {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: max(28px, var(--safe-top)) 20px 20px;
+  gap: 26px;
+  max-width: 820px;
+  padding: max(30px, var(--safe-top)) 20px 36px;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pageEyebrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 22px;
+  font-size: clamp(30px, 5vw, 38px);
+  line-height: 1.15;
   color: var(--text-primary);
 }
 
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid var(--border);
+.subtitle {
+  max-width: 460px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* About Blossom files its rows under a single small label rather than the
+   eyebrow-and-title pair Settings uses, so this stays as it was. */
 .sectionLabel {
   margin: 0 2px;
   color: var(--text-muted);
@@ -36,46 +52,138 @@
   text-transform: uppercase;
 }
 
+/* Group heading: eyebrow, then the display-face title. No rule above it - a
+   line across every group turns the screen back into the filing cabinet. */
+.groupHead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0 2px;
+}
+
+.groupEyebrow {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.groupTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+/* One brand colour per group, carried by the row icons. It is the only thing
+   telling you at a glance that you have crossed from "you" into "your data",
+   so the groups get different colours rather than a shared accent. */
+.tintPink {
+  --row-tint: var(--pink);
+}
+
+.tintLavender {
+  --row-tint: var(--lavender);
+}
+
+.tintMint {
+  --row-tint: var(--mint);
+}
+
+.tintSky {
+  --row-tint: var(--sky);
+}
+
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 13px;
+  min-height: 58px;
+  padding: 13px 15px;
   background: var(--bg-raised);
   color: var(--text-primary);
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+/* Hairlines between rows, not gaps: a gap would show through when a row
+   scales on tap. */
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--row-tint, var(--lavender)) 7%, var(--bg-raised));
+}
+
+.row:active {
+  transform: scale(0.98);
+}
+
+/* The group clips its corners, which would clip an outset focus ring with
+   them, so the ring goes inside the row instead. Still an outline rather than
+   an inset shadow: Windows high contrast throws box-shadow away, and a
+   keyboard user there would be left with no focus indicator at all. */
+.row:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: -3px;
 }
 
 .rowIcon {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--row-tint, var(--text-secondary));
+  background: color-mix(in srgb, var(--row-tint, var(--text-secondary)) 14%, transparent);
 }
 
 .rowIcon svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
 }
 
 .rowText {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .rowTitle {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .rowMeta {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Unread beta chat. The row text says so too; this is just so you can see it
+   without reading. */
+.rowDot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--pink);
 }
 
 .chevron {
@@ -88,14 +196,29 @@
 /* One-line signpost for the tools that used to be filed here. Not a row, so it
    doesn't undo the point of moving them out. */
 .note {
-  margin: 2px 4px 0;
-  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.noteIcon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  color: var(--lavender);
 }
 
 .note a {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -109,4 +232,11 @@
   font-size: 11.5px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 720px) {
+  .screen {
+    gap: 30px;
+    padding: max(42px, var(--safe-top)) 32px 52px;
+  }
 }

@@ -29,10 +29,10 @@ import styles from "./info.module.css";
 const LIB_TOPICS: { label: string; term: string; tint: string; icon: React.ReactNode }[] = [
   { label: "HRT", term: "HRT", tint: "var(--pink)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="3" width="8" height="18" rx="3"/><path d="M8 9h8"/><path d="M12 13v3"/></svg>) },
   { label: "Legal", term: "legal", tint: "var(--pink)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M7 7l-2.5 6a3 3 0 0 0 5 0z"/><path d="M17 7l-2.5 6a3 3 0 0 0 5 0z"/></svg>) },
-  { label: "Coming out", term: "coming out", tint: "var(--secondary)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M5 21V5a1 1 0 0 1 1-1h9l-1.5 3L15 10H6"/></svg>) },
+  { label: "Coming out", term: "coming out", tint: "var(--lavender)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M5 21V5a1 1 0 0 1 1-1h9l-1.5 3L15 10H6"/></svg>) },
   { label: "Clothing", term: "clothing", tint: "var(--pink)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M8 3l4 3 4-3 4 4-3 3v11H7V10L4 7z"/></svg>) },
   { label: "Voice", term: "voice", tint: "var(--pink)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M5 10v4M9 6v12M12 3v18M15 8v8M19 11v2"/></svg>) },
-  { label: "Mental wellbeing", term: "mental health", tint: "var(--secondary)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M15 4a5 5 0 0 1 4 8 6 6 0 0 1-6 6H8a3 3 0 0 1 0-6"/><path d="M11.5 11.5a2 2 0 1 1 3-2.6 2 2 0 1 1 3 2.6L14 15z"/></svg>) },
+  { label: "Mental wellbeing", term: "mental health", tint: "var(--lavender)", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M15 4a5 5 0 0 1 4 8 6 6 0 0 1-6 6H8a3 3 0 0 1 0-6"/><path d="M11.5 11.5a2 2 0 1 1 3-2.6 2 2 0 1 1 3 2.6L14 15z"/></svg>) },
 ];
 
 export default function InfoPage() {

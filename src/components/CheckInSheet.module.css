@@ -1,0 +1,210 @@
+/* Check-in's own styling. Sheet.module.css is shared by three dozen sheets, so
+   the pieces only this one needs (the faces, the scale rows) live here rather
+   than growing that file for everybody.
+
+   Font sizes here are in rem on purpose. The text-size setting in
+   Accessibility scales the root font size, so rem is what actually reaches
+   these labels; at the default 16px root they land on the same scale as the
+   rest of the app. Heights are min-heights for the same reason: bigger text
+   grows a control instead of spilling out of it, and the global
+   large-touch-targets rule can still raise every button to 48px. */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* Name on the left, the ends of the scale on the right, so a number is never
+   just a number with nothing to hang it on. */
+.scaleHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scaleName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.scaleHint {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.moods {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mood {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 82px;
+  padding: 13px 2px 11px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.mood svg {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+.moodLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+.mood:active {
+  transform: scale(0.98);
+}
+
+.mood.selected {
+  border-color: color-mix(in srgb, var(--pink) 62%, var(--border));
+  background: color-mix(in srgb, var(--pink) 14%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.step {
+  min-height: 46px;
+  padding: 10px 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.step:active {
+  transform: scale(0.98);
+}
+
+.step.selected {
+  border-color: color-mix(in srgb, var(--lavender) 62%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.whenRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.when {
+  min-height: 46px;
+  padding: 10px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.when:active {
+  transform: scale(0.98);
+}
+
+.when.selected {
+  border-color: color-mix(in srgb, var(--lavender) 62%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.note {
+  min-height: 96px;
+}
+
+/* Shown when the sheet reopens onto text that was never saved (see
+   src/lib/drafts.ts). Tinted rather than grey, like every other aside in the
+   app, but kept quiet: it's a reassurance, not a warning. */
+.draftNote {
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--mint) 34%, var(--border));
+  background: color-mix(in srgb, var(--mint) 10%, var(--bg-raised));
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 720px) {
+  .moods,
+  .steps,
+  .whenRow {
+    gap: 8px;
+  }
+
+  .mood {
+    min-height: 92px;
+    padding: 16px 6px 14px;
+  }
+
+  .moodLabel {
+    font-size: 0.75rem;
+  }
+}

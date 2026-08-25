@@ -1,7 +1,19 @@
+/* Home.
+   Nothing in here may assume a block's position: order, width and visibility
+   are the person's own and live in their profile (see defaultHomeLayout in
+   src/lib/db.ts). What this file does is give every block one language, so
+   whatever order they choose still reads as one screen: an eyebrow, a
+   display-face title, then real cards.
+
+   Only themeable tokens are used here. The default palette also defines a set
+   of surface and accent tokens that the selectable themes never override, so
+   anything reaching for those silently ignores the theme somebody chose. Low
+   Profile is a discretion feature, not a coat of paint, so that matters. */
+
 .screen {
   display: flex;
   flex-direction: column;
-  gap: 34px;
+  gap: 22px;
   padding: max(30px, var(--safe-top)) 20px 32px;
 }
 
@@ -10,13 +22,19 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
   min-height: 72px;
+}
+
+/* Without this the greeting refuses to shrink and shoves the three header
+   buttons off a 320px screen. */
+.heroText {
+  min-width: 0;
 }
 
 .eyebrow {
   margin-bottom: 5px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -29,6 +47,10 @@
   font-size: clamp(29px, 5vw, 38px);
   line-height: 1.14;
   color: var(--text-primary);
+  /* The name is somebody's own and can be one long word. At 29px on a 320px
+     screen that word is wider than the space left beside the three header
+     buttons, and without this the whole page scrolls sideways. */
+  overflow-wrap: anywhere;
 }
 
 .petals {
@@ -68,120 +90,6 @@
   background: color-mix(in srgb, var(--mint) 54%, transparent);
 }
 
-.overviewGrid {
-  display: grid;
-  gap: 30px;
-}
-
-.homeBlocks {
-  display: grid;
-  gap: 30px;
-}
-
-.homeBlock {
-  min-width: 0;
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-top: 17px;
-  border-top: 1px solid var(--border);
-}
-
-.sectionTitle {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 19px;
-  color: var(--text-primary);
-}
-
-.emptyRow {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 18px 0 4px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.emptyRow strong {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.card {
-  padding: 15px 12px;
-  margin-inline: -12px;
-  border-bottom: 1px solid var(--border);
-  border-radius: 12px;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: background var(--duration-fast) var(--ease-standard);
-}
-
-a.card:hover {
-  background: var(--bg-raised);
-}
-
-.cardOverdue {
-  border-left: 3px solid var(--status-attention);
-  padding-left: 9px;
-  background: color-mix(in srgb, var(--status-attention) 10%, transparent);
-}
-
-.cardOverdue:hover {
-  background: color-mix(in srgb, var(--status-attention) 16%, var(--bg-raised));
-}
-
-.cardOverdue .cardMeta {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.cardTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.cardMeta {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.auroraCard {
-  padding: 18px 18px 18px 20px;
-  border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
-  border-radius: 16px;
-  background: linear-gradient(125deg, color-mix(in srgb, var(--lavender) 14%, var(--bg-raised)), color-mix(in srgb, var(--pink) 10%, var(--bg)));
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.auroraText {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--text-primary);
-  line-height: 1.5;
-}
-
-.auroraLabel {
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
 .heroActions {
   display: flex;
   align-items: center;
@@ -195,7 +103,7 @@ a.card:hover {
   gap: 8px;
   padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--bg-raised) 76%, transparent);
   color: var(--text-secondary);
   font-size: 12px;
@@ -207,9 +115,428 @@ a.card:hover {
   background: var(--bg-raised);
 }
 
+.accountLink:active {
+  transform: scale(0.98);
+}
+
 .accountLink svg {
   width: 19px;
   height: 19px;
+}
+
+/* Crisis help, at the top of Home and given real presence.
+   Pink rather than red on purpose: this sits on screen every ordinary day as
+   well as the bad ones, and a daily emergency banner would make the app heavy
+   to open. Tinted the same way every other Blossom callout is. */
+.crisisChip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 15px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--pink) 26%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--pink) 52%, var(--border));
+}
+
+.crisisChip:active {
+  transform: scale(0.98);
+}
+
+.homeBlocks {
+  display: grid;
+  gap: 26px;
+}
+
+.homeBlock {
+  min-width: 0;
+}
+
+/* Half is the default: the block just occupies one column, and only .wide has
+   anything to say (below, at 720px). The rule exists so the class name is
+   actually generated and the element never carries a stray "undefined". */
+.homeBlock.half {
+  grid-column: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   The shared block language.
+   No rule above the heading: on a dark ground a hairline across every section
+   reads as clutter, and the eyebrow already does the separating.
+   --------------------------------------------------------------------------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionHeadText {
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+a.card:hover {
+  border-color: color-mix(in srgb, var(--lavender) 42%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 5%, var(--bg-raised));
+}
+
+a.card:active {
+  transform: scale(0.98);
+}
+
+/* Overdue is tinted, never shouted. Pink is the app's attention colour and it
+   themes with everything else, so a glance at this screen under Low Profile
+   still gives nothing away. */
+.cardOverdue {
+  border-color: color-mix(in srgb, var(--pink) 46%, var(--border));
+  background: color-mix(in srgb, var(--pink) 12%, var(--bg-raised));
+}
+
+a.cardOverdue:hover {
+  border-color: color-mix(in srgb, var(--pink) 66%, var(--border));
+  background: color-mix(in srgb, var(--pink) 17%, var(--bg-raised));
+}
+
+.cardOverdue .cardMeta {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cardIcon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--lavender) 26%, var(--bg));
+}
+
+.cardIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cardIcon[data-kind="dose"] {
+  background: color-mix(in srgb, var(--mint) 30%, var(--bg));
+}
+
+.cardIcon[data-kind="appointment"] {
+  background: color-mix(in srgb, var(--sky) 30%, var(--bg));
+}
+
+.cardIcon[data-kind="supply"] {
+  background: color-mix(in srgb, var(--pink) 26%, var(--bg));
+}
+
+.cardText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  /* Medication names, appointment titles and journey entries are all typed by
+     the person, so one of them will eventually be a very long unbroken word.
+     min-width on .cardText lets the box shrink; this lets the text shrink with
+     it instead of painting out past the card edge. */
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.cardArrow {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+/* An empty block is a shape, not a grey box. Dashed and faintly tinted so it
+   reads as "room for something" rather than "something is missing". */
+.emptyRow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px dashed color-mix(in srgb, var(--lavender) 36%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 5%, var(--bg-raised));
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.emptyRow strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Something already done. Warm rather than congratulatory: it says the thing
+   is handled, it does not score anybody for having handled it. */
+.doneRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--mint) 40%, var(--border));
+  background: color-mix(in srgb, var(--mint) 10%, var(--bg-raised));
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+/* It goes somewhere, so it answers to a pointer like every other card here. */
+.doneRow:hover {
+  border-color: color-mix(in srgb, var(--mint) 58%, var(--border));
+  background: color-mix(in srgb, var(--mint) 15%, var(--bg-raised));
+}
+
+.doneRow:active {
+  transform: scale(0.98);
+}
+
+.doneMark {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--mint) 34%, var(--bg));
+}
+
+.doneMark svg {
+  width: 18px;
+  height: 18px;
+}
+
+.doneText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.doneText strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding-inline: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   How are you feeling? Five faces, one tap.
+   No streak, no "you missed yesterday", no score handed back. The design
+   principle is "no streaks, no pressure", and a mood row is exactly where that
+   gets broken first.
+   --------------------------------------------------------------------------- */
+
+.moodRow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.moodButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 66px;
+  padding: 10px 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.moodButton span:first-child {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.moodButton:hover {
+  border-color: color-mix(in srgb, var(--lavender) 48%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 8%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.moodButton:active {
+  transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------------------------
+   Quick actions: icon over label, three across, same grid as Library's topics.
+   --------------------------------------------------------------------------- */
+
+.toolGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 92px;
+  padding: 14px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.tool:hover {
+  border-color: color-mix(in srgb, var(--lavender) 40%, var(--border));
+}
+
+.tool:active {
+  transform: scale(0.98);
+}
+
+.toolIcon {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+.toolIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.toolLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.22;
+  text-align: center;
+}
+
+.toolNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* ---------------------------------------------------------------------------
+   Aurora.
+   --------------------------------------------------------------------------- */
+
+.auroraCard {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.auroraText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.auroraLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .auroraTitle {
@@ -219,9 +546,18 @@ a.card:hover {
   line-height: 1.35;
 }
 
+.auroraReason {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .auroraActions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 7px;
   flex-shrink: 0;
 }
@@ -233,14 +569,19 @@ a.card:hover {
   align-items: center;
   justify-content: center;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
 }
 
 .auroraAction {
+  border: 1px solid color-mix(in srgb, var(--lavender) 44%, var(--border));
   background: color-mix(in srgb, var(--lavender) 18%, var(--bg-raised));
   color: var(--text-primary);
+}
+
+.auroraAction:active {
+  transform: scale(0.98);
 }
 
 .auroraDismiss {
@@ -251,123 +592,41 @@ a.card:hover {
   cursor: pointer;
 }
 
-.linkRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.link {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  padding-inline: 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-@media (min-width: 720px) {
-  .screen {
-    padding: max(40px, var(--safe-top)) 32px 48px;
-  }
-
-  .overviewGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 48px;
-  }
-}
-
-@media (max-width: 520px) {
-  .accountLink {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .accountLink span {
-    display: none;
-  }
-
-  .petals {
-    display: none;
-  }
-
-  .auroraCard {
-    flex-direction: column;
-  }
-
-  .auroraActions {
-    width: 100%;
-  }
-}
-
-@media (min-width: 1100px) {
-  .screen {
-    padding-inline: 48px;
-  }
-
-  .hero {
-    min-height: 92px;
-  }
-}
-
-/* Crisis help, moved to the top of Home and given real presence.
-   Pink rather than red on purpose: this sits on screen every ordinary day as
-   well as the bad ones, and a daily emergency banner would make the app heavy
-   to open. Tinted the same way every other Blossom callout is. */
-.crisisChip {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 15px;
-  border-radius: var(--radius-pill);
-  font-size: 13.5px;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--pink) 26%, var(--bg-raised));
-  border: 1px solid color-mix(in srgb, var(--pink) 52%, var(--border));
-}
-
-.auroraReason {
-  display: block;
-  margin-top: 8px;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
+/* ---------------------------------------------------------------------------
+   The focus lens: a temporary view over Home, never an edit to it.
+   --------------------------------------------------------------------------- */
 
 .intentionCard {
   padding: 18px;
   border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--lavender) 7%, var(--bg-raised));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 9%, var(--bg-raised));
 }
 
 .intentionCopy,
 .intentionActive p {
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
 
+/* Two lines per lens: what it's called, and what it actually does. Before this
+   you tapped blind and found out afterwards. A grid rather than a wrap because
+   eight ragged pills wrapped 3-3-1-1 and looked like an accident. */
 .intentionChoices {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: 8px;
-  margin-top: 16px;
+  align-items: stretch;
 }
 
 .intentionButton,
 .intentionSelected,
 .resetIntention,
 .intentionAction {
-  min-height: 38px;
-  padding: 8px 11px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--bg-raised);
   color: var(--text-secondary);
   font: inherit;
@@ -376,14 +635,47 @@ a.card:hover {
   cursor: pointer;
 }
 
+.intentionButton,
+.intentionSelected {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 11px 12px;
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.intentionButton:active,
+.intentionSelected:active,
+.intentionAction:active {
+  transform: scale(0.98);
+}
+
 .intentionSelected,
 .intentionAction {
-  border-color: var(--lavender);
+  border-color: color-mix(in srgb, var(--lavender) 60%, var(--border));
   background: color-mix(in srgb, var(--lavender) 18%, var(--bg-raised));
   color: var(--text-primary);
 }
 
+.intentionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.intentionSummary {
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
 .resetIntention {
+  min-height: 38px;
+  padding: 8px 11px;
   border: 0;
   background: transparent;
   color: var(--text-secondary);
@@ -398,74 +690,58 @@ a.card:hover {
 }
 
 .intentionAction {
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
+  padding: 8px 13px;
   white-space: nowrap;
 }
 
-.pinnedGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.pinnedTool {
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-raised);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.nudges {
+/* Offered under "Calm down" once it's chosen, never before. Two options rather
+   than three: somebody reaching for calm on a bad day doesn't need a
+   permanent-sounding "until I turn it off" put in front of them. That one
+   stays in Settings for people choosing it deliberately. */
+.keepQuiet {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg));
 }
 
-[data-density="compact"] .section {
-  padding-top: 12px;
+.keepQuietLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-[data-density="compact"] .card {
-  padding-block: 11px;
+.keepQuietRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-[data-density="spacious"] .section {
-  padding-top: 24px;
+.keepQuietButton {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--lavender) 44%, var(--border));
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-[data-density="spacious"] .card {
-  padding-block: 19px;
+.keepQuietButton:active {
+  transform: scale(0.98);
 }
 
-@media (min-width: 720px) {
-  .homeBlocks {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 42px 48px;
-  }
-
-  .homeBlock.wide {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 520px) {
-  .intentionActive {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
-/* The way out, on Home itself. Somebody who turned this on during a bad week
-   shouldn't have to remember which settings page it was buried in. Quiet, but
-   not so quiet it can't be found. */
+/* The way out of Just the essentials, on Home itself. Somebody who turned it
+   on during a bad week shouldn't have to remember which settings page it was
+   buried in. Quiet, but not so quiet it can't be found. */
 .quietNotice {
   display: flex;
   align-items: center;
@@ -485,6 +761,7 @@ a.card:hover {
   border: none;
   background: none;
   padding: 0;
+  font: inherit;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -493,109 +770,100 @@ a.card:hover {
   cursor: pointer;
 }
 
-/* Offered under "Calm down" once it's chosen, never before. Two options
-   rather than three: somebody reaching for calm on a bad day doesn't need a
-   permanent-sounding "until I turn it off" put in front of them. That one
-   stays in Settings for people choosing it deliberately. */
-.keepQuiet {
+.nudges {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+}
+
+/* Density is a saved preference, so it moves the breathing room rather than
+   the type size (which the text-size setting owns). */
+[data-density="compact"] .homeBlocks {
+  gap: 18px;
+}
+
+[data-density="compact"] .section {
+  gap: 9px;
+}
+
+[data-density="compact"] .stack {
   gap: 8px;
-  margin-top: 10px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
-  background: color-mix(in srgb, var(--lavender) 10%, var(--bg-raised));
 }
 
-.keepQuietLabel {
-  font-size: 13px;
-  color: var(--text-secondary);
+[data-density="compact"] .card {
+  padding-block: 11px;
 }
 
-.keepQuietRow {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+[data-density="spacious"] .homeBlocks {
+  gap: 34px;
 }
 
-.keepQuietButton {
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in srgb, var(--lavender) 44%, var(--border));
-  background: var(--bg-raised);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+[data-density="spacious"] .section {
+  gap: 16px;
 }
 
-/* Two lines per lens: what it's called, and what it actually does. Before
-   this you tapped blind and found out afterwards. A grid rather than a wrap
-   because eight ragged pills wrapped 3-3-1-1 and looked like an accident. */
-.intentionChoices {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
-  align-items: stretch;
+[data-density="spacious"] .stack {
+  gap: 12px;
 }
 
-.intentionButton,
-.intentionSelected {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-height: 0;
-  padding: 10px 12px;
-  text-align: left;
+[data-density="spacious"] .card {
+  padding-block: 19px;
 }
 
-.intentionLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+@media (min-width: 720px) {
+  .screen {
+    padding: max(40px, var(--safe-top)) 32px 48px;
+  }
+
+  .homeBlocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 30px 40px;
+  }
+
+  .homeBlock.wide {
+    grid-column: 1 / -1;
+  }
 }
 
-.intentionSummary {
-  font-size: 11.5px;
-  font-weight: 400;
-  line-height: 1.35;
-  color: var(--text-muted);
+@media (min-width: 1100px) {
+  .screen {
+    padding-inline: 48px;
+  }
+
+  .hero {
+    min-height: 92px;
+  }
 }
 
-/* Home check-in. Five faces, one tap.
-   No streak, no "you missed yesterday", no score out of five presented back.
-   The design principle is "no streaks, no pressure", and a mood tracker is
-   exactly where that gets broken first. */
-.moodRow {
-  display: flex;
-  gap: 7px;
-}
+@media (max-width: 520px) {
+  .accountLink {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
 
-.moodButton {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 11px 3px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--outline, var(--border));
-  background: var(--surface, var(--bg-raised));
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  min-height: 62px;
-  transition: border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
-}
+  .accountLink span {
+    display: none;
+  }
 
-.moodButton span:first-child { font-size: 21px; line-height: 1; }
+  .heroActions {
+    gap: 8px;
+  }
 
-.moodButton:hover {
-  border-color: color-mix(in srgb, var(--primary, var(--lavender)) 45%, var(--border));
-  color: var(--text-primary);
+  .petals {
+    display: none;
+  }
+
+  .auroraCard {
+    flex-direction: column;
+  }
+
+  .auroraActions {
+    width: 100%;
+  }
+
+  .intentionActive {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

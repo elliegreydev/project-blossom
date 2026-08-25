@@ -13,8 +13,8 @@
   font-size: 12.5px;
   line-height: 1.35;
   color: var(--text, #f3e9f7);
-  background: color-mix(in srgb, var(--secondary, #c99bff) 22%, var(--elevated, #251a2b));
-  border-bottom: 1px solid color-mix(in srgb, var(--secondary, #c99bff) 40%, transparent);
+  background: color-mix(in srgb, var(--lavender) 22%, var(--bg-raised));
+  border-bottom: 1px solid color-mix(in srgb, var(--lavender) 40%, transparent);
   padding-top: max(7px, env(safe-area-inset-top));
 }
 
@@ -27,14 +27,14 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--primary, #ff7dba);
+  background: var(--pink);
 }
 
 .link {
   margin-left: auto;
   flex: none;
   white-space: nowrap;
-  color: var(--secondary, #c99bff);
+  color: var(--lavender);
   font-weight: 600;
   text-decoration: underline;
 }

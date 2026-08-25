@@ -49,7 +49,13 @@ export function defaultHomeLayout(): HomeLayoutConfig {
     order: ["focus", "today", "upcoming", "checkin", "pinned", "supplies", "journey", "aurora", "nudges"],
     density: "standard",
     todayContent: "both",
-    pinnedTools: [],
+    // A starting set, not a suggestion engine. "Quick actions" was an empty box
+    // on the first Home a new person ever saw, and the fix for that belongs in
+    // the default layout rather than in the rendering: a default is something
+    // you can change and it stays changed, whereas filling an empty block at
+    // render time cannot tell a new profile from somebody who just deliberately
+    // unpinned everything, and puts it all back.
+    pinnedTools: ["medication", "journal", "calendar"],
     blockWidths: {
       focus: "wide",
       today: "half",

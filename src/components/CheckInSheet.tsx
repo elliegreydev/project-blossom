@@ -1,17 +1,96 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import styles from "./Sheet.module.css";
+import local from "./CheckInSheet.module.css";
 import { useSheetDialog } from "./useSheetDialog";
 import { addCheckIn, guessCheckInPeriod, updateCheckIn, type CheckIn, type CheckInPeriod } from "@/lib/db";
 import { readDraft, writeDraft, clearDraft, draftKey } from "@/lib/drafts";
 
-const SCALES: { key: "mood" | "energy" | "confidence" | "stress" | "comfort"; label: string }[] = [
-  { key: "mood", label: "Mood" },
-  { key: "energy", label: "Energy" },
-  { key: "confidence", label: "Confidence" },
-  { key: "stress", label: "Stress" },
-  { key: "comfort", label: "Comfort" },
+/* The faces run calm to anxious, not bad to good, and they are the same five
+   words as the one-tap row on Home so a check-in means the same thing wherever
+   it was made. Drawn rather than emoji: they take the theme's colour, which
+   matters under Low Profile, and they don't change shape per platform. */
+function Face({ children }: { children: ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      {children}
+    </svg>
+  );
+}
+
+function Eyes() {
+  return (
+    <>
+      <circle cx="9.4" cy="10.3" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="14.6" cy="10.3" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  );
+}
+
+const MOODS: { value: number; label: string; face: ReactNode }[] = [
+  {
+    value: 5,
+    label: "Calm",
+    face: (
+      <Face>
+        <path d="M8.3 10.9c.6-.8 1.5-.8 2.1 0" />
+        <path d="M13.6 10.9c.6-.8 1.5-.8 2.1 0" />
+        <path d="M8.6 14.2c1.9 1.7 4.9 1.7 6.8 0" />
+      </Face>
+    ),
+  },
+  {
+    value: 4,
+    label: "Good",
+    face: (
+      <Face>
+        <Eyes />
+        <path d="M8.8 14.3c1.8 1.5 4.6 1.5 6.4 0" />
+      </Face>
+    ),
+  },
+  {
+    value: 3,
+    label: "Okay",
+    face: (
+      <Face>
+        <Eyes />
+        <path d="M9.2 14.9h5.6" />
+      </Face>
+    ),
+  },
+  {
+    value: 2,
+    label: "Not great",
+    face: (
+      <Face>
+        <Eyes />
+        <path d="M8.8 15.6c1.8-1.5 4.6-1.5 6.4 0" />
+      </Face>
+    ),
+  },
+  {
+    value: 1,
+    label: "Anxious",
+    face: (
+      <Face>
+        <Eyes />
+        <path d="M8.85 15c.5-1.1 1.6-1.1 2.1 0s1.6 1.1 2.1 0 1.6-1.1 2.1 0" />
+      </Face>
+    ),
+  },
+];
+
+/* Every scale is worded so 5 means more of the thing named, which is how the
+   journal already reads them back ("Stress 4/5"). The hints exist because a
+   bare 1 to 5 asks somebody to invent their own meaning every time. */
+const SCALES: { key: "energy" | "confidence" | "stress" | "comfort"; label: string; hint: string }[] = [
+  { key: "energy", label: "Energy", hint: "running low to plenty" },
+  { key: "confidence", label: "Confidence", hint: "shaky to steady" },
+  { key: "stress", label: "Stress", hint: "settled to wound up" },
+  { key: "comfort", label: "Comfort", hint: "uneasy to at ease" },
 ];
 
 export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | null; onClose: () => void }) {
@@ -66,38 +145,50 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
     <div className={styles.backdrop} onClick={onClose}>
       <div ref={dialogRef} className={styles.sheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="checkin-sheet-title">
         <div className={styles.grabber} />
-        <h2 id="checkin-sheet-title" className={styles.title}>{entry ? "Edit check-in" : "How are you today?"}</h2>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -6 }}>
-          Every part is optional. Fill in only what feels right.
-        </p>
+        <div className={local.header}>
+          <span className={local.eyebrow}>Check-in</span>
+          <h2 id="checkin-sheet-title" className={local.title}>{entry ? "Edit check-in" : "How are you today?"}</h2>
+          <p className={local.subtitle}>
+            Every part is optional. Fill in only what feels right, and tap a face or a number twice to clear it.
+          </p>
+        </div>
 
-        <div className={styles.field}>
-          <span className={styles.label}>When</span>
-          <div className={styles.chipRow} role="group" aria-label="When">
-            {(["morning", "evening", null] as const).map((option) => (
+        <div className={local.group} role="group" aria-label="Mood">
+          <div className={local.scaleHead}>
+            <span className={local.scaleName}>Mood</span>
+            <span className={local.scaleHint}>calm to anxious</span>
+          </div>
+          <div className={local.moods}>
+            {MOODS.map((mood) => (
               <button
-                key={option ?? "anytime"}
+                key={mood.value}
                 type="button"
-                className={`${styles.chip} ${period === option ? styles.selected : ""}`}
-                onClick={() => setPeriod(option)}
+                aria-pressed={values.mood === mood.value}
+                className={`${local.mood} ${values.mood === mood.value ? local.selected : ""}`}
+                onClick={() => setValue("mood", mood.value)}
               >
-                {option === "morning" ? "Morning" : option === "evening" ? "Evening" : "Anytime"}
+                {mood.face}
+                <span className={local.moodLabel}>{mood.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {SCALES.map((scale) => (
-          <div key={scale.key} className={styles.field}>
-            <span className={styles.label}>{scale.label}</span>
-            <div className={styles.chipRow} role="group" aria-label={scale.label}>
+          <div key={scale.key} className={local.group} role="group" aria-label={scale.label}>
+            <div className={local.scaleHead}>
+              <span className={local.scaleName}>{scale.label}</span>
+              <span className={local.scaleHint}>{scale.hint}</span>
+            </div>
+            <div className={local.steps}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
                   type="button"
-                  className={`${styles.chip} ${values[scale.key] === n ? styles.selected : ""}`}
+                  aria-pressed={values[scale.key] === n}
+                  aria-label={`${scale.label} ${n} of 5`}
+                  className={`${local.step} ${values[scale.key] === n ? local.selected : ""}`}
                   onClick={() => setValue(scale.key, n)}
-                  style={{ minWidth: 40, justifyContent: "center" }}
                 >
                   {n}
                 </button>
@@ -106,12 +197,29 @@ export default function CheckInSheet({ entry, onClose }: { entry?: CheckIn | nul
           </div>
         ))}
 
-        <div className={styles.field}>
-          <span className={styles.label}>Note (optional)</span>
-          {noteRestored && <p className={styles.draftNote}>Your note from last time is still here.</p>}
+        <div className={local.group} role="group" aria-label="When">
+          <span className={local.scaleName}>When</span>
+          <div className={local.whenRow}>
+            {(["morning", "evening", null] as const).map((option) => (
+              <button
+                key={option ?? "anytime"}
+                type="button"
+                aria-pressed={period === option}
+                className={`${local.when} ${period === option ? local.selected : ""}`}
+                onClick={() => setPeriod(option)}
+              >
+                {option === "morning" ? "Morning" : option === "evening" ? "Evening" : "Anytime"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={local.group}>
+          <span className={local.scaleName}>Note (optional)</span>
+          {noteRestored && <p className={local.draftNote}>Your note from last time is still here.</p>}
           <textarea
             aria-label="Check-in note"
-            className={styles.textarea}
+            className={`${styles.textarea} ${local.note}`}
             value={note}
             onChange={(e) => editNote(e.target.value)}
             placeholder="Anything you'd like to remember about today"

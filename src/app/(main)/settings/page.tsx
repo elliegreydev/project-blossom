@@ -10,19 +10,134 @@ import { APP_VERSION } from "@/lib/changelog";
 import { THEMES } from "@/lib/themes";
 import styles from "./settings.module.css";
 
+const ICON_PROPS = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.7,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
 const CHEVRON = (
   <svg className={styles.chevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 5l7 7-7 7" />
   </svg>
 );
 
-function Row({ href, title, meta }: { href: string; title: string; meta?: string }) {
+/* One icon per row. They earn their place: this screen is a list of twelve
+   near-identical lines of text, and the icon is what your eye lands on when
+   you already know which one you want. */
+const ICONS = {
+  profile: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="8" r="3.4" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  ),
+  appearance: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8Z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  home: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19Z" />
+      <path d="M9.5 20.5v-6h5v6" />
+    </svg>
+  ),
+  modules: (
+    <svg {...ICON_PROPS}>
+      <rect x="3.8" y="3.8" width="7" height="7" rx="2" />
+      <rect x="13.2" y="3.8" width="7" height="7" rx="2" />
+      <rect x="3.8" y="13.2" width="7" height="7" rx="2" />
+      <rect x="13.2" y="13.2" width="7" height="7" rx="2" />
+    </svg>
+  ),
+  aurora: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 3.6 13.7 9l5.4 1.7-5.4 1.7L12 17.8l-1.7-5.4L4.9 10.7 10.3 9Z" />
+      <path d="M18.4 16.2l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z" />
+    </svg>
+  ),
+  notifications: (
+    <svg {...ICON_PROPS}>
+      <path d="M6.6 10.2a5.4 5.4 0 0 1 10.8 0c0 3.9 1.5 5.3 1.5 5.3H5.1s1.5-1.4 1.5-5.3Z" />
+      <path d="M10 18.4a2.2 2.2 0 0 0 4 0" />
+    </svg>
+  ),
+  accessibility: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="8.4" />
+      <circle cx="12" cy="8.2" r="1.1" fill="currentColor" stroke="none" />
+      <path d="M8.4 10.8h7.2M12 10.8v3.1m0 0-1.9 3.5m1.9-3.5 1.9 3.5" />
+    </svg>
+  ),
+  privacy: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 20.8s6.8-3.7 6.8-9.2V6.2L12 3.5 5.2 6.2v5.4c0 5.5 6.8 9.2 6.8 9.2Z" />
+      <circle cx="12" cy="10.8" r="1.5" />
+      <path d="M12 12.3v2.1" />
+    </svg>
+  ),
+  account: (
+    <svg {...ICON_PROPS}>
+      <path d="M19.8 12a7.8 7.8 0 0 1-13.4 5.4M4.2 12a7.8 7.8 0 0 1 13.4-5.4" />
+      <path d="M17.6 3.4v3.4h-3.4M6.4 20.6v-3.4h3.4" />
+    </svg>
+  ),
+  data: (
+    <svg {...ICON_PROPS}>
+      <rect x="3.6" y="4.4" width="16.8" height="4.4" rx="1.6" />
+      <path d="M5.4 8.8V18a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6V8.8" />
+      <path d="M10 12.4h4" />
+    </svg>
+  ),
+  about: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M12 11.2v5.2" />
+      <circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  askAurora: (
+    <svg {...ICON_PROPS}>
+      <path d="M20 12.4c0 3.5-3.6 6.4-8 6.4-.9 0-1.7-.1-2.5-.3L4.6 20l1.2-3.1A6.1 6.1 0 0 1 4 12.4C4 8.9 7.6 6 12 6s8 2.9 8 6.4Z" />
+      <path d="m12 9.4.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z" />
+    </svg>
+  ),
+  beta: (
+    <svg {...ICON_PROPS}>
+      <path d="M10 3.6h4M11 3.6v5.6L6.7 17a2.2 2.2 0 0 0 1.9 3.4h6.8a2.2 2.2 0 0 0 1.9-3.4L13 9.2V3.6" />
+      <path d="M8.7 15.4h6.6" />
+    </svg>
+  ),
+};
+
+function Row({
+  href,
+  icon,
+  title,
+  meta,
+  unread,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  meta?: string;
+  unread?: boolean;
+}) {
   return (
     <Link href={href} className={styles.row}>
+      <span className={styles.rowIcon} aria-hidden="true">
+        {icon}
+      </span>
       <div className={styles.rowText}>
         <span className={styles.rowTitle}>{title}</span>
         {meta && <span className={styles.rowMeta}>{meta}</span>}
       </div>
+      {unread && <span className={styles.rowDot} aria-hidden="true" />}
       {CHEVRON}
     </Link>
   );
@@ -60,7 +175,7 @@ export default function SettingsPage() {
       setIsBetaTester(betaData === true);
     }
 
-    /* The sharing tools live in Track now, so Settings carries the count instead -
+    /* The sharing tools live in Care now, so Settings carries the count instead -
        "who can see my data" should never be something you have to go looking for. */
     async function countActiveShares() {
       const { data: userData } = await supabase.auth.getUser();
@@ -104,55 +219,90 @@ export default function SettingsPage() {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.title}>Settings</div>
+      <header className={styles.pageHeader}>
+        <div className={styles.pageEyebrow}>Your app</div>
+        <h1 className={styles.title}>Settings</h1>
+        <p className={styles.subtitle}>Set Blossom up the way you want it.</p>
+      </header>
 
       {(isBetaTester || isStaff) && (
-        <div className={styles.section}>
-          <p className={styles.sectionLabel}>Beta</p>
-          <div className={styles.group}>
-            <Row href="/aurora" title="Ask Aurora" meta="Private AI help and regional support sources" />
+        <section className={styles.section}>
+          <div className={styles.groupHead}>
+            <span className={styles.groupEyebrow}>Beta</span>
+            <h2 className={styles.groupTitle}>Early access</h2>
+          </div>
+          <div className={`${styles.group} ${styles.tintSky}`}>
+            <Row href="/aurora" icon={ICONS.askAurora} title="Ask Aurora" meta="Private AI help and regional support sources" />
             <Row
               href="/beta"
+              icon={ICONS.beta}
               title="You're a beta tester"
               meta={hasUnreadBetaChat ? "New message · What's new, beta chat, report a bug" : "What's new, beta chat, report a bug"}
+              unread={hasUnreadBetaChat}
             />
           </div>
-        </div>
+        </section>
       )}
 
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>You</p>
-        <div className={styles.group}>
-          <Row href="/settings/profile" title="Profile & preferences" meta={profile.displayName ?? undefined} />
-          <Row href="/settings/appearance" title="Appearance" meta={THEME_LABELS[profile.theme] ?? "Classic"} />
-          <Row href="/settings/home" title="Home screen" meta="Make this device’s Home your own" />
-          <Row href="/settings/modules" title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
-          <Row href="/settings/aurora" title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
+      <section className={styles.section}>
+        <div className={styles.groupHead}>
+          <span className={styles.groupEyebrow}>You</span>
+          <h2 className={styles.groupTitle}>How Blossom works for you</h2>
         </div>
-      </div>
-
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>Privacy & your data</p>
-        <div className={styles.group}>
-          <Row href="/settings/notifications" title="Notifications" />
-          <Row href="/settings/privacy" title="Privacy & security" meta={privacyMeta || undefined} />
-          <Row href="/settings/accessibility" title="Accessibility" />
-          <Row href="/settings/account" title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
-          <Row href="/settings/data" title="Data controls" meta="Export, import, delete" />
+        <div className={`${styles.group} ${styles.tintPink}`}>
+          <Row
+            href="/settings/profile"
+            icon={ICONS.profile}
+            title="Profile & preferences"
+            meta={profile.displayName ?? "Your name, pronouns and the basics"}
+          />
+          <Row href="/settings/appearance" icon={ICONS.appearance} title="Appearance" meta={THEME_LABELS[profile.theme] ?? "Classic"} />
+          <Row href="/settings/home" icon={ICONS.home} title="Home screen" meta="Make this device’s Home your own" />
+          <Row href="/settings/modules" icon={ICONS.modules} title="Enabled modules" meta={`${profile.enabledModules.length} on`} />
+          <Row href="/settings/aurora" icon={ICONS.aurora} title="Aurora" meta={AURORA_LABELS[profile.auroraMode]} />
+          <Row href="/settings/notifications" icon={ICONS.notifications} title="Notifications" meta="Reminders, quiet hours, and what they say" />
+          <Row href="/settings/accessibility" icon={ICONS.accessibility} title="Accessibility" meta="Contrast, text size, motion and touch" />
         </div>
-        <p className={styles.note}>
-          Trusted Circle, Bridge, your support map, Passport and safety check-ins now live in{" "}
-          <Link href="/care">Care</Link>.
-        </p>
-      </div>
+      </section>
 
-      <div className={styles.section}>
-        <div className={styles.group}>
-          <Row href="/settings/about" title="About Blossom" meta="Help, the roadmap, the team, legal" />
+      <section className={styles.section}>
+        <div className={styles.groupHead}>
+          <span className={styles.groupEyebrow}>Privacy</span>
+          <h2 className={styles.groupTitle}>Your data, and who sees it</h2>
+        </div>
+        <div className={`${styles.group} ${styles.tintLavender}`}>
+          <Row
+            href="/settings/privacy"
+            icon={ICONS.privacy}
+            title="Privacy & security"
+            meta={privacyMeta || "App lock, biometrics and connected services"}
+          />
+          <Row href="/settings/account" icon={ICONS.account} title="Account & sync" meta={profile.syncEnabled ? "Sync on" : "Local-only"} />
+          <Row href="/settings/data" icon={ICONS.data} title="Data controls" meta="Export, import, delete" />
+        </div>
+        <div className={styles.note}>
+          <svg className={styles.noteIcon} {...ICON_PROPS} aria-hidden="true">
+            <circle cx="12" cy="12" r="8.4" />
+            <path d="M9.6 12h4.9M12.6 9.6 15 12l-2.4 2.4" />
+          </svg>
+          <span>
+            Trusted Circle, Bridge, your support map, Passport and safety check-ins now live in{" "}
+            <Link href="/care">Care</Link>.
+          </span>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.groupHead}>
+          <span className={styles.groupEyebrow}>Blossom</span>
+          <h2 className={styles.groupTitle}>About the app</h2>
+        </div>
+        <div className={`${styles.group} ${styles.tintMint}`}>
+          <Row href="/settings/about" icon={ICONS.about} title="About Blossom" meta="Help, the roadmap, the team, legal" />
         </div>
 
         <p className={styles.versionStamp}>Blossom v{APP_VERSION}</p>
-      </div>
+      </section>
     </div>
   );
 }

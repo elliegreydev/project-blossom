@@ -117,7 +117,11 @@
   bottom: 18px;
   left: 5px;
   width: 2px;
-  background: linear-gradient(var(--pink), color-mix(in srgb, var(--secondary) 60%, transparent));
+  /* --lavender, not --secondary: the themes re-colour --pink and --lavender but
+     never --secondary, so half this gradient used to keep the default purple
+     whatever palette somebody picked. On Low Profile that left a purple streak
+     down a screen chosen precisely so the app would not look like that. */
+  background: linear-gradient(var(--pink), color-mix(in srgb, var(--lavender) 60%, transparent));
   border-radius: 2px;
 }
 

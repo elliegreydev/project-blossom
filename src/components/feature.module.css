@@ -47,8 +47,14 @@
 .item {
   padding: 15px 16px;
   border-radius: var(--radius);
-  border: 1px solid var(--outline, var(--border));
-  background: var(--surface, var(--bg-raised));
+  /* --border/--bg-raised, not --outline/--surface. The redesign tokens are only
+     defined on the default palette, so the five themes never override them and
+     var(--outline, var(--border)) always resolves to --outline: the fallback
+     cannot fire on a token that is always defined. Low Profile is a discretion
+     feature rather than decoration, and a card that ignores it stays purple on
+     a palette somebody chose precisely so the app would not look like this. */
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
   display: flex;
   flex-direction: column;
   gap: 4px;

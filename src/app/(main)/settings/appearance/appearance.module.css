@@ -1,3 +1,8 @@
+/* Appearance is the one screen where the tokens are the subject rather than
+   the material. Everything below is drawn with the themeable set only, so a
+   theme that reassigns them reassigns this screen too, and the preview stays
+   an honest picture of what somebody is choosing. */
+
 .screen {
   padding: max(20px, var(--safe-top)) 20px 0;
   display: flex;
@@ -8,114 +13,279 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.sectionLabel {
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eyebrow {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin: 0 2px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
 }
 
 .hint {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.55;
-  margin: -2px 2px 4px;
+  margin: -2px 0 2px;
 }
 
-/* Theme cards ------------------------------------------------------------ */
-.themeList {
+/* Preview ---------------------------------------------------------------- */
+.preview {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.themeCard {
+/* The frame is the page ground and the card is what sits on it, which is the
+   relationship every other screen is built out of. Seeing the two together is
+   the whole point: a theme is mostly the distance between them. */
+.previewFrame {
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.previewHead {
   display: flex;
   align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px;
-  text-align: left;
+  gap: 12px;
+}
+
+/* The one gradient in here, and it earns the space twice over: a lot of each
+   theme's character is in it, and it's the thing the Less decoration switch
+   further down turns off, so the preview shows that switch working as well. */
+.previewMark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--gradient-brand);
+}
+
+.previewTitle {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+/* The only root-relative size in the file, and on purpose: this line has to
+   move when the text size below it moves, or the preview would be telling a
+   small lie about what that slider does. */
+.previewBody {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.previewNote {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--pink) 34%, var(--border));
+  background: color-mix(in srgb, var(--pink) 9%, var(--bg-raised));
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.previewChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.previewChip {
+  padding: 6px 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--lavender) 45%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.previewChipAlt {
+  border-color: color-mix(in srgb, var(--mint) 45%, var(--border));
+  background: color-mix(in srgb, var(--mint) 18%, var(--bg-raised));
+}
+
+.previewMeta {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0 2px;
+}
+
+.previewMeta strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Theme circles ----------------------------------------------------------- */
+.themeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.themeCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  min-height: 118px;
+  padding: 14px 6px 12px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg-raised);
   color: var(--text-primary);
-  cursor: pointer;
   font: inherit;
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
-.themeCard[aria-pressed="true"] {
-  border-color: var(--nav-active);
-  box-shadow: inset 0 0 0 1px var(--nav-active);
+.themeCell:active {
+  transform: scale(0.98);
 }
 
-.themeText {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.themeCell[aria-pressed="true"] {
+  border-color: var(--lavender);
+  background: color-mix(in srgb, var(--lavender) 16%, var(--bg-raised));
 }
 
-.themeName {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.themeDesc {
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  line-height: 1.45;
-}
-
-/* A little live sample of the theme, so the names mean something */
-.swatch {
+.circleWrap {
+  position: relative;
   flex: none;
+  display: flex;
+}
+
+/* A whole palette in one circle: the theme's page behind, its cards in front,
+   its line around the edge, and its two accents as dots. The colours arrive as
+   inline styles because they're read off the document at runtime, see the
+   probe in page.tsx. */
+.circle {
   width: 52px;
   height: 52px;
-  border-radius: 13px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  border-radius: 50%;
   border: 1px solid var(--border);
-}
-
-.swatchTop {
-  flex: 1.6;
   display: flex;
-  align-items: flex-end;
-  padding: 5px;
-  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
-.swatchDot {
-  width: 9px;
-  height: 9px;
+.themeCell[aria-pressed="true"] .circle {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lavender) 60%, transparent);
+}
+
+.dot {
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
 }
 
-.swatchBottom {
-  flex: 1;
+.tick {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
 }
 
-.check {
-  flex: none;
-  font-size: 15px;
-  color: var(--nav-active);
+.tick svg {
+  width: 12px;
+  height: 12px;
 }
 
-/* Appearance -------------------------------------------------------------- */
+.themeName {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.themeNotes {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  padding: 4px 16px;
+}
+
+/* Left as a list-item on purpose: giving the summary a flex display would take
+   the disclosure triangle away, and then the only thing saying this opens is
+   the wording. */
+.themeNotes summary {
+  padding: 13px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.themeNotes dl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 0 14px;
+}
+
+.themeNotes dt {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.themeNotes dd {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Light or dark ----------------------------------------------------------- */
 .segmented {
   display: flex;
   gap: 6px;
   padding: 5px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: var(--bg-raised);
   border: 1px solid var(--border);
 }
@@ -124,7 +294,7 @@
   flex: 1;
   padding: 11px 6px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -132,12 +302,193 @@
   font-weight: 600;
   cursor: pointer;
   min-height: 44px;
+  transition: background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.segment:active {
+  transform: scale(0.98);
 }
 
 .segment[aria-pressed="true"] {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--lavender) 20%, var(--bg-raised));
   color: var(--text-primary);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--plum) 12%, transparent);
+}
+
+/* Text size --------------------------------------------------------------- */
+.sizeRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.sizeSmall,
+.sizeLarge {
+  font-family: var(--font-display);
+  color: var(--text-secondary);
+  flex: none;
+}
+
+.sizeSmall {
+  font-size: 13px;
+}
+
+.sizeLarge {
+  font-size: 21px;
+  color: var(--text-primary);
+}
+
+.sizeSlider {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sizeSlider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lavender) 45%, var(--border));
+}
+
+.sizeSlider::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--lavender) 45%, var(--border));
+}
+
+.sizeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 3px solid var(--text-primary);
+  cursor: grab;
+}
+
+.sizeSlider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 3px solid var(--text-primary);
+  cursor: grab;
+}
+
+.sizeSlider:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.sizeTicks {
+  display: flex;
+  justify-content: space-between;
+  margin: -4px 4px 0;
+}
+
+.sizeTick {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sizeTickOn {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Contrast and decoration ------------------------------------------------- */
+.switchCard {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.switchRow + .switchRow {
+  border-top: 1px solid var(--border);
+}
+
+.switchText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.switchTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.switchDesc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.moreLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--sky) 34%, var(--border));
+  background: color-mix(in srgb, var(--sky) 10%, var(--bg-raised));
+  color: var(--text-primary);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.moreLink:active {
+  transform: scale(0.98);
+}
+
+.moreLink svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.moreText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.moreText strong {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.moreText span {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
 }
 
 .footnote {
@@ -147,12 +498,12 @@
   margin: 0 2px 40px;
 }
 
-/* The hue slider, shown only once "Your colour" is the chosen theme. */
+/* Your colour ------------------------------------------------------------- */
 .hueBlock {
   display: flex;
   flex-direction: column;
   gap: 9px;
-  margin-top: 14px;
+  margin-top: 4px;
   padding: 15px 16px;
   border-radius: var(--radius);
   border: 1px solid color-mix(in srgb, var(--lavender) 38%, var(--border));
@@ -208,4 +559,15 @@
 .hueSlider:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
+}
+
+/* Held on <html> for the handful of microseconds the picker spends reading
+   each palette off the document (see readSwatches in page.tsx). The attribute
+   it reads flips six times inside one frame, and without this the whole app
+   would animate its way through every theme on the way back to the real one. */
+.probing *,
+.probing *::before,
+.probing *::after {
+  transition: none !important;
+  animation: none !important;
 }
