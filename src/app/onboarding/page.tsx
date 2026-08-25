@@ -8,20 +8,28 @@ import { useLiveQuery } from "dexie-react-hooks";
 import styles from "@/components/onboarding.module.css";
 import {
   type AuroraMode,
-  type HrtStatus,
   type ModuleKey,
   db,
   getOrCreateProfile,
   updateProfile,
   LOCAL_PROFILE_ID,
 } from "@/lib/db";
-import { COUNTRIES, SUBREGIONS } from "@/lib/regionResources";
+import { reportClientError } from "@/lib/clientErrorReport";
+import {
+  COUNTRIES,
+  SUBREGIONS,
+  resourcesForRegion,
+  syncRegionResourcesCache,
+} from "@/lib/regionResources";
 import { DEFAULT_ONBOARDING_MODULES, MODULE_OPTIONS as MODULES } from "@/lib/moduleOptions";
 
-// Nine steps, but somebody already inside the installed app sees eight: the
-// last step teaches installing, and teaching it to a person who has already
-// done it is noise. totalSteps below handles that.
-const TOTAL_STEPS = 9;
+// Six steps, and each one changes something about the app that follows. Three
+// of the old nine did not: HRT status only ever reached the doctor handover
+// PDF, the sync question wrote syncEnabled: false whichever card was pressed,
+// and the install instructions were static text that InstallAppNudge already
+// says better, with a real install button attached. Asking somebody for a
+// decision that changes nothing is how a first minute gets spent on nothing.
+const TOTAL_STEPS = 6;
 
 const AURORA_MODES: { key: AuroraMode; title: string; desc: string }[] = [
   { key: "quiet", title: "Quiet", desc: "Only appears when you open it" },
@@ -30,15 +38,13 @@ const AURORA_MODES: { key: AuroraMode; title: string; desc: string }[] = [
   { key: "disabled", title: "Disabled", desc: "No prompts beyond essential messages" },
 ];
 
-const HRT_OPTIONS: { key: NonNullable<HrtStatus>; title: string }[] = [
-  { key: "on", title: "I'm currently on HRT" },
-  { key: "considering", title: "I'm considering it" },
-  { key: "not_tracking", title: "I don't want to track this" },
-];
-
 export default function OnboardingPage() {
   const router = useRouter();
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
+  // The region step's payoff is counted off the real cache rather than a
+  // number written in the copy, so it can never claim something the device
+  // does not actually have.
+  const cachedResources = useLiveQuery(() => db.cachedRegionResources.toArray(), []);
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
   const [storageFailed, setStorageFailed] = useState(false);
@@ -47,12 +53,8 @@ export default function OnboardingPage() {
   const [pronouns, setPronouns] = useState("");
   const [region, setRegion] = useState("");
   const [subregion, setSubregion] = useState("");
-  const [hrtStatus, setHrtStatus] = useState<HrtStatus>(null);
   const [modules, setModules] = useState<ModuleKey[]>(DEFAULT_ONBOARDING_MODULES);
   const [auroraMode, setAuroraMode] = useState<AuroraMode>("gentle");
-  const [discreetReminders, setDiscreetReminders] = useState(true);
-  const [lockSensitive, setLockSensitive] = useState(false);
-  const [setUpSync, setSetUpSync] = useState(false);
 
   useEffect(() => {
     getOrCreateProfile().then((p) => {
@@ -60,23 +62,34 @@ export default function OnboardingPage() {
         router.replace("/");
         return;
       }
-      setStep(p.onboardingStep ?? 0);
+      // A profile saved part-way through the older, longer flow can hold a
+      // step index that no longer exists. Left as it was, somebody came back
+      // to an empty screen with a Continue button that could never reach the
+      // end, and every tap took them further into nothing.
+      setStep(Math.min(Math.max(p.onboardingStep ?? 0, 0), TOTAL_STEPS - 1));
       setDisplayName(p.displayName ?? "");
       setPronouns(p.pronouns ?? "");
       setRegion(p.region ?? "");
       setSubregion(p.subregion ?? "");
-      setHrtStatus(p.hrtStatus);
       setModules(p.enabledModules?.length ? p.enabledModules : DEFAULT_ONBOARDING_MODULES);
       setAuroraMode(p.auroraMode ?? "gentle");
-      setDiscreetReminders((p.reminderPrivacy ?? "discreet") === "discreet");
-      setLockSensitive(p.sensitiveModulesLocked ?? false);
-      setSetUpSync(false);
       setReady(true);
     })
       // This is the very first screen anyone sees, so a device that cannot
       // store anything failed here before Blossom had said a single word.
-      // It rendered null, which is a blank white page.
-      .catch(() => setStorageFailed(true));
+      // It rendered null, which is a blank white page. Reporting it is how we
+      // find out that somebody could not open Blossom at all, which is the
+      // one failure nobody would ever write in to tell us about.
+      .catch((error) => {
+        reportClientError("storing data on this device", error);
+        setStorageFailed(true);
+      });
+    // Onboarding sits outside the main layout, which is where the resource
+    // cache is normally filled, so a brand new device would reach the region
+    // step with nothing saved. Seeding here is what makes that step's promise
+    // true at the moment it is made. Same call the crisis page makes for the
+    // same reason.
+    void syncRegionResourcesCache();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -97,15 +110,11 @@ export default function OnboardingPage() {
       pronouns: pronouns.trim() || null,
       region: region || null,
       subregion: subregion || null,
-      hrtStatus,
       enabledModules: modules,
       auroraMode,
-      reminderPrivacy: discreetReminders ? "discreet" : "detailed",
-      sensitiveModulesLocked: lockSensitive,
-      syncEnabled: false,
       onboardingCompletedAt: new Date().toISOString(),
     });
-    router.replace(setUpSync ? "/account" : "/");
+    router.replace("/");
   }
 
   async function skipRest() {
@@ -121,23 +130,23 @@ export default function OnboardingPage() {
 
   const canSkipAll = step > 0;
 
-  // Already opened from a home-screen icon? Then the install step teaches
-  // nothing, so the flow ends at sync. matchMedia covers Android and desktop
-  // installs; navigator.standalone is Safari's own flag for the same thing.
-  const isStandalone =
-    typeof window !== "undefined" &&
-    (window.matchMedia?.("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone === true);
-  const totalSteps = isStandalone ? TOTAL_STEPS - 1 : TOTAL_STEPS;
+  // Zero while the cache is still loading, and zero for a country with nothing
+  // saved. Both render nothing at all below: a "0 services" line is worse than
+  // silence, and a number we have not actually counted would be worse still.
+  const savedResourceCount = cachedResources
+    ? resourcesForRegion(cachedResources, region || null, subregion || null).length
+    : 0;
 
-  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-  const isIos = /iPhone|iPad|iPod/i.test(ua);
-  const isAndroid = /Android/i.test(ua);
+  // The only two countries on the list that take a "the". Spelled out rather
+  // than guessed at, because "services for United States" reads like a form
+  // letter and this line is meant to sound like a person.
+  const regionLabel =
+    region === "United Kingdom" || region === "United States" ? `the ${region}` : region;
 
   return (
     <div className={styles.screen}>
       <div className={styles.progress}>
-        {Array.from({ length: totalSteps }).map((_, i) => (
+        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
             className={`${styles.progressDot} ${i <= step ? styles.done : ""}`}
@@ -207,13 +216,27 @@ export default function OnboardingPage() {
           </>
         )}
 
+        {/* The only question in the flow that can hand something back in the
+            same second it is answered, so the payoff below is counted rather
+            than claimed. The six-country caveat stays in the copy: without it
+            somebody from anywhere else reads a promise, finds no dropdown
+            entry for home, and has been told they are the exception on the
+            third screen.
+
+            The privacy line is qualified on purpose. region and subregion are
+            in the profile sync payload, and the profile is the one entity the
+            per-category exclusions cannot leave out, so "never sent anywhere"
+            would be a promise sync itself breaks. Asking a trans person where
+            they live is not the place to be casually absolute. */}
         {step === 2 && (
           <>
             <div className={styles.eyebrow}>Region</div>
             <h1 className={styles.title}>Where are you based?</h1>
             <p className={styles.subtitle}>
-              This helps us show relevant support resources. More countries will be
-              added over time - if yours isn&apos;t listed yet, you can skip this.
+              Blossom keeps the support services for your country on this device.
+              Answering sends nothing anywhere, and it stays here unless you ever turn
+              sync on. More countries are still being added, so if yours isn&apos;t
+              listed yet you can skip this.
             </p>
             <div className={styles.field}>
               <span className={styles.label}>Country</span>
@@ -253,33 +276,21 @@ export default function OnboardingPage() {
                 </select>
               </div>
             )}
+
+            {savedResourceCount > 0 && (
+              <div className={styles.callout} aria-live="polite">
+                <strong>
+                  {savedResourceCount} checked{" "}
+                  {savedResourceCount === 1 ? "service" : "services"} for {regionLabel}
+                </strong>{" "}
+                {savedResourceCount === 1 ? "is" : "are"} already saved on this
+                device, ready to open with no signal.
+              </div>
+            )}
           </>
         )}
 
         {step === 3 && (
-          <>
-            <div className={styles.eyebrow}>HRT</div>
-            <h1 className={styles.title}>Would you like to track HRT?</h1>
-            <p className={styles.subtitle}>
-              Entirely optional. You can turn this on or off at any time.
-            </p>
-            <div className={styles.optionGrid}>
-              {HRT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  className={`${styles.optionCard} ${hrtStatus === opt.key ? styles.selected : ""}`}
-                  aria-pressed={hrtStatus === opt.key}
-                  onClick={() => setHrtStatus(opt.key)}
-                >
-                  <span className={styles.optionTitle}>{opt.title}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {step === 4 && (
           <>
             <div className={styles.eyebrow}>Modules</div>
             <h1 className={styles.title}>What would you like to use?</h1>
@@ -304,7 +315,7 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <>
             <div className={styles.eyebrow}>Aurora</div>
             <h1 className={styles.title}>How present should Aurora be?</h1>
@@ -329,115 +340,34 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {step === 6 && (
-          <>
-            <div className={styles.eyebrow}>Privacy</div>
-            <h1 className={styles.title}>Let&apos;s keep things discreet.</h1>
-            <p className={styles.subtitle}>
-              These can be changed any time in Settings.
-            </p>
-            <label className={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={discreetReminders}
-                onChange={(e) => setDiscreetReminders(e.target.checked)}
-              />
-              <span className={styles.checkboxLabel}>
-                Keep notification text discreet (no medication names, appointment
-                types, or journal content shown by default)
-              </span>
-            </label>
-            <label className={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={lockSensitive}
-                onChange={(e) => setLockSensitive(e.target.checked)}
-              />
-              <span className={styles.checkboxLabel}>
-                Lock sensitive modules behind an extra app lock step
-              </span>
-            </label>
-          </>
-        )}
+        {/* Both of these were questions once, and both had a safe answer
+            already selected, so the only thing asking achieved was making
+            somebody agree to what was going to happen anyway. Told, not
+            asked. The second half is the promise the old sync step made and
+            is far too important to have been deleted along with it.
 
-        {step === 7 && (
+            Both sentences are scoped rather than absolute, and the scope is
+            the whole point. "Reminders", not "notifications": a reply on a
+            support ticket pushes "New reply on a support ticket", which is a
+            notification that does say what it is about. "Everything you
+            record", not "nothing": a ticket or a feedback message reaches our
+            servers with sync off, exactly as Settings > Privacy already says.
+            This is the screen where a promise gets believed, so it only makes
+            the ones the code keeps. */}
+        {step === 5 && (
           <>
-            <div className={styles.eyebrow}>Sync</div>
-            <h1 className={styles.title}>Local-only, or sync across devices?</h1>
+            <div className={styles.eyebrow}>Before you go in</div>
+            <h1 className={styles.title}>Two things already set for you.</h1>
             <p className={styles.subtitle}>
-              Blossom works fully without an account. Sync is optional, and you choose
-              category by category what syncs, so your journal can stay on this device
-              while your medication follows you.
+              Reminders do not say what they are about. One tells you something is
+              due and nothing more, so a lock screen someone else can see cannot out
+              you.
             </p>
             <div className={styles.callout}>
-              <strong>Whatever you choose here:</strong> photos, voice recordings,
-              euphoria entries, Time Capsules and trips never leave this
-              device. Not with sync on, not ever.
-            </div>
-            <div className={styles.optionGrid}>
-              <button
-                type="button"
-                className={`${styles.optionCard} ${!setUpSync ? styles.selected : ""}`}
-                aria-pressed={!setUpSync}
-                onClick={() => setSetUpSync(false)}
-              >
-                <span className={styles.optionTitle}>Keep it local-only</span>
-                <span className={styles.optionDesc}>
-                  Everything stays on this device. You can change your mind any time.
-                </span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.optionCard} ${setUpSync ? styles.selected : ""}`}
-                aria-pressed={setUpSync}
-                onClick={() => setSetUpSync(true)}
-              >
-                <span className={styles.optionTitle}>Set up sync after this</span>
-                <span className={styles.optionDesc}>
-                  Sign in with just an email and pick what syncs, once you&apos;re in.
-                </span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 8 && !isStandalone && (
-          <>
-            <div className={styles.eyebrow}>One last thing</div>
-            <h1 className={styles.title}>Put Blossom on your home screen</h1>
-            <p className={styles.subtitle}>
-              It opens quicker, works with no signal, and your phone treats an
-              installed app&apos;s data as worth protecting rather than something to
-              clear out.
-            </p>
-            <div className={styles.installSteps}>
-              {(isIos || !isAndroid) && (
-                <div className={styles.installStep}>
-                  <span className={styles.installNum}>1</span>
-                  <span>
-                    <strong>On iPhone:</strong> in Safari, tap the Share button, then{" "}
-                    <strong>Add to Home Screen</strong>.
-                  </span>
-                </div>
-              )}
-              {(isAndroid || !isIos) && (
-                <div className={styles.installStep}>
-                  <span className={styles.installNum}>{isAndroid && !isIos ? 1 : 2}</span>
-                  <span>
-                    <strong>On Android:</strong> in Chrome, tap the menu, then{" "}
-                    <strong>Add to home screen</strong> or <strong>Install app</strong>.
-                  </span>
-                </div>
-              )}
-              <div className={styles.installStep}>
-                <span className={styles.installNum}>{isIos || isAndroid ? 2 : 3}</span>
-                <span>From then on, open Blossom from the new icon, not the browser.</span>
-              </div>
-            </div>
-            <div className={`${styles.callout} ${styles.calloutPink}`}>
-              The icon is visible on your home screen. If someone else uses your phone
-              and that&apos;s a worry, it&apos;s okay to skip this - Blossom works in
-              the browser too.
+              <strong>Everything you record stays on this device.</strong> Sync
+              exists if you ever want it, it is off until you turn it on, and photos,
+              voice recordings, euphoria entries, Time Capsules and trips never sync
+              at all. Not even then.
             </div>
           </>
         )}
@@ -459,10 +389,10 @@ export default function OnboardingPage() {
             className={styles.primaryButton}
             disabled={step === 0 && !profile.ageConfirmedAt}
             onClick={() =>
-              step === totalSteps - 1 ? finish() : goTo(step + 1)
+              step === TOTAL_STEPS - 1 ? finish() : goTo(step + 1)
             }
           >
-            {step === totalSteps - 1 ? (isStandalone ? "Finish" : "Take me to Blossom 🌸") : "Continue"}
+            {step === TOTAL_STEPS - 1 ? "Take me to Blossom 🌸" : "Continue"}
           </button>
         </div>
         {canSkipAll && (

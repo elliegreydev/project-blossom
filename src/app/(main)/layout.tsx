@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, getOrCreateProfile, LOCAL_PROFILE_ID, syncDeviceTimezone } from "@/lib/db";
 import { seedDevDataIfNeeded } from "@/lib/devSeed";
 import { syncRegionResourcesCache } from "@/lib/regionResources";
+import { reportClientError } from "@/lib/clientErrorReport";
 import BottomNav from "@/components/BottomNav";
 import QuickAdd from "@/components/QuickAdd";
 import AppLockGate from "@/components/AppLockGate";
@@ -56,13 +57,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           return;
         }
         setCheckedOnboarding(true);
-      } catch {
+      } catch (error) {
         // Blossom is local-first, so a database that will not open is not a
         // degraded app, it is no app. Without this the rejection was silent and
         // the loading screen ran forever, which is what somebody actually sat
         // through rather than being told what was wrong. The seed is inside the
         // try for the same reason: it opens the database too, so if it is going
         // to fail it should land here rather than as an unhandled rejection.
+        //
+        // Reported as well as shown, because somebody who cannot open Blossom
+        // at all has no way to tell us and no reason to try twice. The report
+        // carries the shape of the failure and nothing about them.
+        reportClientError("storing data on this device", error);
         setStorageFailed(true);
       }
     })();

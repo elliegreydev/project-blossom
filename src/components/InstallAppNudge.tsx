@@ -140,7 +140,16 @@ export default function InstallAppNudge() {
         <div className={styles.content}>
           <span className={styles.label}>Blossom on your phone</span>
           <strong className={styles.title}>Keep Blossom close</strong>
-          <p className={styles.copy}>Add it to your Home Screen for quicker, app-like access.</p>
+          {/* The second sentence is the only argument for installing that is
+              about somebody's data rather than convenience, and it is the one
+              that matters most here: a phone clearing out space starts with
+              what it thinks nobody kept. It used to live in an onboarding step
+              nobody reached. */}
+          <p className={styles.copy}>
+            Add it to your Home Screen for quicker access. Your phone also treats an
+            installed app&apos;s data as worth keeping rather than something to clear
+            out.
+          </p>
           <button type="button" className={styles.installButton} onClick={handleInstall}>
             Add to Home Screen
           </button>
