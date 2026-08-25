@@ -56,7 +56,7 @@ export async function GET(request: Request) {
 
   const { data: subscriptions, error: subsError } = await supabase
     .from("push_subscriptions")
-    .select("user_id, endpoint, p256dh, auth");
+    .select("id, user_id, endpoint, p256dh, auth");
   if (subsError) {
     // Same blast radius as missing keys: no subscriptions read means no
     // reminders sent to anyone on this run.
@@ -100,7 +100,15 @@ export async function GET(request: Request) {
 
   const now = new Date();
   let sent = 0;
-  const deadEndpoints = new Set<string>();
+  // Ids, not endpoints. `endpoint` is free text that the owner of the row sets,
+  // and postgrest-js only quotes a value passed to .in() when it contains a
+  // comma or a bracket, without escaping a double quote already inside it. So
+  // an endpoint carrying a quote, comma, quote breaks out of its own entry in
+  // the list and becomes several. This delete runs on the service-role client,
+  // which row level security does not apply to, so anybody signed in could have
+  // deleted somebody else's subscription and silently stopped their medication
+  // reminders. Ids are server-generated uuids and carry no user input.
+  const deadSubscriptionIds = new Set<string>();
   // A gone endpoint is routine housekeeping. Anything else is a reminder that
   // didn't arrive, and those are counted rather than reported one by one, so
   // a bad afternoon at a push service arrives as a single number instead of
@@ -237,7 +245,7 @@ export async function GET(request: Request) {
           sent++;
         } catch (error) {
           if (isDeadEndpointError(error)) {
-            deadEndpoints.add(sub.endpoint);
+            deadSubscriptionIds.add(sub.id);
           } else {
             failedSends += 1;
             if (firstSendError === null) firstSendError = error;
@@ -247,8 +255,8 @@ export async function GET(request: Request) {
     }
   }
 
-  if (deadEndpoints.size > 0) {
-    await supabase.from("push_subscriptions").delete().in("endpoint", [...deadEndpoints]);
+  if (deadSubscriptionIds.size > 0) {
+    await supabase.from("push_subscriptions").delete().in("id", [...deadSubscriptionIds]);
   }
 
   // One report for the whole run, carrying how many reminders it lost.
