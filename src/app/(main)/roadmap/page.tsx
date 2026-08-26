@@ -135,6 +135,21 @@ const ROADMAP_THEMES: Record<string, Theme> = {
   "prescription-continuity": "health",
   "your-pace-any-direction": "daily",
   "resource-freshness-checks": "community",
+  "calendar-sync": "health",
+  "multilingual-support": "community",
+  "coming-back-after-a-while": "daily",
+  "voice-passage-monthly": "daily",
+  "waiting-on-someone-else": "daily",
+  "photo-line-up": "daily",
+  "what-was-said": "health",
+  "old-name-still-turns-up": "daily",
+  "decision-against-you": "health",
+  "keep-the-receipts": "daily",
+  "hard-day-box": "daily",
+  "who-knows-what": "privacy",
+  "someone-to-come-with-you": "health",
+  "archive-photos-and-recordings": "data",
+  "how-much-room-is-left": "data",
 };
 
 function themeFor(item: RoadmapItem): Theme {
