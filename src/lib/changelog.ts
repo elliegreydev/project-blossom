@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.40";
+export const APP_VERSION = "0.5.41";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.41",
+    date: "2026-08-26",
+    title: "Live pitch was listening to the room",
+    items: [
+      { tag: "fix", text: "Live pitch was reading far lower than your actual voice, with most of the line pinned to the bottom of the graph. Blossom had started asking for unprocessed microphone audio, which was the right call, but that also let in the low rumble your browser used to strip out: traffic, a fan, a hand moving on the phone. That rumble is slow and steady enough to look like a very low voice, and it was being reported instead of you. There is now a filter that removes it before anything is measured." },
+      { tag: "improved", text: "The filter is set low enough that it leaves genuinely low voices alone, so nothing is lost if yours sits down there." },
+    ],
+  },
   {
     version: "0.5.40",
     date: "2026-08-26",

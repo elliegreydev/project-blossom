@@ -181,3 +181,93 @@ assert.equal(falsePositives, 0, "an empty room must not register as somebody spe
 assert.equal(detectPitch(new Float32Array(FRAME), SR), null, "digital silence is not a pitch");
 
 console.log("Pitch detector checks passed (quiet voices, full range, no false positives).");
+
+// Room rumble ----------------------------------------------------------------
+// Blossom asks for UNPROCESSED microphone audio, because the browser's noise
+// suppression is built for phone calls and mangles the harmonic structure this
+// detector reads. The cost of that choice is everything noise suppression was
+// also removing: traffic, a fan, a hand on the phone, and any DC offset the
+// hardware adds. All of it is loud, slow and periodic enough to look like a
+// voice an octave or two below anybody's.
+//
+// So the live screen and capturePitchRange both put a 75 Hz high-pass in front
+// of the analyser. These assertions exist to prove that filter is load-bearing
+// rather than decorative: without it the detector reports the room, and the
+// readings pin themselves to the bottom of the display.
+
+// The RBJ cookbook biquad, matching what Web Audio's BiquadFilterNode does.
+function highPass(signal, cutoffHz, sampleRate, q = 0.707) {
+  const w0 = (2 * Math.PI * cutoffHz) / sampleRate;
+  const cos = Math.cos(w0);
+  const alpha = Math.sin(w0) / (2 * q);
+  const a0 = 1 + alpha;
+  const b0 = (1 + cos) / 2 / a0;
+  const b1 = -(1 + cos) / a0;
+  const b2 = (1 + cos) / 2 / a0;
+  const a1 = (-2 * cos) / a0;
+  const a2 = (1 - alpha) / a0;
+  const out = new Float32Array(signal.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < signal.length; i += 1) {
+    const x = signal[i];
+    const y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    out[i] = y;
+    x2 = x1; x1 = x; y2 = y1; y1 = y;
+  }
+  return out;
+}
+
+function withRumble(signal, amplitude) {
+  const out = Float32Array.from(signal);
+  let p1 = 0, p2 = 0, p3 = 0;
+  for (let i = 0; i < out.length; i += 1) {
+    p1 += (2 * Math.PI * 18) / SR;
+    p2 += (2 * Math.PI * 31) / SR;
+    p3 += (2 * Math.PI * 47) / SR;
+    out[i] += amplitude * (Math.sin(p1) + 0.7 * Math.sin(p2) + 0.5 * Math.sin(p3));
+  }
+  return out;
+}
+
+function correctFraction(signal, f0) {
+  const frames = Math.floor(signal.length / FRAME);
+  let correct = 0;
+  for (let w = 0; w < frames; w += 1) {
+    const hz = detectPitch(signal.subarray(w * FRAME, w * FRAME + FRAME), SR);
+    if (hz !== null && Math.abs(hz / f0 - 1) < 0.05) correct += 1;
+  }
+  return correct / frames;
+}
+
+const speech = voiceLike(185, FRAME * 30, 0.05);
+
+// Rumble at a level comparable to the voice itself destroys detection...
+const rumbly = withRumble(speech, 0.05);
+assert.ok(
+  correctFraction(rumbly, 185) < 0.2,
+  "sanity: unfiltered room rumble is supposed to break this, otherwise the high-pass proves nothing"
+);
+
+// ...and the high-pass hands it straight back.
+assert.ok(
+  correctFraction(highPass(rumbly, 75, SR), 185) > 0.9,
+  "a 75 Hz high-pass must recover a voice buried in room rumble"
+);
+
+// DC offset is the same story: it swamps the correlation entirely.
+const offset = Float32Array.from(speech);
+for (let i = 0; i < offset.length; i += 1) offset[i] += 0.1;
+assert.ok(correctFraction(offset, 185) < 0.2, "sanity: DC offset is supposed to break this too");
+assert.ok(correctFraction(highPass(offset, 75, SR), 185) > 0.9, "the high-pass must also remove DC offset");
+
+// And it must not cost anybody with a genuinely low voice, which is the whole
+// reason the cutoff sits at 75 Hz rather than somewhere more aggressive.
+for (const f0 of [85, 95, 110]) {
+  const low = voiceLike(f0, FRAME * 30, 0.05);
+  assert.ok(
+    correctFraction(highPass(low, 75, SR), f0) > 0.9,
+    `the high-pass must leave a ${f0} Hz voice alone`
+  );
+}
+
+console.log("High-pass checks passed (rumble and DC offset rejected, low voices unharmed).");

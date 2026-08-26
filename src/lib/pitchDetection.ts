@@ -23,9 +23,18 @@ export async function capturePitchRange(durationMs = 4000): Promise<{ low: numbe
   const stream = await requestAnalysisStream();
   const audioCtx = new AudioContext();
   const source = audioCtx.createMediaStreamSource(stream);
+  // Same high-pass as the live screen, and for the same reason: unprocessed
+  // audio carries room rumble and DC offset, both of which the detector will
+  // happily report as a voice far below anybody's actual pitch. See the
+  // comment in care/voice/live/page.tsx.
+  const highpass = audioCtx.createBiquadFilter();
+  highpass.type = "highpass";
+  highpass.frequency.value = 75;
+  highpass.Q.value = 0.707;
   const analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
-  source.connect(analyser);
+  source.connect(highpass);
+  highpass.connect(analyser);
   const buffer = new Float32Array(analyser.fftSize);
   const readings: number[] = [];
 

@@ -149,9 +149,29 @@ export default function LivePitchPage() {
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
     const source = audioCtx.createMediaStreamSource(stream);
+
+    // A high-pass in front of the analyser, and it is load-bearing.
+    //
+    // Asking for unprocessed audio (which we do, because the browser's noise
+    // suppression mangles the harmonics pitch detection reads) also means
+    // getting the low-frequency rumble it used to remove: traffic, a fan, a
+    // hand moving on the phone, plus any DC offset the hardware adds. All of
+    // that is loud, slow, and periodic enough to look like a voice an octave
+    // or two below anybody's, and the detector locks onto it and reports the
+    // room instead of the person. Measured: at a rumble level comparable to a
+    // speaking voice, detection went from perfect to zero correct with
+    // readings pinned to the bottom of the display, and this filter takes it
+    // straight back to perfect. It costs nothing and leaves even an 85 Hz
+    // voice untouched, which is below almost any speaking pitch.
+    const highpass = audioCtx.createBiquadFilter();
+    highpass.type = "highpass";
+    highpass.frequency.value = 75;
+    highpass.Q.value = 0.707;
+
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
-    source.connect(analyser);
+    source.connect(highpass);
+    highpass.connect(analyser);
     const buffer = new Float32Array(analyser.fftSize);
 
     setStatus("listening");
