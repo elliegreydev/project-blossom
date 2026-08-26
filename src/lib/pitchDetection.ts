@@ -60,13 +60,18 @@ export function detectPitch(buffer: Float32Array, sampleRate: number): number | 
   return frequency;
 }
 
-// A short, opt-in capture for logging alongside a practice session -
-// deliberately separate from LiveWatchView, which never saves anything.
-// Returns a range rather than a single number or an average: voice pitch
-// moves around naturally within a session, and a range says so honestly
-// instead of implying one "true" number. Never compared against a target,
-// never labelled male/female - purely a number over time for the person to
-// read however they want to.
+// A short, opt-in capture for logging alongside a practice session. The live
+// practice screen can also save the range it already heard, which is the same
+// idea over a longer window rather than a separate four-second measurement.
+// Returns a range rather than a single number or an average: voice pitch moves
+// around naturally within a session, and a range says so honestly instead of
+// implying one "true" number.
+//
+// This used to say "never labelled male/female". That was revisited in Aug
+// 2026: the live screen can now draw typical speaking ranges behind the trail
+// if somebody switches them on, off by default. The rule that still holds, and
+// which lib/voiceRanges.ts carries in full, is that a range is a backdrop and
+// never a target. Nothing is scored, and nothing reacts to where a voice sits.
 export async function capturePitchRange(durationMs = 4000): Promise<{ low: number; high: number } | null> {
   if (!isLiveAnalysisSupported()) return null;
 

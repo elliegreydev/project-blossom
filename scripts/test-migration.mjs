@@ -4,7 +4,7 @@ import Dexie from "dexie";
 /**
  * Does data survive the schema upgrades?
  *
- * Blossom's local database has been through 30 schema versions, eleven of which
+ * Blossom's local database has been through 31 schema versions, eleven of which
  * run an upgrade callback that rewrites existing rows. Somebody who has used the
  * app since the early days has passed through every one. If any of those
  * migrations dropped or mangled a field, their transition history was quietly
@@ -22,7 +22,7 @@ import Dexie from "dexie";
 const DB_NAME = "blossom";
 
 // The seed database declares the app's real early schema, versions 1 to 3
-// verbatim, so Dexie sees a consistent history and then upgrades 4..30 over it.
+// verbatim, so Dexie sees a consistent history and then upgrades 4..31 over it.
 // medications, journalEntries and checkIns first appear at version 3, so an
 // honest "old user" seed puts data there, not at version 1 where those tables
 // did not yet exist.
@@ -76,7 +76,7 @@ async function seedOldDatabase() {
 await seedOldDatabase();
 
 // Now let the current app open the same database. Reading anything triggers the
-// open, which runs every upgrade from version 1 to 30 over the seeded rows.
+// open, which runs every upgrade from version 1 to 31 over the seeded rows.
 const app = await import("@/lib/db.ts");
 
 let failures = 0;
@@ -93,10 +93,10 @@ async function check(name, fn) {
 
 await check("the database opens cleanly at the current version", async () => {
   await app.db.open();
-  assert.equal(app.db.verno, 30, "opened at version 30");
+  assert.equal(app.db.verno, 31, "opened at version 31");
 });
 
-await check("a medication seeded at version 3 survives to version 30", async () => {
+await check("a medication seeded at version 3 survives to version 31", async () => {
   const med = await app.db.medications.get(seededMedId);
   assert.ok(med, "the old medication still exists after all upgrades");
   assert.equal(med.name, "Old Estradiol", "its name was not mangled");
@@ -133,7 +133,7 @@ await check("the profile survives and gains its later fields", async () => {
 
 console.log(
   failures === 0
-    ? "  all migration checks passed: 30 versions, no data lost"
+    ? "  all migration checks passed: 31 versions, no data lost"
     : `  ${failures} migration check(s) failed`
 );
 process.exit(failures === 0 ? 0 : 1);

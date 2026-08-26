@@ -57,6 +57,6 @@ export function clearAllDrafts(): void {
 
 /** Editing an existing record keeps its own draft, so an interrupted edit
  *  doesn't reappear in the "new entry" sheet, and vice versa. */
-export function draftKey(kind: "journal" | "checkin", id?: string | null): string {
+export function draftKey(kind: "journal" | "checkin" | "voiceline", id?: string | null): string {
   return id ? `${kind}:${id}` : `${kind}:new`;
 }

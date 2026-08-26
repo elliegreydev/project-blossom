@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.37";
+export const APP_VERSION = "0.5.38";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,22 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.38",
+    date: "2026-08-26",
+    title: "Voice practice has something in it now",
+    items: [
+      { tag: "new", text: "Things to read out loud. A shelf of passages, a page of ordinary sentences people actually say, and somewhere to write your own lines, like your coffee order or the thing you always trip over. Before this, voice practice was a place to record that you'd practised somewhere else." },
+      { tag: "new", text: "Live pitch is a proper page rather than a cramped popup, and the screen stays awake while you use it. You can freeze the trail to look at what you just did, and save what it heard straight to your practice log instead of doing a separate measurement afterwards." },
+      { tag: "new", text: "You can put typical speaking ranges behind the trail if some context helps. They're off unless you turn them on, they're described as typical ranges rather than goals, and nothing reacts to where your voice lands. No score, no target, no congratulations." },
+      { tag: "new", text: "A short read on keeping your voice in one piece, and a list of free guides from speech therapists and trans-led organisations. Blossom doesn't teach technique, and this is it saying so plainly and pointing at people who do." },
+      { tag: "fix", text: "The pitch trail was drawn on a straight scale, which squashed lower voices flat and made them look less mobile than they were. It now uses a scale that matches how pitch is actually heard, so the shape of your line means the same thing whatever your voice is doing." },
+      { tag: "fix", text: "Removing a practice goal no longer deletes the recordings underneath it. Those clips are the one thing in Blossom that can't be recreated, and tidying up shouldn't cost you them." },
+      { tag: "fix", text: "The live pitch trail followed Blossom's default colours instead of your chosen theme, so it stayed pink and lavender even on Low Profile. It now matches whatever theme you're using." },
+      { tag: "improved", text: "You no longer need to create a goal before you can log a session. Practise first, name it later, or never." },
+      { tag: "improved", text: "Recordings stay covered until you tap them, so you're never ambushed by hearing your own voice, and you can save a copy out of Blossom as an ordinary audio file." },
+    ],
+  },
   {
     version: "0.5.37",
     date: "2026-08-25",

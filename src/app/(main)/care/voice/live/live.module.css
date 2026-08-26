@@ -1,0 +1,255 @@
+.screen {
+  min-height: 100vh;
+  padding: max(20px, var(--safe-top)) max(18px, var(--safe-right)) max(96px, var(--safe-bottom)) max(18px, var(--safe-left));
+  background:
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--lavender) 12%, transparent), transparent 28rem),
+    var(--bg);
+}
+
+.intro {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 46ch;
+}
+
+/* The canvas and its legend. position:relative so the start prompt can sit
+   over the top of it without the layout jumping when listening begins. */
+.stage {
+  position: relative;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-raised) 70%, var(--bg));
+  overflow: hidden;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 210px;
+}
+
+@media (min-width: 600px) {
+  .canvas {
+    height: 300px;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+
+.overlayText {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 34ch;
+}
+
+.startButton {
+  min-height: 48px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--lavender);
+  color: var(--plum);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legend {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.legendSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0.75;
+}
+
+.legendHz {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.holdButton {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.holdActive {
+  background: color-mix(in srgb, var(--lavender) 24%, transparent);
+  border-color: color-mix(in srgb, var(--lavender) 46%, transparent);
+}
+
+.holdHint {
+  flex: 1 1 12ch;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.section {
+  margin-top: 22px;
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.mode {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeOn {
+  background: color-mix(in srgb, var(--lavender) 22%, transparent);
+  border-color: color-mix(in srgb, var(--lavender) 44%, transparent);
+  color: var(--text-primary);
+}
+
+.mode:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin-top: 9px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 52ch;
+}
+
+.primaryButton,
+.secondaryButton {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: none;
+  background: var(--lavender);
+  color: var(--plum);
+}
+
+.primaryButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.savedNote {
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--mint) 20%, var(--bg-raised));
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+
+.savedLink {
+  font-weight: 650;
+  text-decoration: underline;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.toggleLabel {
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+.hzReadout {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.privacy {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 54ch;
+}

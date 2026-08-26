@@ -770,9 +770,24 @@ export interface VoiceGoal {
   updatedAt: string;
 }
 
+// Things you want to be able to say out loud: the coffee order, the name at a
+// reception desk, the phone call you're dreading. Written entirely by the
+// person, which is deliberate - it's the one kind of practice material Blossom
+// can offer without straying into technique it isn't qualified to teach.
+// Device-local: these never sync, so they're only ever on this phone and in
+// your export. Short enough to retype, unlike a recording.
+export interface VoiceLine {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface VoiceSession {
   id: string;
-  goalId: string;
+  // Null means "just practising": a session that belongs to no goal. Sessions
+  // can be logged before any goal exists, and a goal being removed orphans its
+  // sessions rather than destroying them (see deleteVoiceGoal).
+  goalId: string | null;
   sessionDuration: string | null;
   comfortRating: number | null;
   note: string | null;
@@ -782,9 +797,16 @@ export interface VoiceSession {
   // the JSON/PDF export (which strips it to a hasRecording flag instead).
   // Only ever used for private playback - nothing in Blossom analyses it.
   recording: Blob | null;
-  // Optional, opt-in only (see capturePitchRange in lib/pitchDetection.ts) -
-  // a range, not a single score, and never compared against any target or
-  // labelled male/female anywhere it's shown.
+  // Optional, opt-in only (see capturePitchRange in lib/pitchDetection.ts, and
+  // the live practice screen, which can save the range it already heard) - a
+  // range, not a single score, and never turned into a verdict.
+  //
+  // Aug 2026: the live screen can now draw typical speaking ranges behind the
+  // trail, labelled, if the person switches them on. That's a deliberate
+  // change from "never labelled male/female", which this comment used to say.
+  // The line that still holds: a reference range is a backdrop, never a
+  // target. Nothing reacts when a voice enters one, nothing is scored against
+  // it, and it is off unless someone asks for it. See lib/voiceRanges.ts.
   pitchLowHz: number | null;
   pitchHighHz: number | null;
   createdAt: string;
@@ -1136,6 +1158,7 @@ type BlossomDb = Dexie & {
   bloodTestEntries: EntityTable<BloodTestEntry, "id">;
   voiceGoals: EntityTable<VoiceGoal, "id">;
   voiceSessions: EntityTable<VoiceSession, "id">;
+  voiceLines: EntityTable<VoiceLine, "id">;
   presentationEntries: EntityTable<PresentationEntry, "id">;
   bodyEntries: EntityTable<BodyEntry, "id">;
   weightEntries: EntityTable<WeightEntry, "id">;
@@ -2035,6 +2058,54 @@ function createDb(): BlossomDb {
     bloodTestEntries: "id, testName, date",
     voiceGoals: "id, category",
     voiceSessions: "id, goalId, createdAt",
+    presentationEntries: "id, category, date",
+    bodyEntries: "id, date",
+    weightEntries: "id, date",
+    trips: "id, startDate, endDate",
+    calorieEntries: "id, date",
+    notifiedReminders: "key, firedAt",
+    cachedRegionResources: "id, country, subregion",
+    cachedLegalContextNotes: "id, country, subregion",
+    syncOutbox: "id, entity, changedAt",
+    syncMeta: "key",
+  });
+
+  // v31: voice practice lines (things you want to be able to say out loud),
+  // and voiceSessions.goalId becomes nullable so a session can exist before
+  // any goal does. Nothing to migrate: existing sessions keep their goalId,
+  // and a null one simply reads as "just practising".
+  instance.version(31).stores({
+    profiles: "id",
+    milestones: "id, eventDate, category",
+    journeyEvents: "id, eventDate, category",
+    auroraNudges: "nudgeKey",
+    medications: "id",
+    medicationLogs: "id, medicationId, loggedAt",
+    medicationSupplies: "id, medicationId, updatedAt",
+    medicationSupplyAdjustments: "id, supplyId, medicationId, createdAt",
+    careSupplies: "id, category, updatedAt",
+    careSupplyAdjustments: "id, supplyId, createdAt",
+    appointments: "id, appointmentAt",
+    referrals: "id, status, referredOn",
+    referralUpdates: "id, referralId, happenedOn",
+    selfDirected: "id",
+    journalEntries: "id, createdAt",
+    intimacyEntries: "id, date, createdAt",
+    euphoriaEntries: "id, createdAt, reopenAt, kind",
+    socialTransitionPeople: "id, status, updatedAt",
+    socialTransitionPlans: "id, kind, status, updatedAt",
+    socialTransitionTasks: "id, category, status, updatedAt",
+    checkIns: "id, createdAt",
+    goals: "id, status",
+    privateLinks: "id",
+    supportMapEntries: "id, type, isFavourite, reviewOn, updatedAt",
+    safetyCheckIns: "id, dueAt, status",
+    budgetEntries: "id, category, date",
+    budgetGoals: "id",
+    bloodTestEntries: "id, testName, date",
+    voiceGoals: "id, category",
+    voiceSessions: "id, goalId, createdAt",
+    voiceLines: "id, createdAt",
     presentationEntries: "id, category, date",
     bodyEntries: "id, date",
     weightEntries: "id, date",
@@ -3680,17 +3751,42 @@ export async function updateVoiceGoal(id: string, patch: Partial<VoiceGoal>): Pr
   });
 }
 
+// Removing a goal keeps every session that belonged to it. Those sessions can
+// hold a recording, which is the one thing in Blossom that cannot be recreated:
+// it is local-only, never synced, and stripped from every export, so deleting
+// it here used to destroy the only copy that existed. Tidying up a stale goal
+// should never cost somebody the first time they heard their own voice change.
+// The sessions are orphaned instead and show up as "just practising".
+//
+// The upserts are recorded BEFORE the goal's delete so that a server which
+// still carries the old "on delete cascade" foreign key sees goal_id cleared
+// first and has nothing left to cascade into.
 export async function deleteVoiceGoal(id: string): Promise<void> {
   const changedAt = new Date().toISOString();
   await db.transaction("rw", db.voiceGoals, db.voiceSessions, db.syncOutbox, async () => {
+    const sessions = await db.voiceSessions.where("goalId").equals(id).toArray();
+    for (const session of sessions) {
+      await db.voiceSessions.update(session.id, { goalId: null });
+      await recordSyncChange("voice_session", session.id, "upsert", changedAt);
+    }
     await db.voiceGoals.delete(id);
     await recordSyncChange("voice_goal", id, "delete", changedAt);
-    const sessions = await db.voiceSessions.where("goalId").equals(id).toArray();
-    await db.voiceSessions.bulkDelete(sessions.map((s) => s.id));
-    for (const session of sessions) {
-      await recordSyncChange("voice_session", session.id, "delete", changedAt);
-    }
   });
+}
+
+// Practice lines. Device-local on purpose, so no sync outbox entries here.
+export async function addVoiceLine(text: string): Promise<VoiceLine> {
+  const line: VoiceLine = { id: newId(), text, createdAt: new Date().toISOString() };
+  await db.voiceLines.add(line);
+  return line;
+}
+
+export async function updateVoiceLine(id: string, text: string): Promise<void> {
+  await db.voiceLines.update(id, { text });
+}
+
+export async function deleteVoiceLine(id: string): Promise<void> {
+  await db.voiceLines.delete(id);
 }
 
 export async function addVoiceSession(
@@ -3996,6 +4092,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     bloodTestEntries,
     voiceGoals,
     voiceSessionsRaw,
+    voiceLines,
     presentationEntriesRaw,
     bodyEntriesRaw,
     weightEntries,
@@ -4028,6 +4125,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     db.bloodTestEntries.toArray(),
     db.voiceGoals.toArray(),
     db.voiceSessions.toArray(),
+    db.voiceLines.toArray(),
     db.presentationEntries.toArray(),
     db.bodyEntries.toArray(),
     db.weightEntries.toArray(),
@@ -4085,6 +4183,7 @@ export async function exportAllData(): Promise<Record<string, unknown>> {
     bloodTestEntries,
     voiceGoals,
     voiceSessions,
+    voiceLines,
     presentationEntries,
     bodyEntries,
     weightEntries,
@@ -4126,6 +4225,7 @@ export async function exportSelectedData(selection: DataExportSelection): Promis
     calorieEntries: selection.health ? all.calorieEntries : [],
     voiceGoals: selection.voiceAndPresentation ? all.voiceGoals : [],
     voiceSessions: selection.voiceAndPresentation ? all.voiceSessions : [],
+    voiceLines: selection.voiceAndPresentation ? all.voiceLines : [],
     presentationEntries: selection.voiceAndPresentation ? all.presentationEntries : [],
     euphoriaEntries: selection.euphoriaAndSocial ? all.euphoriaEntries : [],
     socialTransitionPeople: selection.euphoriaAndSocial ? all.socialTransitionPeople : [],
@@ -4154,7 +4254,7 @@ const IMPORT_TABLES: Array<{ section: BlossomImportSection; label: string; keys:
   { section: "journal", label: "Journal & check-ins", keys: ["journalEntries", "checkIns"], tables: ["journalEntries", "checkIns"] },
   { section: "goals", label: "Goals", keys: ["goals"], tables: ["goals"] },
   { section: "health", label: "Health & body records", keys: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"], tables: ["bloodTestEntries", "bodyEntries", "weightEntries", "calorieEntries"] },
-  { section: "voiceAndPresentation", label: "Voice & presentation", keys: ["voiceGoals", "voiceSessions", "presentationEntries"], tables: ["voiceGoals", "voiceSessions", "presentationEntries"] },
+  { section: "voiceAndPresentation", label: "Voice & presentation", keys: ["voiceGoals", "voiceSessions", "voiceLines", "presentationEntries"], tables: ["voiceGoals", "voiceSessions", "voiceLines", "presentationEntries"] },
   { section: "euphoriaAndSocial", label: "Euphoria & social transition", keys: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"], tables: ["euphoriaEntries", "socialTransitionPeople", "socialTransitionPlans", "socialTransitionTasks"] },
   { section: "budget", label: "Budget", keys: ["budgetEntries", "budgetGoals"], tables: ["budgetEntries", "budgetGoals"] },
   { section: "savedLinks", label: "Saved links", keys: ["privateLinks"], tables: ["privateLinks"] },
@@ -4278,6 +4378,7 @@ export async function deleteAllData(): Promise<void> {
       db.bloodTestEntries,
       db.voiceGoals,
       db.voiceSessions,
+      db.voiceLines,
       db.presentationEntries,
       db.bodyEntries,
       db.weightEntries,
@@ -4326,6 +4427,7 @@ export async function deleteAllData(): Promise<void> {
         db.bloodTestEntries.clear(),
         db.voiceGoals.clear(),
         db.voiceSessions.clear(),
+        db.voiceLines.clear(),
         db.presentationEntries.clear(),
         db.bodyEntries.clear(),
         db.weightEntries.clear(),

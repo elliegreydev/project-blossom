@@ -1,0 +1,123 @@
+.screen {
+  min-height: 100vh;
+  padding: max(20px, var(--safe-top)) max(18px, var(--safe-right)) max(96px, var(--safe-bottom)) max(18px, var(--safe-left));
+  background: var(--bg);
+}
+
+.intro {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 48ch;
+}
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.itemTitle {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.itemMeta {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.itemBlurb {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.kind {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sky) 26%, var(--bg));
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.backToShelf {
+  min-height: 40px;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Reading type. Larger and looser than anything else in Blossom, because it
+   is meant to be read aloud from a phone held at arm's length, possibly by
+   somebody who is nervous and losing their place. */
+.reader {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  max-width: 34ch;
+}
+
+.reader p {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.62;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.gap {
+  display: block;
+  height: 6px;
+}
+
+.source {
+  margin-top: 26px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@media (min-width: 600px) {
+  .reader p {
+    font-size: 24px;
+  }
+}

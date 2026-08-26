@@ -1,5 +1,5 @@
 // Shared mic-access helpers for voice practice recording (see
-// LogVoiceSessionSheet) and the live pitch view (see LivePitchView) - kept
+// LogVoiceSessionSheet) and the live pitch view (see care/voice/live) - kept
 // small and separate from either feature's own logic.
 
 export function isRecordingSupported(): boolean {

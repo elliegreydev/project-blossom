@@ -431,10 +431,14 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
   } else {
     const voiceGoalById = new Map(data.voiceGoals.map((g) => [g.id, g.title]));
     const sessionsByGoal = new Map<string, ExportShape["voiceSessions"]>();
+    // A session with no goal is one somebody just practised, so it is grouped
+    // under its own heading below rather than being dropped from the export.
+    const UNGROUPED = " ungrouped";
     for (const session of data.voiceSessions) {
-      const list = sessionsByGoal.get(session.goalId) ?? [];
+      const key = session.goalId ?? UNGROUPED;
+      const list = sessionsByGoal.get(key) ?? [];
       list.push(session);
-      sessionsByGoal.set(session.goalId, list);
+      sessionsByGoal.set(key, list);
     }
     for (const goal of data.voiceGoals) {
       d.subheading(goal.title);
@@ -448,10 +452,19 @@ export function buildDataExportPdf(data: ExportShape): jsPDF {
       }
       d.spacer(6);
     }
+    // Sessions belonging to no goal: either practised without one, or left
+    // behind when a goal was removed. They used to print as a bare date under
+    // "Deleted goal", which threw away the detail and framed somebody's
+    // practice as debris. Same detail line as everything above.
     for (const [goalId, orphanSessions] of sessionsByGoal) {
-      if (voiceGoalById.has(goalId)) continue;
-      d.subheading("Deleted goal");
-      for (const session of orphanSessions) d.meta(fmtDate(session.createdAt));
+      if (goalId !== UNGROUPED && voiceGoalById.has(goalId)) continue;
+      d.subheading("Just practising");
+      for (const session of orphanSessions.sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+        const pitchText = session.pitchLowHz !== null && session.pitchHighHz !== null ? ` · ≈${session.pitchLowHz}–${session.pitchHighHz} Hz` : "";
+        d.meta(
+          `${fmtDate(session.createdAt)}${session.sessionDuration ? ` · ${session.sessionDuration}` : ""}${session.comfortRating ? ` · Comfort ${session.comfortRating}/5` : ""}${pitchText}${session.hasRecording ? " · (recording attached, listen in app)" : ""}`
+        );
+      }
       d.spacer(6);
     }
   }

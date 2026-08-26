@@ -131,10 +131,11 @@ export default function LogVoiceSessionSheet({
 
   if (goals === undefined) return null;
 
-  const activeGoalId = selectedGoalId ?? goals[0]?.id ?? null;
+  // No arbitrary default. goals[0] was whichever UUID happened to sort first,
+  // so a session could silently attach itself to a goal nobody picked.
+  const activeGoalId = selectedGoalId;
 
   async function save() {
-    if (!activeGoalId) return;
     setSaving(true);
     await addVoiceSession({
       goalId: activeGoalId,
@@ -164,15 +165,22 @@ export default function LogVoiceSessionSheet({
           Log a practice session
         </h2>
 
-        {goals.length === 0 ? (
-          <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            Add a practice goal first, then you can log sessions against it.
-          </p>
-        ) : (
-          <>
+        {/* A session no longer needs a goal. Requiring one made day one a dead
+            end: the main action on the screen told you to go and do something
+            else first, at the exact moment somebody had worked up to trying.
+            "Just practising" is the default, and it is always offered, so
+            naming what you did stays optional forever rather than up front. */}
+        <>
             <div className={styles.field}>
-              <span className={styles.label}>Which goal?</span>
+              <span className={styles.label}>Part of a goal? (optional)</span>
               <div className={styles.chipRow}>
+                <button
+                  type="button"
+                  className={`${styles.chip} ${activeGoalId === null ? styles.selected : ""}`}
+                  onClick={() => setSelectedGoalId(null)}
+                >
+                  Just practising
+                </button>
                 {goals.map((g) => (
                   <button
                     key={g.id}
@@ -289,8 +297,7 @@ export default function LogVoiceSessionSheet({
                 </p>
               )}
             </div>
-          </>
-        )}
+        </>
 
         <div className={styles.actions}>
           <button type="button" className={styles.tertiaryButton} onClick={onClose}>
@@ -299,7 +306,7 @@ export default function LogVoiceSessionSheet({
           <button
             type="button"
             className={styles.primaryButton}
-            disabled={!activeGoalId || saving}
+            disabled={saving}
             onClick={() => void save()}
           >
             Save session

@@ -29,21 +29,132 @@
   box-shadow: 0 1px 3px rgba(43, 31, 51, 0.08);
 }
 
-.pitchViewButton {
+/* The front door to live practice. Tinted with a brand colour rather than
+   left as the old dashed grey strip, because this is the main thing on the
+   screen rather than a footnote to the logbook. */
+.liveCard {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px;
+  gap: 13px;
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--lavender) 34%, var(--border));
   border-radius: var(--radius);
+  background: color-mix(in srgb, var(--lavender) 12%, var(--bg-raised));
+  color: var(--text-primary);
+}
+
+.liveIcon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lavender) 30%, var(--bg));
+  color: var(--text-primary);
+}
+
+.liveIcon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.liveText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.liveTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.liveSub {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.liveChevron {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+}
+
+/* Practice material. Three small doors rather than one list, so the shelf,
+   your own lines and the pointer to real therapists all read as equals. */
+.practiceRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.practiceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
+.practiceTitle {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.practiceSub {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* A recording waiting to be uncovered. Inviting rather than sealed: the
+   point is that you choose the moment, not that it is locked away. */
+.covered {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
   border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
-  font-family: var(--font-inter);
-  font-size: 14px;
-  font-weight: 500;
+  text-align: center;
   cursor: pointer;
+}
+
+.coveredTitle {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.coveredHint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.playback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.playback audio {
+  width: 100%;
 }
 
 .categoryTag {
