@@ -9,6 +9,7 @@ import CareSupplySheet from "@/components/CareSupplySheet";
 import ManualDoseSheet from "@/components/ManualDoseSheet";
 import EditDoseSheet from "@/components/EditDoseSheet";
 import SensitiveModuleGate from "@/components/SensitiveModuleGate";
+import ReminderOffer from "@/components/ReminderOffer";
 import UndoRemovalNotice from "@/components/UndoRemovalNotice";
 import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import {
@@ -103,6 +104,11 @@ export default function MedicationPage() {
   const meds = allMeds.filter((m) => m.active);
   const allSupplies = supplies;
 
+  // A scheduled medication is a reason for reminders to exist, so this is the
+  // point-of-value moment right after adding one. It also quietly catches
+  // people who set a schedule long ago and get nothing.
+  const hasScheduledMed = meds.some((m) => m.frequency && m.frequency.times.length > 0);
+
   const historyCutoff = new Date();
   historyCutoff.setDate(historyCutoff.getDate() - 30);
   const historyGroups = meds
@@ -155,6 +161,8 @@ export default function MedicationPage() {
     <SensitiveModuleGate>
     <div className={styles.screen}>
       <ScreenHeader title="Medication" backHref="/care" />
+
+      {hasScheduledMed && <ReminderOffer reason="You have a schedule set" />}
 
       {meds.length > 0 && (
         <button type="button" className={styles.addButton} onClick={() => setManualDoseOpen(true)}>

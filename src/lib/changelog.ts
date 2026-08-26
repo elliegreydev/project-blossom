@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.36";
+export const APP_VERSION = "0.5.37";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.37",
+    date: "2026-08-25",
+    title: "Reminders, offered when they'd actually help",
+    items: [
+      { tag: "new", text: "When you set a medication schedule or an appointment reminder, Blossom now offers to turn reminders on right there, instead of leaving you to find the setting. Before this, a schedule you set would quietly do nothing unless you'd already switched notifications on somewhere else." },
+      { tag: "improved", text: "It's an offer, not a nag. Dismiss it and it stays gone for a couple of weeks, and it never appears if you've already turned notifications off in your browser, because that choice is yours to keep." },
+      { tag: "improved", text: "The offer keeps its promises small. It only mentions the lock screen staying discreet if that's actually your setting, and if you're not signed in it says plainly that reminders work while Blossom's open, rather than implying they'll reach you with the app shut." },
+    ],
+  },
   {
     version: "0.5.36",
     date: "2026-08-25",

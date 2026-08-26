@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import AddAppointmentSheet from "@/components/AddAppointmentSheet";
 import AppointmentWorkspaceSheet from "@/components/AppointmentWorkspaceSheet";
+import ReminderOffer from "@/components/ReminderOffer";
 import UndoRemovalNotice from "@/components/UndoRemovalNotice";
 import { useUndoableRemoval } from "@/components/useUndoableRemoval";
 import { addGoal, db, deleteAppointment, type Appointment } from "@/lib/db";
@@ -88,6 +89,11 @@ export default function PlanPage() {
   const live = appts.filter((a) => !isPendingRemoval(a.id));
   const upcoming = live.filter((a) => new Date(a.appointmentAt).getTime() >= now);
   const past = live.filter((a) => new Date(a.appointmentAt).getTime() < now).reverse();
+
+  // Someone with an upcoming appointment reminder set has already asked to be
+  // nudged, so this is the moment that offer is worth making. Point-of-value
+  // right after setting one, and it catches existing users who get nothing.
+  const hasUpcomingReminder = upcoming.some((a) => a.reminderMinutesBefore != null);
 
   // One lookup shared by Week and Month. Everything is here, including what has
   // already happened today, because a day row is a day, not a to-do list.
@@ -226,6 +232,7 @@ export default function PlanPage() {
       >
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Upcoming</h2>
+          {hasUpcomingReminder && <ReminderOffer reason="You've set an appointment reminder" />}
           {upcoming.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyMark} aria-hidden="true">
