@@ -10,6 +10,9 @@ import { isLiveAnalysisSupported, requestMicStream, stopStream } from "@/lib/aud
 import { detectPitch } from "@/lib/pitchDetection";
 import {
   bandsFor,
+  correctOctave,
+  medianOf,
+  pitchToUnit,
   pitchToY,
   readToken,
   type ReferenceBand,
@@ -27,6 +30,9 @@ const SAMPLE_MS = 40;
 const TRAIL_SECONDS = 8;
 const TRAIL_LENGTH = Math.round((TRAIL_SECONDS * 1000) / SAMPLE_MS);
 const SMOOTHING_WINDOW = 5;
+// Reserved strip on the right for the band labels. Must match the width of
+// .bandLabel in live.module.css.
+const GUTTER_PX = 78;
 
 type Status = "idle" | "starting" | "listening" | "denied" | "unsupported";
 
@@ -63,6 +69,9 @@ export default function LivePitchPage() {
   // Every voiced reading of the whole session, kept so the range offered at
   // the end reflects what actually happened rather than a separate capture.
   const sessionRef = useRef<number[]>([]);
+  // The running pitch an octave slip is judged against. Reset whenever
+  // listening starts so a previous session cannot bias a new one.
+  const referenceRef = useRef<number | null>(null);
   const bandsRef = useRef<ReferenceBand[]>([]);
 
   // Load the saved preference. Device-local: which reference somebody wants
@@ -148,17 +157,28 @@ export default function LivePitchPage() {
     setStatus("listening");
     setSaved(false);
     sessionRef.current = [];
+    referenceRef.current = null;
+    recentRef.current = [];
+    trailRef.current = [];
 
     timerRef.current = window.setInterval(() => {
       if (heldRef.current) return;
       analyser.getFloatTimeDomainData(buffer);
-      const pitch = detectPitch(buffer, audioCtx.sampleRate);
+      const raw = detectPitch(buffer, audioCtx.sampleRate);
+      // Correct an obvious octave slip before it reaches anything else, so a
+      // detector mistake never becomes a spike on the trail or a number in
+      // somebody's practice log. Judged against the running median rather than
+      // the previous reading: if a single bad reading became the reference,
+      // every correct reading after it would get "corrected" to match the
+      // mistake, and the trail would settle an octave away and stay there.
+      const pitch = raw === null ? null : correctOctave(raw, referenceRef.current);
       if (pitch !== null) sessionRef.current.push(pitch);
 
       recentRef.current.push(pitch ?? NaN);
       if (recentRef.current.length > SMOOTHING_WINDOW) recentRef.current.shift();
       const valid = recentRef.current.filter((v) => !Number.isNaN(v));
-      const smoothed = valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+      const smoothed = medianOf(valid);
+      if (smoothed !== null) referenceRef.current = smoothed;
 
       setCurrentHz(smoothed);
       trailRef.current.push(smoothed ?? NaN);
@@ -241,13 +261,25 @@ export default function LivePitchPage() {
             )}
           </div>
         )}
+        {/* Labels sit against the right edge at the vertical middle of the
+            band they name, so each one is physically at the height it refers
+            to. They used to be a legend stacked in the top-left corner, which
+            covered the upper third of the plot (the female band, of all
+            things) and listed the bands in the opposite order to the way the
+            canvas draws them. */}
         {bands.length > 0 && (
-          <ul className={styles.legend}>
+          <ul className={styles.bandLabels} aria-label="Reference ranges shown behind the trail">
             {bands.map((band) => (
-              <li key={band.id} style={{ color: `var(${band.token})` }}>
-                <span className={styles.legendSwatch} style={{ background: `var(${band.token})` }} />
-                {band.label}
-                <span className={styles.legendHz}>
+              <li
+                key={band.id}
+                className={styles.bandLabel}
+                style={{
+                  color: `var(${band.token})`,
+                  top: `${midpointPercent(band.lowHz, band.highHz)}%`,
+                }}
+              >
+                <span className={styles.bandName}>{band.label}</span>
+                <span className={styles.bandHz}>
                   {band.lowHz}&ndash;{band.highHz} Hz
                 </span>
               </li>
@@ -368,6 +400,15 @@ export default function LivePitchPage() {
   );
 }
 
+// Where the middle of a band sits, as a percentage down from the top of the
+// canvas. Uses the same log mapping the canvas draws with, so a label and its
+// band can never drift apart.
+function midpointPercent(lowHz: number, highHz: number): number {
+  const top = pitchToUnit(highHz);
+  const bottom = pitchToUnit(lowHz);
+  return (1 - (top + bottom) / 2) * 100;
+}
+
 function drawTrail(canvas: HTMLCanvasElement | null, history: number[], bands: ReferenceBand[]) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -386,6 +427,11 @@ function drawTrail(canvas: HTMLCanvasElement | null, history: number[], bands: R
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, cssWidth, cssHeight);
 
+  // Everything is drawn into the plot area only, leaving a gutter down the
+  // right for the band labels. Nothing overlaps the trail, which is what went
+  // wrong when the labels were a legend floating on top of the plot.
+  const plotWidth = Math.max(40, cssWidth - GUTTER_PX);
+
   // Reference bands first, underneath everything, deliberately faint. They
   // are scenery. Nothing about them changes in response to the voice.
   for (const band of bands) {
@@ -393,16 +439,16 @@ function drawTrail(canvas: HTMLCanvasElement | null, history: number[], bands: R
     const bottom = pitchToY(band.lowHz, cssHeight);
     ctx.fillStyle = readToken(band.token, "#c4b6f6");
     ctx.globalAlpha = 0.1;
-    ctx.fillRect(0, top, cssWidth, bottom - top);
+    ctx.fillRect(0, top, plotWidth, bottom - top);
     ctx.globalAlpha = 0.32;
     ctx.strokeStyle = readToken(band.token, "#c4b6f6");
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(0, top);
-    ctx.lineTo(cssWidth, top);
+    ctx.lineTo(plotWidth, top);
     ctx.moveTo(0, bottom);
-    ctx.lineTo(cssWidth, bottom);
+    ctx.lineTo(plotWidth, bottom);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
@@ -411,31 +457,50 @@ function drawTrail(canvas: HTMLCanvasElement | null, history: number[], bands: R
   const line = readToken("--lavender", "#c4b6f6");
   const dot = readToken("--pink", "#f7b4c8");
 
-  ctx.beginPath();
-  let started = false;
-  history.forEach((hz, i) => {
-    if (Number.isNaN(hz)) {
-      started = false;
-      return;
-    }
-    const x = (i / (TRAIL_LENGTH - 1)) * cssWidth;
-    const y = pitchToY(hz, cssHeight);
-    if (!started) {
-      ctx.moveTo(x, y);
-      started = true;
-    } else {
-      ctx.lineTo(x, y);
-    }
-  });
+  // Drawn as runs of consecutive voiced readings. Runs shorter than
+  // MIN_RUN are skipped: a couple of stray samples in the middle of silence
+  // is the detector catching a cough or a chair, and it rendered as a little
+  // dash floating on its own in the middle of the graph, which looked like
+  // data and was not.
+  const MIN_RUN = 3;
   ctx.strokeStyle = line;
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.stroke();
 
+  let run: Array<{ x: number; y: number }> = [];
+  const flush = () => {
+    if (run.length >= MIN_RUN) {
+      ctx.beginPath();
+      run.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+    }
+    run = [];
+  };
+
+  history.forEach((hz, i) => {
+    if (Number.isNaN(hz)) {
+      flush();
+      return;
+    }
+    run.push({
+      x: (i / (TRAIL_LENGTH - 1)) * plotWidth,
+      y: pitchToY(hz, cssHeight),
+    });
+  });
+  flush();
+
+  // The dot marks where the voice is right now, so it only appears when the
+  // line under it does. Otherwise a skipped stray run left a dot hovering on
+  // its own with nothing attached to it.
+  const tail = history.slice(-MIN_RUN);
+  const tailIsVoiced = tail.length === MIN_RUN && tail.every((v) => !Number.isNaN(v));
   const last = history[history.length - 1];
-  if (last !== undefined && !Number.isNaN(last)) {
-    const x = ((history.length - 1) / (TRAIL_LENGTH - 1)) * cssWidth;
+  if (tailIsVoiced && last !== undefined && !Number.isNaN(last)) {
+    const x = ((history.length - 1) / (TRAIL_LENGTH - 1)) * plotWidth;
     const y = pitchToY(last, cssHeight);
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);

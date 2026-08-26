@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.38";
+export const APP_VERSION = "0.5.39";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.39",
+    date: "2026-08-26",
+    title: "The pitch trail was lying to you a bit",
+    items: [
+      { tag: "fix", text: "The trail jumped about more than your voice did. Pitch detection can mistake a voice for one an octave above or below, and those mistakes were drawn as real spikes. They're now caught and corrected, and the smoothing no longer averages a mistake with a good reading, which used to invent a pitch in between that you never actually made." },
+      { tag: "fix", text: "The range labels were sitting on top of the graph, covering the upper part of it, and were listed in the opposite order to the way the graph draws them. They now sit in their own space down the side, each one level with the band it names." },
+      { tag: "fix", text: "Stray blips no longer draw. A stray couple of readings while you're not speaking is usually a cough or a chair, and it was showing up as a little dash floating in the middle of the graph as though it were something you did." },
+    ],
+  },
   {
     version: "0.5.38",
     date: "2026-08-26",

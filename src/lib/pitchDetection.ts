@@ -60,6 +60,8 @@ export function detectPitch(buffer: Float32Array, sampleRate: number): number | 
   return frequency;
 }
 
+// correctOctave and medianOf live in lib/voiceRanges.ts, which deliberately
+// has no imports so the arithmetic can be tested on its own.
 // A short, opt-in capture for logging alongside a practice session. The live
 // practice screen can also save the range it already heard, which is the same
 // idea over a longer window rather than a separate four-second measurement.

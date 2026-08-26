@@ -66,38 +66,47 @@
   cursor: pointer;
 }
 
-.legend {
+/* Band labels live in a gutter down the right-hand side that the trail never
+   draws into, so nothing is ever covered. The old version was a legend
+   stacked in the top-left corner, on top of the plot, hiding the upper third
+   (the female band) and listing the bands in the opposite order to the way
+   the canvas draws them. A label now sits at the vertical middle of its own
+   band, which makes the order impossible to get wrong.
+   Width here must match GUTTER_PX in the page. */
+.bandLabels {
   position: absolute;
-  top: 10px;
-  left: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  inset: 0;
   margin: 0;
   padding: 0;
   list-style: none;
   pointer-events: none;
 }
 
-.legend li {
+.bandLabel {
+  position: absolute;
+  right: 7px;
+  width: 70px;
+  transform: translateY(-50%);
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
-  font-weight: 600;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+
+.bandName {
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
   letter-spacing: 0.01em;
 }
 
-.legendSwatch {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  opacity: 0.75;
-}
-
-.legendHz {
-  color: var(--text-muted);
+.bandHz {
+  font-size: 9.5px;
   font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .controlRow {

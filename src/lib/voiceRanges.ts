@@ -90,6 +90,39 @@ export function pitchToY(hz: number, height: number): number {
   return height - pitchToUnit(hz) * height;
 }
 
+// Octave errors are the standard failure of autocorrelation pitch detection.
+// The strongest repeating pattern in a voice is not always exactly one pitch
+// period: the search can lock onto twice the period (reporting an octave too
+// low) or half of it (an octave too high). On a live trail that shows up as a
+// sudden vertical spike, and it is the detector guessing badly rather than
+// anything the voice actually did.
+//
+// This nudges an obvious slip back towards the recent pitch rather than
+// dropping the reading, because a hole in the line reads as a pause somebody
+// did not take. A reading close to double or half the running reference gets
+// halved or doubled; anything else is left alone. With no reference yet there
+// is nothing to be wrong relative to, so the first reading always stands.
+const OCTAVE_TOLERANCE = 0.18;
+
+export function correctOctave(hz: number, reference: number | null): number {
+  if (reference === null || reference <= 0) return hz;
+  const ratio = hz / reference;
+  if (Math.abs(ratio - 2) < 2 * OCTAVE_TOLERANCE) return hz / 2;
+  if (Math.abs(ratio - 0.5) < 0.5 * OCTAVE_TOLERANCE) return hz * 2;
+  return hz;
+}
+
+// Median rather than mean, deliberately. A mean over a window containing one
+// octave slip lands halfway between the two and invents a pitch the voice
+// never produced: 180 and a slipped 90 average to 135, which is a confident
+// reading rather than an absence of one. A median ignores the outlier.
+export function medianOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
 // Colours come from the live theme rather than the stylesheet's defaults, so
 // the trail follows Low Profile and "Your colour" like everything else does.
 // Canvas cannot read a CSS custom property on its own, which is how two
