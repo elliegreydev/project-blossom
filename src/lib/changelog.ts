@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.39";
+export const APP_VERSION = "0.5.40";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.40",
+    date: "2026-08-26",
+    title: "Live pitch can actually hear you now",
+    items: [
+      { tag: "fix", text: "Live pitch barely worked. It decided whether you were speaking by how loud you were, and the cut-off sat right about where a phone picks up an ordinary speaking voice, so a whole sentence came out as a few disconnected scraps. It now works out whether a sound is a voice by whether it repeats like one, which is the actual question, and it does not care how loudly you say it. It picks up a voice around fifteen times quieter than before." },
+      { tag: "fix", text: "Blossom was also asking your browser for microphone audio with its noise removal switched on, which is meant for phone calls and quietly damages the thing pitch detection reads. Live pitch now asks for the sound as your microphone actually heard it. Recording a practice session still uses the tidied-up version, because that one is for listening back to." },
+      { tag: "improved", text: "When it cannot tell, it shows nothing rather than guessing. A wrong reading gets drawn as a pitch you think you made, and that is worse than a gap." },
+    ],
+  },
   {
     version: "0.5.39",
     date: "2026-08-26",

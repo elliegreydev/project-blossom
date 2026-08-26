@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { detectPitch } from "../src/lib/pitchMath.ts";
 import {
   DISPLAY_MAX_HZ,
   DISPLAY_MIN_HZ,
@@ -107,3 +108,76 @@ assert.equal(bandsFor("zones", null).length, ZONE_BANDS.length);
 assert.equal(bandsFor("bands", null).length, SIMPLE_BANDS.length);
 
 console.log("Voice pitch scale and octave checks passed.");
+
+// The detector itself --------------------------------------------------------
+// The bug this guards against: the original detector decided whether somebody
+// was speaking by measuring loudness, bailing out below an RMS of 0.01. That
+// is a cliff edge sitting exactly where a phone microphone puts an ordinary
+// speaking voice, so a whole spoken sentence came out as a few disconnected
+// fragments. The replacement measures periodicity instead, which is what the
+// question actually is, and does not care how loud the voice is.
+
+const SR = 48000;
+const FRAME = 2048;
+
+// A voice-like tone: fundamental plus decaying harmonics, phase accumulated
+// rather than recomputed from f*t (recomputing it produces phase jumps, which
+// is noise, not a voice, and made an earlier version of this harness lie).
+function voiceLike(f0, samples, amplitude, noise = 0) {
+  const out = new Float32Array(samples);
+  let phase = 0;
+  for (let i = 0; i < samples; i += 1) {
+    phase += (2 * Math.PI * f0) / SR;
+    let s = 0;
+    for (let h = 1; h <= 10; h += 1) s += (1 / h) * Math.sin(h * phase);
+    out[i] = (amplitude * s) / 2 + (Math.random() - 0.5) * 2 * noise;
+  }
+  return out;
+}
+
+function accuracy(f0, amplitude, noise = 0, frames = 40) {
+  const signal = voiceLike(f0, FRAME * frames, amplitude, noise);
+  let correct = 0;
+  let wrong = 0;
+  for (let w = 0; w < frames; w += 1) {
+    const hz = detectPitch(signal.subarray(w * FRAME, w * FRAME + FRAME), SR);
+    if (hz === null) continue;
+    if (Math.abs(hz / f0 - 1) < 0.05) correct += 1;
+    else wrong += 1;
+  }
+  return { correct: correct / frames, wrong: wrong / frames };
+}
+
+// Quiet speech is the whole point. 0.02 was dead silence to the old detector.
+for (const amplitude of [0.1, 0.05, 0.02, 0.01, 0.005]) {
+  const { correct } = accuracy(165, amplitude);
+  assert.ok(
+    correct > 0.9,
+    `a quiet voice must still be heard: at amplitude ${amplitude} only ${Math.round(correct * 100)}% of frames were detected`
+  );
+}
+
+// And across the range of speaking pitches, not just a comfortable middle.
+for (const f0 of [95, 110, 145, 165, 185, 220, 260]) {
+  const { correct } = accuracy(f0, 0.02, 0.002);
+  assert.ok(correct > 0.9, `${f0} Hz must be detected when quiet, got ${Math.round(correct * 100)}%`);
+}
+
+// Being wrong is worse than being silent, because a wrong reading is drawn on
+// screen as a pitch somebody believes they produced.
+const noisy = accuracy(165, 0.02, 0.02, 60);
+assert.equal(noisy.wrong, 0, "under heavy noise it must go quiet rather than invent a pitch");
+
+// Room tone is not a voice.
+const roomTone = new Float32Array(FRAME * 40);
+for (let i = 0; i < roomTone.length; i += 1) roomTone[i] = (Math.random() - 0.5) * 0.004;
+let falsePositives = 0;
+for (let w = 0; w < 40; w += 1) {
+  if (detectPitch(roomTone.subarray(w * FRAME, w * FRAME + FRAME), SR) !== null) falsePositives += 1;
+}
+assert.equal(falsePositives, 0, "an empty room must not register as somebody speaking");
+
+// Silence is silence.
+assert.equal(detectPitch(new Float32Array(FRAME), SR), null, "digital silence is not a pitch");
+
+console.log("Pitch detector checks passed (quiet voices, full range, no false positives).");

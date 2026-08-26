@@ -6,7 +6,7 @@ import Link from "next/link";
 import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
 import VoiceSafetyNotice from "@/components/VoiceSafetyNotice";
-import { isLiveAnalysisSupported, requestMicStream, stopStream } from "@/lib/audioRecorder";
+import { isLiveAnalysisSupported, requestAnalysisStream, stopStream } from "@/lib/audioRecorder";
 import { detectPitch } from "@/lib/pitchDetection";
 import {
   bandsFor,
@@ -130,7 +130,7 @@ export default function LivePitchPage() {
     setStatus("starting");
     let stream: MediaStream;
     try {
-      stream = await requestMicStream();
+      stream = await requestAnalysisStream();
     } catch {
       setStatus("denied");
       return;
@@ -462,7 +462,7 @@ function drawTrail(canvas: HTMLCanvasElement | null, history: number[], bands: R
   // is the detector catching a cough or a chair, and it rendered as a little
   // dash floating on its own in the middle of the graph, which looked like
   // data and was not.
-  const MIN_RUN = 3;
+  const MIN_RUN = 2;
   ctx.strokeStyle = line;
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
