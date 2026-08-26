@@ -399,6 +399,13 @@
   font-weight: 600;
 }
 
+.deletePinError {
+  margin: 0;
+  color: var(--pink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .deleteList {
   display: flex;
   flex-direction: column;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, LOCAL_PROFILE_ID, deleteAllData } from "@/lib/db";
+import { db, LOCAL_PROFILE_ID, deleteAllData, verifyAppLockPin } from "@/lib/db";
 import { isHqDevEntry } from "@/lib/devAccess";
 import DevSignInNotice from "@/components/DevSignInNotice";
 import { reportClientError } from "@/lib/clientErrorReport";
@@ -124,6 +124,15 @@ export default function AccountPage() {
   // would be exactly the kind of quiet ambiguity this flow must not create.
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmWord, setConfirmWord] = useState("");
+  // The app lock guards the app, but /account sits outside it (it has to work
+  // when signed out, to sign in), so without this the one irreversible action
+  // in Blossom could be reached on an unlocked phone the lock was meant to
+  // protect. Gated on the hash being on THIS device, not merely appLockEnabled:
+  // a lock whose intent synced from another device has no local PIN to check,
+  // and blocking deletion behind a PIN the person cannot enter would trap them.
+  const [deletePin, setDeletePin] = useState("");
+  const [deletePinError, setDeletePinError] = useState(false);
+  const deleteNeedsPin = Boolean(profile?.appLockPinHash);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   // True only once the server has said the account is gone AND the device has
@@ -373,8 +382,21 @@ export default function AccountPage() {
    */
   async function deleteAccount() {
     if (!user || deleting) return;
+
+    // Check the PIN before anything else, and before the button even shows a
+    // busy state, so a wrong PIN is a quiet correction rather than a scare. A
+    // wrong PIN stops here and nothing is sent.
+    if (deleteNeedsPin) {
+      const ok = await verifyAppLockPin(deletePin);
+      if (!ok) {
+        setDeletePinError(true);
+        return;
+      }
+    }
+
     setDeleting(true);
     setDeleteError(null);
+    setDeletePinError(false);
     setError(null);
     setMessage(null);
 
@@ -438,6 +460,8 @@ export default function AccountPage() {
       setDeleting(false);
       setDeleteOpen(false);
       setConfirmWord("");
+      setDeletePin("");
+      setDeletePinError(false);
       setDeleteError(
         `Your account has been deleted from Blossom's servers and you've been signed out. This device's own copy couldn't be removed automatically, so it's still here. Settings, then Data controls, then Delete all data will clear it. If that doesn't work either, email ${SUPPORT_EMAIL}.`
       );
@@ -721,6 +745,8 @@ export default function AccountPage() {
                     onClick={() => {
                       setDeleteOpen(true);
                       setConfirmWord("");
+                      setDeletePin("");
+                      setDeletePinError(false);
                       setDeleteError(null);
                     }}
                   >
@@ -794,12 +820,48 @@ export default function AccountPage() {
                     placeholder={CONFIRM_WORD}
                     disabled={deleting}
                   />
+                  {deleteNeedsPin && (
+                    <>
+                      <label
+                        className={styles.deleteLabel}
+                        htmlFor="account-delete-pin"
+                        id="account-delete-pin-label"
+                      >
+                        Enter your app lock PIN
+                      </label>
+                      <input
+                        id="account-delete-pin"
+                        className={styles.confirmInput}
+                        type="password"
+                        inputMode="numeric"
+                        value={deletePin}
+                        onChange={(event) => {
+                          setDeletePin(event.target.value);
+                          setDeletePinError(false);
+                        }}
+                        autoComplete="off"
+                        placeholder="PIN"
+                        disabled={deleting}
+                        aria-invalid={deletePinError}
+                        aria-describedby={deletePinError ? "account-delete-pin-error" : undefined}
+                      />
+                      {deletePinError && (
+                        <p id="account-delete-pin-error" className={styles.deletePinError} role="alert">
+                          That PIN doesn&rsquo;t match. Nothing has been deleted.
+                        </p>
+                      )}
+                    </>
+                  )}
                   <div className={styles.deleteActions}>
                     <button
                       type="button"
                       className={styles.dangerButton}
                       onClick={() => void deleteAccount()}
-                      disabled={deleting || confirmWord.trim().toLowerCase() !== CONFIRM_WORD}
+                      disabled={
+                        deleting ||
+                        confirmWord.trim().toLowerCase() !== CONFIRM_WORD ||
+                        (deleteNeedsPin && deletePin.length === 0)
+                      }
                       // A dimmed button with no reason attached is a wall
                       // somebody can stand in front of without being told why,
                       // so it carries the instruction that unlocks it.
@@ -816,6 +878,8 @@ export default function AccountPage() {
                         returnFocusToTrigger.current = true;
                         setDeleteOpen(false);
                         setConfirmWord("");
+                        setDeletePin("");
+                        setDeletePinError(false);
                       }}
                       disabled={deleting}
                     >
