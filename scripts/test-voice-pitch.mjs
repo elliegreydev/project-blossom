@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { detectPitch } from "../src/lib/pitchMath.ts";
+import { createNoiseGate, detectPitch, frameRms } from "../src/lib/pitchMath.ts";
 import {
   DISPLAY_MAX_HZ,
   DISPLAY_MIN_HZ,
@@ -271,3 +271,84 @@ for (const f0 of [85, 95, 110]) {
 }
 
 console.log("High-pass checks passed (rumble and DC offset rejected, low voices unharmed).");
+
+// Fans, and why "no false positives" was not enough --------------------------
+// The room-tone check above passes white noise, which is not periodic, so the
+// detector rejects it easily. A fan is a different animal: a motor hum plus a
+// blade-passing tone and its harmonics, all of it MORE perfectly periodic than
+// a human voice. Measured, the detector reported a pitch on 100% of frames of
+// fan-only audio, at the blade frequency, and no high-pass cutoff low enough
+// to keep real voices removes it.
+//
+// So periodicity answers "what pitch is this" and the noise gate answers
+// "is anybody actually speaking". These assertions cover the second one.
+
+function fanNoise(samples, amplitude, bladeHz) {
+  const out = new Float32Array(samples);
+  let motor = 0, blade = 0;
+  for (let i = 0; i < samples; i += 1) {
+    motor += (2 * Math.PI * 50) / SR;
+    blade += (2 * Math.PI * bladeHz) / SR;
+    out[i] =
+      amplitude *
+        (0.6 * Math.sin(motor) + Math.sin(blade) + 0.5 * Math.sin(2 * blade) + 0.3 * Math.sin(3 * blade)) +
+      (Math.random() - 0.5) * amplitude * 0.8;
+  }
+  return out;
+}
+
+// Without the gate, a fan is reported as a voice on essentially every frame.
+for (const bladeHz of [88, 96, 110, 130]) {
+  const fan = highPass(fanNoise(FRAME * 25, 0.05, bladeHz), 75, SR);
+  let reported = 0;
+  for (let w = 0; w < 25; w += 1) {
+    if (detectPitch(fan.subarray(w * FRAME, w * FRAME + FRAME), SR) !== null) reported += 1;
+  }
+  assert.ok(
+    reported > 20,
+    `sanity: a ${bladeHz} Hz fan is supposed to fool the detector, otherwise the gate proves nothing`
+  );
+}
+
+// With it, an empty room with a fan in it produces nothing at all.
+for (const bladeHz of [88, 96, 110, 130]) {
+  const fan = highPass(fanNoise(FRAME * 60, 0.05, bladeHz), 75, SR);
+  const gate = createNoiseGate();
+  let reported = 0;
+  for (let w = 0; w < 60; w += 1) {
+    const frame = fan.subarray(w * FRAME, w * FRAME + FRAME);
+    if (!gate.accepts(frameRms(frame))) continue;
+    if (detectPitch(frame, SR) !== null) reported += 1;
+  }
+  assert.equal(reported, 0, `a ${bladeHz} Hz fan alone must never be reported as somebody's voice`);
+}
+
+// And somebody speaking over that fan still gets through. The voice has to be
+// meaningfully louder than the room, which is physics rather than a setting:
+// below about 18 dB the fan wins the correlation whatever we do.
+{
+  const frames = 140;
+  const fan = fanNoise(FRAME * frames, 0.05, 96);
+  const speech = voiceLike(185, FRAME * frames, 0.05 * 8);
+  const mixed = Float32Array.from(fan);
+  const half = Math.floor(frames / 2);
+  // First half: fan only. Second half: fan plus a voice.
+  for (let i = half * FRAME; i < mixed.length; i += 1) mixed[i] += speech[i];
+  const filtered = highPass(mixed, 75, SR);
+
+  const gate = createNoiseGate();
+  let falsePositives = 0;
+  let correct = 0;
+  for (let w = 0; w < frames; w += 1) {
+    const frame = filtered.subarray(w * FRAME, w * FRAME + FRAME);
+    if (!gate.accepts(frameRms(frame))) continue;
+    const hz = detectPitch(frame, SR);
+    if (hz === null) continue;
+    if (w < half) falsePositives += 1;
+    else if (Math.abs(hz / 185 - 1) < 0.05) correct += 1;
+  }
+  assert.equal(falsePositives, 0, "the quiet stretch before somebody speaks must stay empty");
+  assert.ok(correct > half * 0.7, `a voice over a fan must still register, got ${correct} of ${half}`);
+}
+
+console.log("Noise gate checks passed (a fan is not a voice, a voice over a fan still is).");

@@ -262,3 +262,18 @@
   color: var(--text-muted);
   max-width: 54ch;
 }
+
+/* Shown when the gate has been closed for several seconds while the room is
+   clearly audible. It explains a screen that would otherwise just sit there
+   drawing nothing, which is the state Ellie hit with a fan running. Tinted
+   rather than grey, like every other callout in Blossom. */
+.roomNote {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--sky) 34%, var(--border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--sky) 10%, var(--bg-raised));
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}

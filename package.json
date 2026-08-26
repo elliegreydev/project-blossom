@@ -1,6 +1,6 @@
 {
   "name": "project-blossom",
-  "version": "0.5.41",
+  "version": "0.5.42",
   "engines": {
     "node": ">=20.9.0"
   },

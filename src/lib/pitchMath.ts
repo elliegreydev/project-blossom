@@ -115,3 +115,66 @@ export function detectPitch(buffer: Float32Array, sampleRate: number): number | 
   if (!Number.isFinite(frequency) || frequency < MIN_HZ || frequency > MAX_HZ) return null;
   return frequency;
 }
+
+// A noise gate that learns the room.
+//
+// The detector answers "is this sound periodic", which is the right question
+// for telling a voice from a hiss, and the wrong one for telling a voice from
+// a fan. A fan is a motor hum plus a blade-passing tone, and those are more
+// perfectly periodic than a human voice is, so a clarity test accepts them
+// happily. Measured: a fan alone produced a reading on 100% of frames, at the
+// blade frequency, and no high-pass fixes it because the tone's harmonics
+// survive any cutoff low enough to keep real voices.
+//
+// So periodicity decides WHAT the pitch is, and this decides WHETHER anything
+// is worth reading at all. It is a relative test, not the absolute loudness
+// threshold that broke the original detector: it watches the quietest recent
+// moments to learn what this room sounds like with nobody speaking, then asks
+// whether right now is meaningfully louder than that. A quiet room sets a
+// quiet floor and a whisper still gets through; a room with a fan sets a
+// higher one and the fan stops being mistaken for a person.
+//
+// The floor is a low percentile rather than the true minimum, so a single
+// freak frame cannot drag it down, and it is taken over a couple of seconds,
+// which is long enough that ordinary gaps between words land in it.
+const GATE_WINDOW_FRAMES = 75;
+const GATE_PERCENTILE = 0.15;
+
+// About 12 dB above the room. Tuned by measurement, and deliberately not
+// higher: past roughly 16 dB the gate starts defeating itself, because
+// somebody talking steadily fills the whole window and drags their own floor
+// up with them.
+const GATE_RATIO = 4;
+
+export interface NoiseGate {
+  /** Feed every frame's RMS, in order. True means this frame is worth reading. */
+  accepts(rms: number): boolean;
+  /** The current estimate of the room's own level, for showing a hint. */
+  floor(): number;
+}
+
+export function createNoiseGate(): NoiseGate {
+  const history: number[] = [];
+  let currentFloor = SILENCE_FLOOR_RMS;
+
+  return {
+    accepts(rms: number): boolean {
+      history.push(rms);
+      if (history.length > GATE_WINDOW_FRAMES) history.shift();
+      const sorted = [...history].sort((a, b) => a - b);
+      const at = sorted[Math.floor(sorted.length * GATE_PERCENTILE)] ?? sorted[0];
+      currentFloor = Math.max(at, SILENCE_FLOOR_RMS);
+      return rms > currentFloor * GATE_RATIO;
+    },
+    floor(): number {
+      return currentFloor;
+    },
+  };
+}
+
+/** RMS of a frame. Shared so the gate and the detector agree on "how loud". */
+export function frameRms(buffer: Float32Array): number {
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i += 1) sum += buffer[i] * buffer[i];
+  return Math.sqrt(sum / buffer.length);
+}

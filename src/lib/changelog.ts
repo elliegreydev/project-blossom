@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.41";
+export const APP_VERSION = "0.5.42";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.42",
+    date: "2026-08-26",
+    title: "Live pitch was mistaking a fan for a person",
+    items: [
+      { tag: "fix", text: "Live pitch drew a line even when nobody was speaking. It worked out whether a sound was a voice by whether it repeats, and a fan repeats beautifully, better than a voice does. So a fan in the room was being read as somebody talking, endlessly. Blossom now listens to your room first, learns how loud it is with nobody speaking, and only reads what rises above it." },
+      { tag: "new", text: "If it can hear the room but nothing it is sure is a voice, it now says so instead of sitting there drawing nothing. A fan or traffic can genuinely drown a voice out, and holding the phone closer usually fixes it." },
+    ],
+  },
   {
     version: "0.5.41",
     date: "2026-08-26",

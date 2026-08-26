@@ -7,7 +7,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import Toggle from "@/components/Toggle";
 import VoiceSafetyNotice from "@/components/VoiceSafetyNotice";
 import { isLiveAnalysisSupported, requestAnalysisStream, stopStream } from "@/lib/audioRecorder";
-import { detectPitch } from "@/lib/pitchDetection";
+import { createNoiseGate, detectPitch, frameRms, type NoiseGate } from "@/lib/pitchMath";
 import {
   bandsFor,
   correctOctave,
@@ -57,6 +57,7 @@ export default function LivePitchPage() {
   const [saved, setSaved] = useState(false);
   const [showSafety, setShowSafety] = useState(false);
   const [safetyReason, setSafetyReason] = useState<"first" | "ranges">("first");
+  const [roomIsLoud, setRoomIsLoud] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -73,6 +74,10 @@ export default function LivePitchPage() {
   // listening starts so a previous session cannot bias a new one.
   const referenceRef = useRef<number | null>(null);
   const bandsRef = useRef<ReferenceBand[]>([]);
+  const gateRef = useRef<NoiseGate | null>(null);
+  // Consecutive frames where the room was audible but nothing voice-like got
+  // through. Used only to offer a hint, never to change what is drawn.
+  const gatedFramesRef = useRef(0);
 
   // Load the saved preference. Device-local: which reference somebody wants
   // behind their trail is a property of this screen on this phone, not a fact
@@ -177,6 +182,9 @@ export default function LivePitchPage() {
     setStatus("listening");
     setSaved(false);
     sessionRef.current = [];
+    gateRef.current = createNoiseGate();
+    gatedFramesRef.current = 0;
+    setRoomIsLoud(false);
     referenceRef.current = null;
     recentRef.current = [];
     trailRef.current = [];
@@ -184,6 +192,26 @@ export default function LivePitchPage() {
     timerRef.current = window.setInterval(() => {
       if (heldRef.current) return;
       analyser.getFloatTimeDomainData(buffer);
+
+      // Periodicity decides what the pitch is; the gate decides whether
+      // anything here is worth reading. A fan is more perfectly periodic than
+      // a voice, so without this it gets reported as one, endlessly, while
+      // nobody is speaking.
+      const gateOpen = gateRef.current?.accepts(frameRms(buffer)) ?? true;
+      if (!gateOpen) {
+        gatedFramesRef.current += 1;
+        // Roughly six seconds of hearing the room and nothing else.
+        if (gatedFramesRef.current === 150) setRoomIsLoud(true);
+        recentRef.current.push(NaN);
+        if (recentRef.current.length > SMOOTHING_WINDOW) recentRef.current.shift();
+        setCurrentHz(null);
+        trailRef.current.push(NaN);
+        if (trailRef.current.length > TRAIL_LENGTH) trailRef.current.shift();
+        return;
+      }
+      gatedFramesRef.current = 0;
+      setRoomIsLoud(false);
+
       const raw = detectPitch(buffer, audioCtx.sampleRate);
       // Correct an obvious octave slip before it reaches anything else, so a
       // detector mistake never becomes a spike on the trail or a number in
@@ -307,6 +335,14 @@ export default function LivePitchPage() {
           </ul>
         )}
       </div>
+
+      {roomIsLoud && status === "listening" && (
+        <p className={styles.roomNote}>
+          It sounds noisy in there. Blossom can hear the room but nothing it is confident
+          is a voice. A fan, traffic or a machine nearby can drown one out, so holding the
+          phone closer to you usually sorts it.
+        </p>
+      )}
 
       {status === "listening" && (
         <div className={styles.controlRow}>
