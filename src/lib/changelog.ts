@@ -1,7 +1,13 @@
 // Blossom's in-app changelog. Newest entry first.
 //
-// Every shipped change bumps APP_VERSION and adds an entry here, kept in sync
-// with package.json. Same discipline as Filthy Rich Tycoon, different tone:
+// The version number itself lives in appVersion.ts, so that the handful of
+// places on the boot path that only need the version do not have to pull every
+// release note ever written into the app's first chunk. It is re-exported
+// below, so importing it from here still works.
+//
+// Every shipped change bumps APP_VERSION in appVersion.ts and adds an entry
+// here, kept in sync with package.json. Same discipline as Filthy Rich Tycoon,
+// different tone:
 // Blossom's whole design is quiet by default, so entries are written plainly
 // and the popup that shows them never celebrates at someone who might have
 // opened the app on a rough day.
@@ -11,7 +17,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.42";
+export { APP_VERSION, LAST_SEEN_VERSION_KEY, isNewer } from "./appVersion";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +34,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.43",
+    date: "2026-09-08",
+    title: "Blossom opens without the blank screen first",
+    items: [
+      { tag: "fix", text: "Opening Blossom showed nothing at all for a few seconds, then the whole app at once. The page it sent your phone was genuinely empty, so there was nothing to draw until every last piece had arrived. Blossom's own opening screen now comes with the page itself, so you see Blossom straight away instead of white. On a phone that is about four times sooner." },
+      { tag: "improved", text: "There is a lot less to download. The sign-in machinery no longer loads for people who have not connected an account, the support directory and the release notes wait until the app is up rather than holding it back, and a chunk of unused connection code has been taken out altogether. Roughly a third less than before." },
+      { tag: "improved", text: "The opening screen's flower had a white square behind it. It does not any more." },
+      { tag: "fix", text: "Setting Blossom up for the first time started on a blank screen too. It now opens the same way as the rest of the app." },
+    ],
+  },
   {
     version: "0.5.42",
     date: "2026-08-26",
@@ -547,17 +564,3 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
 ];
-
-// Numeric compare so "0.10.0" is correctly newer than "0.9.0" - a plain string
-// comparison gets that backwards.
-export function isNewer(candidate: string, current: string): boolean {
-  const a = candidate.split(".").map((n) => Number(n) || 0);
-  const b = current.split(".").map((n) => Number(n) || 0);
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const diff = (a[i] ?? 0) - (b[i] ?? 0);
-    if (diff !== 0) return diff > 0;
-  }
-  return false;
-}
-
-export const LAST_SEEN_VERSION_KEY = "blossom-last-seen-version";

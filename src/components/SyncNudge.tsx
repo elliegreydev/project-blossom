@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
-import { createClient } from "@/lib/supabase/client";
 import styles from "./SyncNudge.module.css";
 
 const DISMISSED_KEY = "blossom-sync-nudge-dismissed-until";
@@ -19,25 +18,39 @@ export default function SyncNudge() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
+    let cancelled = false;
+    let unsubscribe = () => {};
     const authFallback = window.setTimeout(() => setReady(true), 250);
-    void supabase.auth.getSession().then(({ data }) => {
+
+    // Home renders this, and a static import of the Supabase client put a
+    // quarter of a megabyte in front of the app's first paint on behalf of a
+    // prompt that is in no hurry. The 250ms fallback above already covers the
+    // wait, so nothing on screen changes.
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      if (cancelled) return;
+      const supabase = createClient();
+      const { data: sessionResult } = await supabase.auth.getSession();
+      if (cancelled) return;
       window.clearTimeout(authFallback);
       try {
         setDismissed(Number(localStorage.getItem(DISMISSED_KEY)) > Date.now());
       } catch {
         // The prompt can still be dismissed for this visit.
       }
-      setSignedIn(Boolean(data.session?.user));
+      setSignedIn(Boolean(sessionResult.session?.user));
       setReady(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(Boolean(session?.user));
-      setReady(true);
-    });
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSignedIn(Boolean(session?.user));
+        setReady(true);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
+    })();
+
     return () => {
+      cancelled = true;
       window.clearTimeout(authFallback);
-      data.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import StorageUnavailable from "@/components/StorageUnavailable";
+import OpeningScreen from "@/components/OpeningScreen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -97,7 +98,11 @@ export default function OnboardingPage() {
     return <StorageUnavailable onRetry={() => window.location.reload()} />;
   }
 
-  if (!ready || !profile) return null;
+  // Not null. Returning null here meant onboarding prerendered to an empty
+  // body, so somebody's first ever sight of Blossom was a white screen for as
+  // long as their phone took to download and run the bundle. OpeningScreen
+  // renders on the server, so it is on screen almost at once.
+  if (!ready || !profile) return <OpeningScreen />;
 
   async function goTo(next: number) {
     await updateProfile({ onboardingStep: next });

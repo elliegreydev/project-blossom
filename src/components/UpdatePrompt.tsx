@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APP_VERSION, isNewer } from "@/lib/changelog";
+import { APP_VERSION, isNewer } from "@/lib/appVersion";
 import styles from "./UpdatePrompt.module.css";
 
 const POLL_INTERVAL_MS = 120_000;

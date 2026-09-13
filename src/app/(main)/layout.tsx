@@ -17,19 +17,23 @@ import TimezoneChangeNotice from "@/components/TimezoneChangeNotice";
 import SyncStatus from "@/components/SyncStatus";
 import TestBuildBanner from "@/components/TestBuildBanner";
 import StorageUnavailable from "@/components/StorageUnavailable";
+import OpeningScreen from "@/components/OpeningScreen";
 import styles from "./layout.module.css";
 
-// Reading from Dexie is usually instant, so a naive loader would flash for a
-// frame and read as a glitch. The old fix was a 5s floor on *every* open,
-// which meant waiting five seconds to log a dose on a phone that was ready in
-// fifty milliseconds.
+// The one thing this layout renders on the server is OpeningScreen, which
+// means it is in the HTML the phone receives and paints before a single line
+// of JavaScript has run.
 //
-// Instead: don't show the loader at all unless loading is actually taking a
-// moment, and once it is on screen keep it there long enough to be read. Fast
-// opens now show nothing and go straight to Home; slow ones get a stable
-// screen rather than a flicker.
-const LOADER_DELAY_MS = 150;
-const LOADER_MIN_VISIBLE_MS = 500;
+// It used to render null until a 150ms client timer had fired, and a client
+// timer cannot start until the bundle has hydrated. On a phone that is
+// seconds, and what it was covering was plain white, so the one moment the
+// loader existed for was the exact moment it could not appear. Every page
+// under (main) shipped an empty <body>.
+//
+// There is deliberately no minimum-visible floor any more either. The old one
+// existed because the loader appeared late and could otherwise vanish before
+// it was read. Arriving with the HTML solves that on its own, and keeping the
+// floor measured as Home landing a quarter of a second later than before.
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -37,8 +41,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Set when the local database refuses to open. Until this existed, that
   // failure had no path out of the loading state at all.
   const [storageFailed, setStorageFailed] = useState(false);
-  const [loaderVisible, setLoaderVisible] = useState(false);
-  const [loaderMinElapsed, setLoaderMinElapsed] = useState(false);
   const profile = useLiveQuery(() => db.profiles.get(LOCAL_PROFILE_ID));
 
   useEffect(() => {
@@ -76,48 +78,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     void syncRegionResourcesCache();
   }, [router]);
 
-  const ready = checkedOnboarding && Boolean(profile);
-
-  useEffect(() => {
-    if (ready) return;
-    const timer = setTimeout(() => setLoaderVisible(true), LOADER_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [ready]);
-
-  useEffect(() => {
-    if (!loaderVisible) return;
-    const timer = setTimeout(() => setLoaderMinElapsed(true), LOADER_MIN_VISIBLE_MS);
-    return () => clearTimeout(timer);
-  }, [loaderVisible]);
-
   // Checked before the loading state, so a device that cannot store anything
   // gets an explanation instead of a spinner that never stops.
   if (storageFailed) {
     return <StorageUnavailable onRetry={() => window.location.reload()} />;
   }
 
-  // Checks profile directly rather than via `ready` so it narrows below.
-  if (!checkedOnboarding || !profile || (loaderVisible && !loaderMinElapsed)) {
-    // Still within the delay window - blank rather than a frame of loader that
-    // would be gone before it registered.
-    if (!loaderVisible) return null;
-    return (
-      <main className={styles.loadingScreen} aria-live="polite" aria-label="Opening Blossom">
-        <div className={styles.loadingMarkWrap}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon-512.png" alt="" width={72} height={72} />
-        </div>
-        <p className={styles.loadingWordmark}>Blossom</p>
-        <p className={styles.loadingStatus}>
-          Opening your space
-          <span className={styles.loadingDots} aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-        </p>
-      </main>
-    );
+  // Checks profile directly rather than through a derived flag so it narrows
+  // below. On the server both are always false, which is the point: this
+  // branch is what gets prerendered into the HTML.
+  if (!checkedOnboarding || !profile) {
+    return <OpeningScreen />;
   }
 
   const shell = (

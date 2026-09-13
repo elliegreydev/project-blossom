@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { APP_VERSION } from "@/lib/changelog";
+import { APP_VERSION } from "@/lib/appVersion";
 
 // The version of the build currently deployed. The server always runs the
 // newest deploy, so an app that's been open for days can compare this against

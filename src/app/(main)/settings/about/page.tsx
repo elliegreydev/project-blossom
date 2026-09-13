@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import ScreenHeader from "@/components/ScreenHeader";
-import { APP_VERSION } from "@/lib/changelog";
+import { APP_VERSION } from "@/lib/appVersion";
 import formStyles from "@/components/settingsForm.module.css";
 import styles from "../settings.module.css";
 

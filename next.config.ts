@@ -103,6 +103,24 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
+   * Blossom never uses Supabase realtime. supabase-js imports the websocket
+   * engine unconditionally and builds one in its constructor, so roughly 100KB
+   * of channel machinery shipped to every person who opened the app on behalf
+   * of a feature that does not exist here.
+   *
+   * The alias is scoped to `browser` on purpose. The API routes construct real
+   * Supabase clients too, and there is no reason to change what runs on the
+   * server just to make the page lighter.
+   *
+   * src/lib/supabase/no-realtime.ts explains exactly which methods the stand-in
+   * has to answer, and what to re-check when supabase-js is upgraded.
+   */
+  turbopack: {
+    resolveAlias: {
+      "@supabase/realtime-js": { browser: "./src/lib/supabase/no-realtime.ts" },
+    },
+  },
+  /**
    * The 2026 rename: Track became Care, Calendar became Plan, Info became
    * Library. Blossom is installed to home screens and people bookmark pages
    * inside it, so the old paths keep working rather than turning into 404s

@@ -7,7 +7,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID } from "@/lib/db";
 import { isDevBuild, restartOnboardingForDev } from "@/lib/devSeed";
 import { createClient } from "@/lib/supabase/client";
-import { APP_VERSION } from "@/lib/changelog";
+import { APP_VERSION } from "@/lib/appVersion";
 import { THEMES } from "@/lib/themes";
 import styles from "./settings.module.css";
 

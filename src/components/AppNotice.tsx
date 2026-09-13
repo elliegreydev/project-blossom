@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import styles from "./AppNotice.module.css";
 
 interface Notice {
@@ -16,9 +15,15 @@ export default function AppNotice() {
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = createClient();
 
+    // Home renders this, so a static import of the Supabase client put it in
+    // the chunk that has to parse before anything is drawn. A notice nobody
+    // has posted yet is not worth a white screen, so the client is fetched
+    // once this component is already mounted.
     async function load() {
+      const { createClient } = await import("@/lib/supabase/client");
+      if (cancelled) return;
+      const supabase = createClient();
       const now = new Date().toISOString();
       const { data } = await supabase
         .from("app_notices")

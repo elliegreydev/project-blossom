@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APP_VERSION, CHANGELOG, LAST_SEEN_VERSION_KEY, isNewer } from "@/lib/changelog";
+import { APP_VERSION, LAST_SEEN_VERSION_KEY, isNewer } from "@/lib/appVersion";
+import type { ChangelogEntry } from "@/lib/changelog";
 import styles from "./WhatsNew.module.css";
 
 const TAG_CLASS: Record<string, string> = {
@@ -20,6 +21,12 @@ const TAG_CLASS: Record<string, string> = {
 export default function WhatsNew() {
   const [open, setOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  // The entries are fetched only once this has decided it is going to show
+  // something, which on almost every open is never. Held as state rather than
+  // imported because 45KB of release notes were otherwise sitting in the chunk
+  // that has to parse before the app can draw. This component lives in the app
+  // shell, so that cost was on every page.
+  const [entries, setEntries] = useState<ChangelogEntry[]>([]);
 
   useEffect(() => {
     let seen: string | null = null;
@@ -37,7 +44,17 @@ export default function WhatsNew() {
       return;
     }
 
-    if (isNewer(APP_VERSION, seen)) setOpen(true);
+    if (!isNewer(APP_VERSION, seen)) return;
+
+    let cancelled = false;
+    void import("@/lib/changelog").then(({ CHANGELOG }) => {
+      if (cancelled || CHANGELOG.length === 0) return;
+      setEntries(CHANGELOG);
+      setOpen(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function dismiss() {
@@ -47,9 +64,9 @@ export default function WhatsNew() {
     } catch {}
   }
 
-  if (!open || CHANGELOG.length === 0) return null;
+  if (!open || entries.length === 0) return null;
 
-  const entries = showAll ? CHANGELOG : CHANGELOG.slice(0, 1);
+  const shown = showAll ? entries : entries.slice(0, 1);
 
   return (
     <div
@@ -71,7 +88,7 @@ export default function WhatsNew() {
         </div>
 
         <div className={styles.body}>
-          {entries.map((entry) => (
+          {shown.map((entry) => (
             <section className={styles.entry} key={entry.version}>
               <div className={styles.entryHead}>
                 <span className={styles.entryTitle}>{entry.title}</span>
@@ -97,9 +114,9 @@ export default function WhatsNew() {
         </div>
 
         <div className={styles.foot}>
-          {CHANGELOG.length > 1 && (
+          {entries.length > 1 && (
             <button type="button" className={styles.more} onClick={() => setShowAll((v) => !v)}>
-              {showAll ? "Show only the latest" : `Everything before this (${CHANGELOG.length - 1})`}
+              {showAll ? "Show only the latest" : `Everything before this (${entries.length - 1})`}
             </button>
           )}
           <button type="button" className={styles.close} onClick={dismiss}>

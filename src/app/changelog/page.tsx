@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CHANGELOG, APP_VERSION } from "@/lib/changelog";
+import { APP_VERSION } from "@/lib/appVersion";
+import { CHANGELOG } from "@/lib/changelog";
 import styles from "../blog/blog.module.css";
 
 /**

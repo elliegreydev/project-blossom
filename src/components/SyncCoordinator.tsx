@@ -2,19 +2,43 @@
 
 import { useEffect } from "react";
 import { reportClientError } from "@/lib/clientErrorReport";
-import { createClient } from "@/lib/supabase/client";
-import { backgroundSync } from "@/lib/sync";
+
+// The Supabase client is imported at the point of use rather than at the top
+// of the file, and this component is the reason it matters: it is mounted in
+// the root layout, so a static import put the whole client, realtime engine
+// included, into the first chunk of every single page. That is a quarter of a
+// megabyte the phone had to parse before it could draw anything, on behalf of
+// a sync that most people have never turned on.
+//
+// The sync engine is behind a second dynamic import, and it only loads once
+// Supabase has confirmed a real session, so somebody who has never connected
+// an account never downloads it at all. To be exact about what this does and
+// does not do: the Supabase client itself is still fetched a second or so
+// after the app is up, because asking whether there is a session needs it.
+// What changed is that it is no longer in front of the first paint.
+//
+// Whether somebody is signed in is deliberately not guessed from a cookie.
+// Guessing wrong in that direction means their data quietly stops syncing and
+// nothing on screen would say so. Supabase's own answer is the only one worth
+// trusting here.
+async function supabaseClient() {
+  const { createClient } = await import("@/lib/supabase/client");
+  return createClient();
+}
 
 export default function SyncCoordinator() {
   useEffect(() => {
-    const supabase = createClient();
     let debounceTimer: number | undefined;
+    let cancelled = false;
 
     async function runSync() {
       if (!navigator.onLine) return;
+      const supabase = await supabaseClient();
+      if (cancelled) return;
       const { data } = await supabase.auth.getSession();
-      if (!data.session?.user) return;
+      if (!data.session?.user || cancelled) return;
       try {
+        const { backgroundSync } = await import("@/lib/sync");
         await backgroundSync(data.session.user.id);
       } catch (error) {
         // The account screen surfaces the stored error and offers a retry.
@@ -48,9 +72,25 @@ export default function SyncCoordinator() {
       else flushNow();
     }
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) scheduleSync();
-    });
+    // The listener is the one thing here that needs the client whether or not
+    // anything has happened yet, so it is attached on the same 900ms delay as
+    // the first sync rather than during boot. Nothing is missed by waiting:
+    // the first sync does its own getSession, so a session that already exists
+    // is picked up on this open regardless. The listener is only there to
+    // catch somebody signing in later, and nobody signs in inside the first
+    // second of the app opening.
+    let unsubscribeAuth = () => {};
+    const authTimer = window.setTimeout(() => {
+      void (async () => {
+        const supabase = await supabaseClient();
+        if (cancelled) return;
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session?.user) scheduleSync();
+        });
+        unsubscribeAuth = () => data.subscription.unsubscribe();
+      })();
+    }, 900);
+
     window.addEventListener("online", scheduleSync);
     window.addEventListener("blossom:sync-needed", scheduleSync);
     document.addEventListener("visibilitychange", handleVisibility);
@@ -61,9 +101,11 @@ export default function SyncCoordinator() {
     scheduleSync();
 
     return () => {
+      cancelled = true;
       window.clearTimeout(debounceTimer);
+      window.clearTimeout(authTimer);
       window.clearInterval(interval);
-      authListener.subscription.unsubscribe();
+      unsubscribeAuth();
       window.removeEventListener("online", scheduleSync);
       window.removeEventListener("blossom:sync-needed", scheduleSync);
       window.removeEventListener("pagehide", flushNow);

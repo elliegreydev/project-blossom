@@ -1,4 +1,8 @@
-import { APP_VERSION } from "@/lib/changelog";
+// From appVersion, not changelog. This send is keepalive so it survives the
+// tab closing in the same second as the crash, which rules out awaiting a
+// dynamic import first - and a static import of the changelog would put
+// every release note in the boot chunk of every page.
+import { APP_VERSION } from "@/lib/appVersion";
 import {
   browserToken,
   coarseRoute,
