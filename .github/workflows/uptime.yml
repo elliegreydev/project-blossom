@@ -1,0 +1,102 @@
+# Is Blossom actually usable right now?
+#
+# Written after 13 September 2026, when Blossom's authentication service had
+# been crash-looping for an unknown length of time and nothing said so. The site
+# was up. The database was up. The Supabase dashboard said the project was
+# healthy. The only symptom anybody could see was Ellie's phone refusing to open,
+# and that was found by hand, hours later, by reading the auth service's logs
+# before the free tier's one-hour retention window closed on them.
+#
+# The lesson that produced this file: "the site returns 200" is not the same
+# question as "can anyone sign in". Blossom is local-first, so the app carries on
+# working when auth dies, which is a good property that also hides the failure.
+# See 02 Projects/Project Blossom/Auth outage 13 Sep 2026 in the vault.
+#
+# Free: Actions minutes are not billed on public repositories, and this runs no
+# checkout, no npm install and no Node.
+#
+# Two things to know about scheduled workflows:
+#  - They only run from the DEFAULT branch. This does nothing on dev.
+#  - GitHub disables them after 60 days with no activity in the repository, and
+#    emails to say so. If the checks go quiet, that is why.
+name: Uptime
+
+on:
+  schedule:
+    # Every 15 minutes. Often enough to catch an outage the same hour it starts,
+    # rare enough that a flapping endpoint does not fill an inbox.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Can somebody use Blossom
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the things a person actually needs
+        env:
+          # Public by design: this key ships inside the app bundle, and Supabase
+          # documents it as safe to expose. Inlined for the same reason the RLS
+          # tripwire in tests.yml inlines it, so the check works with no repo
+          # configuration to forget.
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwYnFxbGJ0d3lrZnVpbXFnZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MzY5NzcsImV4cCI6MjA5OTUxMjk3N30.srET-ZeP6-yUgX9vsCa95864wfAt7nLBx7nplS5WhBM
+          SUPABASE: https://tpbqqlbtwykfuimqgfwn.supabase.co
+          SITE: https://projectblossom.net
+        run: |
+          set -u
+          failures=""
+
+          # Three attempts before calling anything down. A single failed request
+          # is usually the network between here and there, and waking somebody
+          # for that teaches them to ignore this workflow, which is worse than
+          # not having it.
+          check() {
+            name="$1"; url="$2"; shift 2
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null --max-time 25 -w "%{http_code}" "$@" "$url" || echo "000")
+              if [ "$code" = "200" ]; then
+                echo "  ok       $name ($code)"
+                return 0
+              fi
+              echo "  attempt $attempt failed: $name ($code)"
+              [ "$attempt" -lt 3 ] && sleep 10
+            done
+            echo "  DOWN     $name ($code)"
+            failures="$failures $name"
+            return 0
+          }
+
+          echo "Blossom uptime check"
+
+          # The one that was missed. A dead auth service means nobody can sign
+          # in and every signed-in device hangs on open, while everything else
+          # below still looks perfectly fine.
+          check "sign-in (Supabase auth)" "$SUPABASE/auth/v1/health" -H "apikey: $ANON"
+
+          # The shared data the app pulls: crisis resources, legal notes, the
+          # roadmap. Local-first means this being down is survivable, but it is
+          # still worth knowing.
+          check "database (Supabase REST)" "$SUPABASE/rest/v1/region_resources?select=id&limit=1" -H "apikey: $ANON"
+
+          # The site itself, and the one page that has to work on the worst day
+          # somebody is having.
+          check "the website" "$SITE/"
+          check "crisis support page" "$SITE/crisis-support"
+
+          if [ -n "$failures" ]; then
+            echo ""
+            echo "DOWN:$failures"
+            echo "Blossom is not fully usable. Start with the auth logs, which only"
+            echo "keep about an hour on the free tier:"
+            echo "  GET /v1/projects/tpbqqlbtwykfuimqgfwn/analytics/endpoints/logs.all?sql=<urlencoded>"
+            echo "  select cast(timestamp as datetime) as t, event_message from auth_logs"
+            echo "  where timestamp > timestamp_sub(current_timestamp(), interval 2 hour)"
+            echo "  order by timestamp desc limit 25"
+            exit 1
+          fi
+
+          echo ""
+          echo "All good."
