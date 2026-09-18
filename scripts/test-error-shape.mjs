@@ -5,6 +5,7 @@ import {
   httpErrorClass,
   isExpectedAuthFailure,
   rateLimitWaitSeconds,
+  readableAuthMessage,
   token,
 } from "../src/lib/errorShape.ts";
 
@@ -239,5 +240,33 @@ const realRateLimit = rateLimited(
 assert.equal(isExpectedAuthFailure(realRateLimit), false, "a rate limit must still be reported");
 assert.equal(narrowErrorClass(errorClassOf(realRateLimit)), "over_email_send_rate_limit");
 assert.equal(rateLimitWaitSeconds(realRateLimit), 47);
+
+// Sign-in error text. The regression: 18 Sep 2026, the mail provider refused
+// Supabase's login, Supabase replied 500 with a body that had no message, and
+// supabase-js stringified it. The sign-in page showed the person "{}".
+function authError(message, status) {
+  const e = new Error(message);
+  if (status !== undefined) e.status = status;
+  return e;
+}
+assert.equal(readableAuthMessage(authError("{}", 500)), null, "the exact failure from 18 Sep");
+assert.equal(readableAuthMessage(authError("{}")), null, "{} is never a message, status or not");
+assert.equal(readableAuthMessage(authError("[]", 400)), null);
+assert.equal(readableAuthMessage(authError('{"code":"unexpected_failure"}', 400)), null);
+assert.equal(readableAuthMessage(authError("   ", 400)), null);
+assert.equal(readableAuthMessage(authError("undefined", 400)), null);
+assert.equal(
+  readableAuthMessage(authError("Error sending magic link email", 500)),
+  null,
+  "a 5xx is our plumbing, even when its text is readable",
+);
+assert.equal(
+  readableAuthMessage(authError("Unable to validate email address: invalid format", 400)),
+  "Unable to validate email address: invalid format",
+  "a real 4xx message about their input still gets through",
+);
+assert.equal(readableAuthMessage(authError("  Signups not allowed for otp  ", 422)), "Signups not allowed for otp");
+assert.equal(readableAuthMessage(null), null);
+assert.equal(readableAuthMessage("boom"), null);
 
 console.log(`error shape: OK (${SUPABASE_AUTH_CODES.length} Supabase codes survive the round trip)`);
