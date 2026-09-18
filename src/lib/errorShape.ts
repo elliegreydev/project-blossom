@@ -255,6 +255,34 @@ export function rateLimitWaitSeconds(error: unknown): number | null {
   return 60;
 }
 
+/**
+ * The sign-in error's own message, but only when it is something a person can
+ * read. Null means "say it in our own words instead".
+ *
+ * The bug this exists for: on 18 Sep 2026 Blossom's email provider refused to
+ * send a sign-in code, Supabase answered with a 500 whose body had no message
+ * field, and supabase-js falls back to JSON.stringify for a body like that. So
+ * the error's message was the two characters {} and the sign-in page printed
+ * them, in a red box, as the explanation.
+ *
+ * Two rules:
+ *   - Anything from a 5xx is about Blossom's own plumbing (mail servers, auth
+ *     config), not the person. Its text says nothing they can act on and can
+ *     name infrastructure they have no business seeing.
+ *   - Text that is a serialised object or array is not a message, whatever its
+ *     status. Neither is an empty string or the word undefined.
+ */
+export function readableAuthMessage(error: unknown): string | null {
+  if (!isRecord(error)) return null;
+  const status = typeof error.status === "number" ? error.status : null;
+  if (status !== null && status >= 500) return null;
+  const message = typeof error.message === "string" ? error.message.trim() : "";
+  if (message === "") return null;
+  if (message.startsWith("{") || message.startsWith("[")) return null;
+  if (message === "undefined" || message === "null") return null;
+  return message;
+}
+
 // Every first path segment Blossom actually serves. Anything else is somebody
 // following a broken or hostile link, and becomes "/other".
 const KNOWN_ROUTE_SEGMENTS = new Set([

@@ -9,7 +9,7 @@ import { db, LOCAL_PROFILE_ID, deleteAllData, verifyAppLockPin } from "@/lib/db"
 import { isHqDevEntry } from "@/lib/devAccess";
 import DevSignInNotice from "@/components/DevSignInNotice";
 import { reportClientError } from "@/lib/clientErrorReport";
-import { isExpectedAuthFailure, rateLimitWaitSeconds } from "@/lib/errorShape";
+import { isExpectedAuthFailure, rateLimitWaitSeconds, readableAuthMessage } from "@/lib/errorShape";
 import { createClient } from "@/lib/supabase/client";
 import {
   enableSync,
@@ -230,10 +230,14 @@ export default function AccountPage() {
     if (wait !== null) {
       return `A code is already on its way to that address. You can ask for another in ${wait} seconds. It's worth checking your spam folder while you wait, that's usually where it is.`;
     }
-    if (authError instanceof Error && authError.message.trim() !== "") return authError.message;
+    // Used to be any non-empty message, which is how the literal text {} ended
+    // up on this page. readableAuthMessage turns away anything a person can't
+    // read, and anything from a 5xx, which is always Blossom's own plumbing.
+    const readable = readableAuthMessage(authError);
+    if (readable) return readable;
     return kind === "send"
-      ? "Blossom couldn’t send a code just now."
-      : "Blossom couldn’t resend the code just now.";
+      ? "Blossom couldn’t send a code just now. That’s a problem on our side, not with your email address, so please try again a bit later."
+      : "Blossom couldn’t resend the code just now. That’s a problem on our side, not with your email address, so please try again a bit later.";
   }
 
   function startWaitIfRateLimited(authError: unknown) {
