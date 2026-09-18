@@ -11,7 +11,7 @@
 //   "improved" something that already existed, working better
 //   "fix"      something that was broken
 
-export const APP_VERSION = "0.5.37";
+export const APP_VERSION = "0.5.44";
 
 export type ChangelogTag = "new" | "improved" | "fix";
 
@@ -28,6 +28,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.44",
+    date: "2026-09-18",
+    title: "Signing in explains itself when a code can't be sent",
+    items: [
+      { tag: "fix", text: "If Blossom couldn't email you a sign-in code, the page showed two brackets, {}, instead of an explanation. It now says plainly that the problem is on Blossom's side and not with your email address." },
+    ],
+  },
   {
     version: "0.5.37",
     date: "2026-08-25",
