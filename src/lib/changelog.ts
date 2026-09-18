@@ -35,6 +35,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.5.45",
+    date: "2026-09-18",
+    title: "The roadmap's \"Recently added\" means recent again",
+    items: [
+      { tag: "fix", text: "Almost everything on the roadmap said \"Recently added\", including ideas from two months ago. The label was ticked by hand and never taken off. It now comes from the date: three weeks after something is added, or three weeks after it ships, the label goes away by itself." },
+    ],
+  },
+  {
     version: "0.5.44",
     date: "2026-09-18",
     title: "Signing in explains itself when a code can't be sent",

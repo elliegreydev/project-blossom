@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { recentLabel } from "@/lib/roadmapRecency";
 import styles from "./roadmap.module.css";
 
 type Stage = "available" | "next" | "later";
@@ -14,8 +15,10 @@ interface RoadmapItem {
   title: string;
   description: string;
   stage: Stage;
-  is_recent: boolean;
+  created_at: string;
+  stage_changed_at: string;
 }
+
 
 const STAGES: Array<{ key: Stage; eyebrow: string; title: string; description: string }> = [
   {
@@ -156,21 +159,16 @@ function themeFor(item: RoadmapItem): Theme {
   return ROADMAP_THEMES[item.slug] ?? "other";
 }
 
-function RoadmapItemRow({ item }: { item: RoadmapItem }) {
+function RoadmapItemRow({ item, now }: { item: RoadmapItem; now: number }) {
+  const label = recentLabel(item, now);
   return (
     <article className={styles.item}>
       <div className={styles.itemHeading}>
         <h3>{item.title}</h3>
-        {/* The same flag means two different things depending on where the
-            item sits. In "Available now" it marks something newly built, which
-            is what /ideas already calls "Recently shipped". Anywhere else it
-            marks a newly added plan. Saying "added" for finished work made
-            shipped features read like fresh promises. */}
-        {item.is_recent && (
-          <span className={styles.recent}>
-            {item.stage === "available" ? "Recently shipped" : "Recently added"}
-          </span>
-        )}
+        {/* "Recently shipped" in Available, "Recently added" everywhere
+            else. Saying "added" for finished work made shipped features read
+            like fresh promises. */}
+        {label && <span className={styles.recent}>{label}</span>}
       </div>
       <p>{item.description}</p>
     </article>
@@ -179,6 +177,9 @@ function RoadmapItemRow({ item }: { item: RoadmapItem }) {
 
 export default function RoadmapPage() {
   const [items, setItems] = useState<RoadmapItem[] | null>(null);
+  // Taken once, when the roadmap arrives, rather than during render: reading
+  // the clock while rendering is impure and the React Compiler rejects it.
+  const [loadedAt, setLoadedAt] = useState(0);
   const [activeTheme, setActiveTheme] = useState<Theme | "all">("all");
 
   useEffect(() => {
@@ -187,12 +188,15 @@ export default function RoadmapPage() {
     async function loadRoadmap() {
       const { data } = await createClient()
         .from("product_roadmap")
-        .select("id,slug,title,description,stage,is_recent")
+        .select("id,slug,title,description,stage,created_at,stage_changed_at")
         .eq("status", "active")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
 
-      if (!cancelled) setItems((data as RoadmapItem[]) ?? []);
+      if (!cancelled) {
+        setLoadedAt(Date.now());
+        setItems((data as RoadmapItem[]) ?? []);
+      }
     }
 
     void loadRoadmap();
@@ -270,7 +274,7 @@ export default function RoadmapPage() {
                           <span className={styles.summaryAction}>Show details</span>
                         </summary>
                         <div className={styles.items}>
-                          {stageItems.map((item) => <RoadmapItemRow key={item.id} item={item} />)}
+                          {stageItems.map((item) => <RoadmapItemRow key={item.id} item={item} now={loadedAt} />)}
                           {stageItems.length === 0 && <p className={styles.empty}>Nothing matches this focus just yet.</p>}
                         </div>
                       </details>
@@ -292,7 +296,7 @@ export default function RoadmapPage() {
                                 <span className={styles.groupCount}>{groupItems.length}</span>
                               </summary>
                               <div className={styles.items}>
-                                {groupItems.map((item) => <RoadmapItemRow key={item.id} item={item} />)}
+                                {groupItems.map((item) => <RoadmapItemRow key={item.id} item={item} now={loadedAt} />)}
                               </div>
                             </details>
                           );
