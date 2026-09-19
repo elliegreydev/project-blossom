@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { APP_VERSION, LAST_SEEN_VERSION_KEY, isNewer } from "@/lib/appVersion";
+import { resolveWelcomeBack } from "@/lib/welcomeBack";
 import type { ChangelogEntry } from "@/lib/changelog";
 import styles from "./WhatsNew.module.css";
 
@@ -29,6 +30,12 @@ export default function WhatsNew() {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
 
   useEffect(() => {
+    // After a long gap the welcome-back card on Home lists what's new itself,
+    // and resolving it marks this version seen. Asked here, before reading the
+    // version, because this component's effects run before Home's do, and
+    // otherwise somebody coming back would get the popup and the card.
+    if (resolveWelcomeBack()) return;
+
     let seen: string | null = null;
     try {
       seen = localStorage.getItem(LAST_SEEN_VERSION_KEY);

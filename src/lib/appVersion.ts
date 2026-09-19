@@ -11,7 +11,7 @@
 // change bumps APP_VERSION below, adds an entry to the top of CHANGELOG in
 // changelog.ts, and bumps package.json. All three, every time.
 
-export const APP_VERSION = "0.5.45";
+export const APP_VERSION = "0.5.46";
 
 export const LAST_SEEN_VERSION_KEY = "blossom-last-seen-version";
 

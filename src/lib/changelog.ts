@@ -35,6 +35,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.5.46",
+    date: "2026-09-19",
+    title: "A gentler welcome after time away",
+    items: [
+      { tag: "new", text: "If you haven't opened Blossom on this device for a couple of weeks, Home now starts with a calm welcome back instead of carrying on as if you were here yesterday. It says everything is still here, points to anything that's probably out of date, and tells you what's new. When there's nothing to catch up on, it says so. It never counts anything, and one tap puts it away." },
+      { tag: "improved", text: "Coming back after a while no longer means a burst of follow-up reminders all at once. They're gathered into the welcome back instead." },
+    ],
+  },
+  {
     version: "0.5.45",
     date: "2026-09-18",
     title: "The roadmap's \"Recently added\" means recent again",

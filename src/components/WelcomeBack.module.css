@@ -1,0 +1,238 @@
+/* Tinted lavender like Blossom's other callouts, never grey. Everything here
+   paints from theme tokens so Low Profile and every palette carry it. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 14px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--lavender) 46%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 11%, var(--bg-raised));
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.lede {
+  margin: 2px 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.row:hover {
+  border-color: color-mix(in srgb, var(--lavender) 42%, var(--border));
+  background: color-mix(in srgb, var(--lavender) 5%, var(--bg-raised));
+}
+
+.row:focus-visible,
+.carryOn:focus-visible,
+.quietLink:focus-visible {
+  outline: 2px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+.icon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--text-primary);
+}
+
+.icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.icon[data-tint="mint"] {
+  background: color-mix(in srgb, var(--mint) 30%, var(--bg));
+}
+
+.icon[data-tint="sky"] {
+  background: color-mix(in srgb, var(--sky) 30%, var(--bg));
+}
+
+.icon[data-tint="pink"] {
+  background: color-mix(in srgb, var(--pink) 30%, var(--bg));
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rowTitle {
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--text-primary);
+}
+
+.rowBody {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.chevron {
+  flex: 0 0 auto;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.nothing {
+  padding: 12px 13px;
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid color-mix(in srgb, var(--mint) 55%, var(--border));
+  background: color-mix(in srgb, var(--mint) 24%, var(--bg-raised));
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.nothing strong {
+  font-weight: 600;
+}
+
+.news {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.newsTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.newsTitle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.newsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.newsList li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.newsList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lavender);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Same treatment as the support card's primary button, so the two read as one
+   family: plum on light, a light lavender with dark text on dark. The mockup's
+   lavender-on-lavender was too faint in dark mode. */
+.carryOn {
+  min-height: 44px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--plum);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .carryOn {
+    background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+    color: #1b151f;
+  }
+}
+
+:global(html[data-appearance="dark"]) .carryOn {
+  background: color-mix(in srgb, var(--lavender) 88%, var(--plum));
+  color: #1b151f;
+}
+
+:global(html[data-appearance="light"]) .carryOn {
+  background: var(--plum);
+  color: #fff;
+}
+
+.quietLink {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

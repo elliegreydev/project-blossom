@@ -37,6 +37,7 @@ import SyncNudge from "@/components/SyncNudge";
 import DiscordNudge from "@/components/DiscordNudge";
 import SharingToolsNudge from "@/components/SharingToolsNudge";
 import AppNotice from "@/components/AppNotice";
+import WelcomeBack from "@/components/WelcomeBack";
 import SupportCard from "@/components/SupportCard";
 import { ESSENTIALS_DURATIONS, essentialsActive, essentialsDaysLeft, filterBlocksForEssentials } from "@/lib/justTheEssentials";
 import { INTENTIONS, orderIntentions, rememberIntention, type IntentionKey } from "@/lib/intentions";
@@ -644,6 +645,8 @@ export default function HomePage() {
         alarming - pink, not red - because it's on screen every ordinary day
         too, and a daily emergency banner would make the app heavy to open. */}
     <Link href="/crisis-support" className={styles.crisisChip}>Need support right now?</Link>
+    {/* Below crisis help, never above it: see the note on the chip. */}
+    <WelcomeBack />
     <AppNotice />
     {quietHome && (
       // The way out has to live here, not only in Settings. Somebody who

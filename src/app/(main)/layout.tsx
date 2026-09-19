@@ -18,6 +18,7 @@ import SyncStatus from "@/components/SyncStatus";
 import TestBuildBanner from "@/components/TestBuildBanner";
 import StorageUnavailable from "@/components/StorageUnavailable";
 import OpeningScreen from "@/components/OpeningScreen";
+import { startActivityClock } from "@/lib/welcomeBack";
 import styles from "./layout.module.css";
 
 // The one thing this layout renders on the server is OpeningScreen, which
@@ -77,6 +78,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     void syncDeviceTimezone();
     void syncRegionResourcesCache();
   }, [router]);
+
+  // Keeps "last here" current on this device, for the welcome-back card.
+  useEffect(() => startActivityClock(), []);
 
   // Checked before the loading state, so a device that cannot store anything
   // gets an explanation instead of a spinner that never stops.

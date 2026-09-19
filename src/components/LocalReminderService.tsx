@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LOCAL_PROFILE_ID, markReminderNotified, notifiedReminderState } from "@/lib/db";
+import { resolveWelcomeBack } from "@/lib/welcomeBack";
 import { dueAppointmentReminders, dueCheckInReminders, dueMedicationReminders, dueReferralChaseReminders, dueSafetyCheckInReminders, dueWeightReminders, isQuietHours } from "@/lib/reminders";
 
 const CHECK_INTERVAL_MS = 30 * 1000;
@@ -37,10 +38,25 @@ export default function LocalReminderService() {
       if (isQuietHours(now, profile.quietHoursEnabled, profile.quietHoursStart, profile.quietHoursEnd)) return;
 
       const notified = await notifiedReminderState();
+
+      // Coming back after a long gap, referral follow-ups are shown as one
+      // line on the welcome-back card rather than all firing as notifications
+      // the moment the app opens. They are marked as delivered, so this round
+      // of follow-ups doesn't arrive again the moment the card is put away.
+      // Only these: medication, appointment and check-in reminders never fire
+      // for anything stale in the first place, and safety check-ins must never
+      // be quietened.
+      const welcomingBack = resolveWelcomeBack(now) !== null;
+      if (welcomingBack && referrals) {
+        for (const reminder of dueReferralChaseReminders(referrals, notified, now)) {
+          await markReminderNotified(reminder.key);
+        }
+      }
+
       const pending = [
         ...dueMedicationReminders(medications, medicationLogs, notified, now),
         ...dueAppointmentReminders(appointments, notified, now),
-        ...(referrals ? dueReferralChaseReminders(referrals, notified, now) : []),
+        ...(referrals && !welcomingBack ? dueReferralChaseReminders(referrals, notified, now) : []),
         ...(profile.safetyCheckInsEnabled && safetyCheckIns
           ? dueSafetyCheckInReminders(safetyCheckIns, notified, now)
           : []),
