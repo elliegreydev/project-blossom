@@ -170,14 +170,14 @@ async function runSeed(): Promise<void> {
 
     // Journal.
     await addJournalEntry("First proper week on gel. Feeling hopeful, a bit anxious about bloods.");
-    await addJournalEntry("Had coffee with Liv today. Laughed properly for the first time in ages.");
+    await addJournalEntry("Had coffee with Sam today. Laughed properly for the first time in ages.");
     await addJournalEntry("Rough day with dysphoria but the walk helped. Small wins.");
 
     // Check-ins across the week (mood 1-5).
     const checkins = [
       { mood: 4, note: "Good day." },
       { mood: 3, note: "Okay." },
-      { mood: 5, note: "Really good, walk and Liv." },
+      { mood: 5, note: "Really good, walk and Sam." },
       { mood: 2, note: "Tough, dysphoria." },
       { mood: 4, note: "Steady." },
       { mood: 3, note: "Fine." },
@@ -212,7 +212,7 @@ async function runSeed(): Promise<void> {
     await addBudgetEntry({ category: "Clothing", description: "New wardrobe bits", amount: 6500, date: dateKey(daysAgoIso(6)) } as never);
 
     // Support map + saved links.
-    await addSupportMapEntry({ name: "Liv", type: "person", labels: ["best friend", "safe"], contact: null, area: null, note: "Always there.", reviewOn: null, isFavourite: true } as never);
+    await addSupportMapEntry({ name: "Sam", type: "person", labels: ["best friend", "safe"], contact: null, area: null, note: "Always there.", reviewOn: null, isFavourite: true } as never);
     await addSupportMapEntry({ name: "Nottingham LGBT+ Network", type: "group", labels: ["peer support"], contact: null, area: "Nottingham", note: "Monthly meetup.", reviewOn: null, isFavourite: false } as never);
     await addPrivateLink({ label: "TransActual: medical transition", url: "https://transactual.org.uk/medical-transition/", note: "Good plain guides." } as never);
     await addPrivateLink({ label: "Deed poll guide", url: "https://www.gov.uk/change-name-deed-poll", note: null } as never);
